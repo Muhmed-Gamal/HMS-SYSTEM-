@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول | نظام الباركود - HMS Group</title>
+    <script src="js/tailwind.min.js"></script>
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="navy-slate-bg flex items-center justify-center p-4 min-h-screen">
+
+    <div class="w-full max-w-sm">
+        <!-- Main Card -->
+        <div class="slate-card p-8 sm:p-9">
+            
+            <!-- Brand Icon -->
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700/60">
+                <div class="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg">
+                    <i class="fas fa-barcode"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-white" id="loginCompanyAr">HMS Group</h1>
+                    <div class="text-[11px] text-slate-400 font-mono mt-0.5" id="loginCompanyEn">HMS Group Barcode System</div>
+                </div>
+            </div>
+
+            <!-- Heading -->
+            <div class="mb-5">
+                <h2 class="text-base font-bold text-white">تسجيل الدخول</h2>
+                <p class="text-xs text-slate-400 mt-1">أدخل بيانات الحساب لبدء جلسة العمل</p>
+            </div>
+
+            <!-- Form -->
+            <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5" for="loginUsername">
+                        اسم المستخدم
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="loginUsername" required placeholder="admin أو اسم الحساب..." 
+                            class="slate-input pr-10 text-xs font-mono" autocomplete="username">
+                        <i class="fas fa-user absolute right-3.5 top-3 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5" for="loginPassword">
+                        كلمة المرور
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="loginPassword" required placeholder="••••••••" 
+                            class="slate-input pr-10 pl-10 text-xs font-mono" autocomplete="current-password">
+                        <i class="fas fa-lock absolute right-3.5 top-3 text-slate-400 text-xs"></i>
+                        <button type="button" onclick="togglePasswordVisibility()" 
+                            class="absolute left-3 top-2.5 text-slate-400 hover:text-slate-200 text-xs p-1 transition" id="togglePassBtn">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="btn-slate btn-slate-primary w-full py-2.5 text-xs font-semibold" id="loginSubmitBtn">
+                        <span id="loginBtnText" class="flex items-center justify-center gap-2">
+                            <span>تسجيل الدخول</span>
+                            <i class="fas fa-arrow-left text-[11px]"></i>
+                        </span>
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-700/60 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    محطة العمل متصلة
+                </span>
+                <span>SQL Server</span>
+            </div>
+        </div>
+
+        <p class="text-center text-[11px] text-slate-500 mt-4 font-mono" id="loginCopyright">
+            HMS Group © 2026
+        </p>
+    </div>
+
+    <!-- Alert Modal -->
+    <div id="loginAlertModal" style="display:none;position:fixed;inset:0;background:rgba(10,17,32,0.7);backdrop-filter:blur(8px);z-index:9990;align-items:center;justify-content:center;padding:16px;">
+        <div class="slate-card p-6 w-full max-w-xs text-center shadow-xl">
+            <div id="loginAlertIcon" class="w-10 h-10 rounded-full mx-auto mb-3 flex items-center justify-center text-sm"></div>
+            <h3 id="loginAlertTitle" class="text-white text-sm font-bold mb-1"></h3>
+            <p id="loginAlertMessage" class="text-slate-300 text-xs leading-relaxed mb-4"></p>
+            <button onclick="closeLoginAlert()" class="btn-slate btn-slate-secondary w-full py-1.5 text-xs font-semibold">إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('loginPassword');
+            const btn = document.getElementById('togglePassBtn');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                passInput.type = 'password';
+                btn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        }
+
+        async function handleLoginSubmit(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!username || !password) {
+                showLoginAlert('تنبيه', 'يرجى إدخال اسم المستخدم وكلمة المرور', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('loginSubmitBtn');
+            const btnText = document.getElementById('loginBtnText');
+            btn.disabled = true;
+            btnText.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري التحقق...';
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    if (data.token) localStorage.setItem('hms_token', data.token);
+                    localStorage.setItem('hms_user', JSON.stringify(data.user));
+                    localStorage.setItem('freedom_user', JSON.stringify(data.user));
+                    btnText.innerHTML = '<i class="fas fa-check"></i> تم الدخول بنجاح';
+
+                    setTimeout(() => {
+                        if (data.user.role === 'production' || data.user.role === 'external_operator') {
+                            window.location.href = '/index.html';
+                        } else if (data.user.role === 'external_admin') {
+                            window.location.href = '/external_tracking.html';
+                        } else {
+                            window.location.href = '/orders_tracking.html';
+                        }
+                    }, 350);
+                } else {
+                    btn.disabled = false;
+                    btnText.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-arrow-left text-[11px]"></i>';
+                    showLoginAlert('تعذر الدخول', data.message || 'بيانات الدخول غير صحيحة', 'error');
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btnText.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-arrow-left text-[11px]"></i>';
+                showLoginAlert('خطأ في الاتصال', 'تعذر الاتصال بالخادم. يرجى التأكد من تشغيل السيرفر.', 'error');
+            }
+        }
+
+        function showLoginAlert(title, message, type = 'error') {
+            const icons = {
+                error: { bg: 'rgba(239,68,68,0.15)', color: '#f87171', icon: '<i class="fas fa-exclamation-circle"></i>' },
+                warning: { bg: 'rgba(245,158,11,0.15)', color: '#fbbf24', icon: '<i class="fas fa-exclamation-triangle"></i>' },
+                info: { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', icon: '<i class="fas fa-info-circle"></i>' },
+            };
+            const ic = icons[type] || icons.error;
+            const iconEl = document.getElementById('loginAlertIcon');
+            iconEl.style.background = ic.bg;
+            iconEl.style.color = ic.color;
+            iconEl.innerHTML = ic.icon;
+            document.getElementById('loginAlertTitle').textContent = title;
+            document.getElementById('loginAlertMessage').textContent = message;
+            document.getElementById('loginAlertModal').style.display = 'flex';
+        }
+
+        function closeLoginAlert() {
+            document.getElementById('loginAlertModal').style.display = 'none';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch('/api/system/info')
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.company_name) {
+                        const arEl = document.getElementById('loginCompanyAr');
+                        if (arEl) arEl.textContent = d.company_name;
+                        const enEl = document.getElementById('loginCompanyEn');
+                        if (enEl) enEl.textContent = `${d.company_en || d.company_name} Barcode System`;
+                        const cpEl = document.getElementById('loginCopyright');
+                        if (cpEl) cpEl.textContent = `${d.company_en || d.company_name} © ${new Date().getFullYear()}`;
+                        document.title = `تسجيل الدخول | نظام الباركود - ${d.company_name}`;
+                    }
+                }).catch(() => {});
+
+            const savedUser = localStorage.getItem('hms_user') || localStorage.getItem('freedom_user');
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    if (user && user.id) {
+                        if (user.role === 'production' || user.role === 'external_operator') {
+                            window.location.href = '/index.html';
+                        } else if (user.role === 'external_admin') {
+                            window.location.href = '/external_tracking.html';
+                        } else {
+                            window.location.href = '/orders_tracking.html';
+                        }
+                    }
+                } catch (e) { 
+                    localStorage.removeItem('hms_user');
+                    localStorage.removeItem('freedom_user'); 
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>HMS Barcode Ecosystem | العرض التقديمي الشامل وحل إدارة خطوط الإنتاج والباركود الصناعي</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind -->
+    <script src="/js/tailwind.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #070d18;
+            --bg-card: #0f172a;
+            --bg-card-glass: rgba(15, 23, 42, 0.88);
+            --gold: #f59e0b;
+            --gold-light: #fbbf24;
+            --emerald: #10b981;
+            --blue-accent: #38bdf8;
+            --cyan-glow: #06b6d4;
+            --slate-border: rgba(148, 163, 184, 0.18);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', 'Cairo', sans-serif;
+            background: var(--bg-deep);
+            color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Slide Structure */
+        .slide {
+            min-height: 100vh;
+            width: 100%;
+            padding: 32px 36px 80px 36px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            border-bottom: 2px dashed rgba(56, 189, 248, 0.2);
+            background: radial-gradient(circle at 10% 10%, rgba(14, 165, 233, 0.15) 0%, transparent 45%),
+                        radial-gradient(circle at 90% 90%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
+                        var(--bg-deep);
+        }
+
+        .slide-inner {
+            max-width: 1320px;
+            margin: 0 auto;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Glass Cards */
+        .glass-card {
+            background: var(--bg-card-glass);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--slate-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+        }
+
+        .glass-card-gold {
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            box-shadow: 0 10px 35px rgba(245, 158, 11, 0.1);
+        }
+
+        .glass-card-blue {
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            box-shadow: 0 10px 35px rgba(56, 189, 248, 0.1);
+        }
+
+        .glass-card-emerald {
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            box-shadow: 0 10px 35px rgba(16, 185, 129, 0.1);
+        }
+
+        .glass-card-cyan {
+            border: 1px solid rgba(6, 182, 212, 0.35);
+            box-shadow: 0 10px 35px rgba(6, 182, 212, 0.1);
+        }
+
+        /* Callout Badges */
+        .callout-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-gold {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .badge-blue {
+            background: rgba(56, 189, 248, 0.15);
+            color: #7dd3fc;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .badge-emerald {
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-cyan {
+            background: rgba(6, 182, 212, 0.15);
+            color: #67e8f9;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        /* Realistic UI Mockup Containers */
+        .mockup-frame {
+            background: #080d19;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.7);
+        }
+
+        .mockup-header {
+            background: #0f172a;
+            padding: 9px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+        }
+
+        .mockup-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Floating Controller */
+        .floating-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            background: rgba(11, 18, 33, 0.94);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            padding: 7px 16px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.75);
+            max-width: 95vw;
+            overflow-x: auto;
+        }
+
+        .nav-btn {
+            background: rgba(30, 41, 59, 0.8);
+            color: #f8fafc;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            padding: 6px 13px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .nav-btn:hover {
+            background: #0284c7;
+            color: #fff;
+            border-color: #38bdf8;
+            transform: translateY(-1px);
+        }
+        .nav-btn.primary {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            border: 1px solid rgba(56,189,248,0.4);
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+        }
+        .nav-btn.download-btn {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: #ecfdf5;
+            border: 1px solid rgba(16,185,129,0.4);
+            box-shadow: 0 4px 15px rgba(5,150,105,0.35);
+        }
+        .nav-btn.download-btn:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(5,150,105,0.5);
+        }
+
+        /* Download Modal */
+        .dl-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(7,13,24,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .dl-modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .dl-modal {
+            background: #0f172a;
+            border: 1px solid rgba(56,189,248,0.4);
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 520px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.85);
+            transform: translateY(20px);
+            transition: transform 0.25s ease;
+        }
+        .dl-modal-overlay.open .dl-modal {
+            transform: translateY(0);
+        }
+        .dl-option-btn {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(148,163,184,0.2);
+            background: rgba(30,41,59,0.6);
+            color: #f1f5f9;
+            font-size: 13.5px;
+            font-weight: 700;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+        .dl-option-btn:hover {
+            transform: translateX(-4px);
+            border-color: rgba(56,189,248,0.5);
+            background: rgba(56,189,248,0.1);
+        }
+        .dl-option-btn .dl-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .dl-progress-bar {
+            height: 4px;
+            background: rgba(148,163,184,0.15);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+        .dl-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0284c7, #38bdf8);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Print Styling */
+        @media print {
+            *, *::before, *::after {
+                box-shadow: none !important;
+                text-shadow: none !important;
+                filter: none !important;
+                backdrop-filter: none !important;
+            }
+            @page {
+                size: A4 landscape;
+                margin: 0;
+            }
+            body {
+                background: #080e1a !important;
+                color: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .slide {
+                min-height: 100vh !important;
+                height: 100vh !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                border: none !important;
+                padding: 24px 36px !important;
+            }
+            .floating-nav, .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Action Bar -->
+    <div class="floating-nav no-print">
+        <button onclick="openDownloadModal()" class="nav-btn download-btn">
+            <i class="fas fa-download"></i> <span>تحميل البرزنتيشن</span>
+        </button>
+        <span class="text-xs text-slate-500 font-mono hidden sm:inline">|</span>
+        <button onclick="navigateSlide(-1)" class="nav-btn">
+            <i class="fas fa-chevron-right"></i> <span>السابق</span>
+        </button>
+        <span id="slideCounter" class="text-xs font-mono font-bold text-sky-400 px-1">1 / 10</span>
+        <button onclick="navigateSlide(1)" class="nav-btn">
+            <span>التالي</span> <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="text-xs text-slate-500 font-mono hidden sm:inline">|</span>
+        <button onclick="toggleFullscreen()" class="nav-btn hidden md:flex">
+            <i class="fas fa-expand"></i> <span>ملء الشاشة</span>
+        </button>
+        <a href="/orders" class="nav-btn primary">
+            <i class="fas fa-play-circle"></i> <span>فتح تجربة النظام الحية</span>
+        </a>
+    </div>
+
+    <!-- Download Modal -->
+    <div class="dl-modal-overlay no-print" id="dlModalOverlay" onclick="closeDlModalOnBg(event)">
+        <div class="dl-modal">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 to-blue-500 flex items-center justify-center text-white text-2xl mx-auto mb-4 shadow-lg shadow-sky-500/20">
+                <i class="fas fa-cloud-arrow-down"></i>
+            </div>
+            <h2 style="color:#f1f5f9;font-size:20px;font-weight:800;margin-bottom:6px;font-family:Tajawal,sans-serif;">تحميل العرض التقديمي الشامل</h2>
+            <p style="color:#94a3b8;font-size:13px;margin-bottom:20px;font-family:Tajawal,sans-serif;">اختر الصيغة المناسبة لتقديم العرض للعميل أو طباعته</p>
+
+            <button class="dl-option-btn" onclick="downloadAsHTML()">
+                <div class="dl-icon" style="background:rgba(56,189,248,0.15);color:#38bdf8;"><i class="fas fa-file-code"></i></div>
+                <div style="text-align:right;">
+                    <div style="font-size:14px;font-weight:700;">تحميل كـ ملف HTML متكامل ومستقل</div>
+                    <div style="font-size:11px;color:#94a3b8;font-weight:400;">نسخة كاملة أوفلاين · تعمل على الفلاشة وبدون إنترنت</div>
+                </div>
+                <i class="fas fa-chevron-left" style="margin-right:auto;color:#64748b;font-size:11px;"></i>
+            </button>
+
+            <button class="dl-option-btn" onclick="downloadAsPDF()">
+                <div class="dl-icon" style="background:rgba(239,68,68,0.15);color:#ef4444;"><i class="fas fa-file-pdf"></i></div>
+                <div style="text-align:right;">
+                    <div style="font-size:14px;font-weight:700;">تحميل كـ ملف PDF عالي الجودة (A4 Landscape)</div>
+                    <div style="font-size:11px;color:#94a3b8;font-weight:400;">كتيب عرض رسمي مناسب للإرسال عبر واتساب والإيميل</div>
+                </div>
+                <i class="fas fa-chevron-left" style="margin-right:auto;color:#64748b;font-size:11px;"></i>
+            </button>
+
+            <button class="dl-option-btn" onclick="window.print(); closeDownloadModal();">
+                <div class="dl-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;"><i class="fas fa-print"></i></div>
+                <div style="text-align:right;">
+                    <div style="font-size:14px;font-weight:700;">طباعة ورقية مباشرة</div>
+                    <div style="font-size:11px;color:#94a3b8;font-weight:400;">إرسال فوري للطابعة بتنسيق أفقي جاهز للاجتماعات</div>
+                </div>
+                <i class="fas fa-chevron-left" style="margin-right:auto;color:#64748b;font-size:11px;"></i>
+            </button>
+
+            <div id="dlProgressWrap" style="display:none;margin-top:10px;">
+                <div style="font-size:12px;color:#38bdf8;font-family:Tajawal,sans-serif;margin-bottom:6px;" id="dlStatusText">جاري التحضير...</div>
+                <div class="dl-progress-bar"><div class="dl-progress-fill" id="dlProgressFill"></div></div>
+            </div>
+
+            <button onclick="closeDownloadModal()" style="margin-top:18px;color:#64748b;font-size:12px;font-family:Tajawal,sans-serif;background:none;border:none;cursor:pointer;font-weight:600;">
+                <i class="fas fa-times" style="margin-left:4px;"></i> إغلاق النافذة
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 1: الغلاف التنفيذي العالمي (THE EXECUTIVE HERO & PITCH)
+         ========================================== -->
+    <section class="slide" id="slide-1">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-sky-500/25">
+                    <i class="fas fa-barcode"></i>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-white text-base tracking-wide flex items-center gap-2">
+                        <span>HMS Barcode System</span>
+                        <span class="text-[9px] bg-sky-500/15 text-sky-400 px-1.5 py-0.5 rounded border border-sky-500/30 font-mono">v8.5 ENTERPRISE</span>
+                    </h3>
+                    <p class="text-[11px] text-slate-400 font-mono">INDUSTRIAL PRODUCTION AUDITING & BARCODE PLATFORM</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="badge-emerald callout-tag font-mono">VERIFIED ROI 2026</span>
+                <span class="text-xs text-slate-400 font-mono hidden sm:inline">OFFICIAL COMMERCIAL PITCH DECK</span>
+            </div>
+        </div>
+
+        <div class="slide-inner py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Pitch Content -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-bold">
+                        <i class="fas fa-shield-halved"></i> الحل التكنولوجي المعتمد لكبرى مصانع الملابس والغزل والنسيج
+                    </div>
+
+                    <h1 class="text-3xl sm:text-5xl font-black text-white leading-tight">
+                        المنظومة الصناعية الذكية لإدارة وتتبع خطوط الإنتاج <span class="bg-gradient-to-r from-sky-400 via-cyan-300 to-blue-500 bg-clip-text text-transparent">ومطابقة الباركود</span>
+                    </h1>
+
+                    <p class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
+                        وداعاً لضياع القطع، وتضارب الأعداد، وتأخير الأوردرات. نظام متكامل يمنح الإدارة <strong class="text-white">رقابة رقمية مطلقة 100%</strong> على كل قطعة قماش من بداية أمر الشغل مروراً بكافة المراحل وحتى تسليم الكرتونة للمستورد.
+                    </p>
+
+                    <!-- Key Metric Highlights -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                        <div class="glass-card glass-card-blue p-3.5 text-center">
+                            <div class="text-2xl font-black text-sky-400 font-mono">100%</div>
+                            <div class="text-xs text-white font-bold mt-1">مطابقة كميات</div>
+                            <div class="text-[10px] text-slate-400">Zero Lost Pieces</div>
+                        </div>
+                        <div class="glass-card glass-card-emerald p-3.5 text-center">
+                            <div class="text-2xl font-black text-emerald-400 font-mono">&lt; 20ms</div>
+                            <div class="text-xs text-white font-bold mt-1">سرعة ضربة الليزر</div>
+                            <div class="text-[10px] text-slate-400">Sub-Millisecond Scan</div>
+                        </div>
+                        <div class="glass-card glass-card-cyan p-3.5 text-center">
+                            <div class="text-2xl font-black text-cyan-400 font-mono">200K+</div>
+                            <div class="text-xs text-white font-bold mt-1">سعة الأوردر الواحد</div>
+                            <div class="text-[10px] text-slate-400">Massive Batch Engine</div>
+                        </div>
+                        <div class="glass-card glass-card-gold p-3.5 text-center">
+                            <div class="text-2xl font-black text-amber-400 font-mono">14 يوم</div>
+                            <div class="text-xs text-white font-bold mt-1">استرداد الاستثمار</div>
+                            <div class="text-[10px] text-slate-400">Proven Fast ROI</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Angled Mockup Screen -->
+                <div class="lg:col-span-5">
+                    <div class="mockup-frame transform hover:scale-[1.01] transition-transform duration-300">
+                        <div class="mockup-header">
+                            <div class="flex items-center gap-1.5">
+                                <span class="mockup-dot bg-rose-500"></span>
+                                <span class="mockup-dot bg-amber-500"></span>
+                                <span class="mockup-dot bg-emerald-500"></span>
+                            </div>
+                            <span class="text-[10px] text-slate-300 font-mono">HMS Live Executive Hub</span>
+                            <span class="text-[9px] text-emerald-400 font-mono">● ONLINE 24/7</span>
+                        </div>
+                        <div class="p-3.5 space-y-3 bg-[#080d19]">
+                            <!-- Mock Header -->
+                            <div class="flex justify-between items-center bg-[#0f172a] p-2 rounded-lg border border-slate-700/60">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-6 h-6 rounded bg-sky-500 flex items-center justify-center text-white text-[10px]"><i class="fas fa-barcode"></i></div>
+                                    <span class="text-xs font-bold text-white">HMS SYSTEM</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-[10px] bg-slate-800 px-2 py-0.5 rounded text-sky-300 font-mono">
+                                    <i class="fas fa-clock"></i> 14:45:00
+                                </div>
+                            </div>
+
+                            <!-- Live Stat Cards Simulation -->
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="p-2.5 rounded-lg bg-[#0d1629] border border-blue-500/30">
+                                    <span class="text-[10px] text-slate-400">أوامر التشغيل الحية</span>
+                                    <div class="text-base font-black text-white font-mono mt-0.5">48 أوردر</div>
+                                    <span class="text-[9px] text-emerald-400">98.2% نسبة الإنجاز</span>
+                                </div>
+                                <div class="p-2.5 rounded-lg bg-[#0d1629] border border-cyan-500/30">
+                                    <span class="text-[10px] text-slate-400">إجمالي القطع الممسوحة</span>
+                                    <div class="text-base font-black text-cyan-400 font-mono mt-0.5">184,520</div>
+                                    <span class="text-[9px] text-sky-400">صفر تكرار مسجل</span>
+                                </div>
+                            </div>
+
+                            <!-- Live Progress Preview -->
+                            <div class="p-2.5 rounded-lg bg-[#0a1120] border border-slate-800 space-y-1.5">
+                                <div class="flex justify-between text-[10px]">
+                                    <span class="font-bold text-white">أوردر ORD-2026-9040 (جاكيت جينز)</span>
+                                    <span class="text-emerald-400 font-mono">14,850 / 15,000 (99%)</span>
+                                </div>
+                                <div class="w-full bg-slate-800 rounded-full h-1.5">
+                                    <div class="bg-gradient-to-r from-sky-500 to-emerald-400 h-1.5 rounded-full" style="width:99%"></div>
+                                </div>
+                                <div class="flex justify-between text-[9px] text-slate-400 font-mono pt-0.5">
+                                    <span>المراحل: ليزر ➔ سنفرة ➔ مغسلة ➔ تعبئة</span>
+                                    <span class="text-amber-400">متبقي 150 قطعة</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>CONFIDENTIAL COMMERCIAL PROPOSAL · HMS INDUSTRIAL ECOSYSTEM</div>
+            <div>SLIDE 1 OF 10</div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 2: نزيف الأرباح في المصانع التقليدية vs. الحل الرقمي
+         ========================================== -->
+    <section class="slide" id="slide-2">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div>
+                <span class="badge-gold callout-tag mb-1">THE INDUSTRIAL COST OF LOSS VS. SOLUTION</span>
+                <h2 class="text-xl font-bold text-white">نزيف الأرباح في المصانع التقليدية مقابل الرقابة الرقمية المطلقة</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">SLIDE 2 / 10</span>
+        </div>
+
+        <div class="slide-inner py-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                <!-- The Expensive Reality -->
+                <div class="glass-card p-5 sm:p-6 border-rose-500/35 bg-rose-950/10 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2.5 mb-4 text-rose-400">
+                            <div class="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center text-sm border border-rose-500/40">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <h3 class="text-base sm:text-lg font-black text-white">الواقع المكلف للمصانع بدون نظام باركود متطور</h3>
+                        </div>
+                        <ul class="space-y-3.5 text-xs text-slate-300">
+                            <li class="flex items-start gap-2.5">
+                                <i class="fas fa-circle-xmark text-rose-400 mt-0.5 text-sm flex-shrink-0"></i>
+                                <div><strong class="text-white">فقدان وعجز غامض في القطع:</strong> اختفاء ما بين 2% إلى 5% من القطع بين المراحل (سنفرة، ليزر، مغسلة) دون معرفة أين فُقدت ولا من المسؤول.</div>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <i class="fas fa-circle-xmark text-rose-400 mt-0.5 text-sm flex-shrink-0"></i>
+                                <div><strong class="text-white">غرامات تأخير العملاء والمستوردين:</strong> اكتشاف العجز فجأة في مرحلة التعبئة قبل الشحن بساعات، مما يضطر المصنع لتشغيل خطوط عاجلة بتكلفة مضاعفة.</div>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <i class="fas fa-circle-xmark text-rose-400 mt-0.5 text-sm flex-shrink-0"></i>
+                                <div><strong class="text-white">تضارب الدفاتر والورقيات:</strong> تسجيل كميات غير دقيقة يدوياً وإمكانية التلاعب بالأرقام لإخفاء العيوب والقطع التالفة.</div>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <i class="fas fa-circle-xmark text-rose-400 mt-0.5 text-sm flex-shrink-0"></i>
+                                <div><strong class="text-white">فقدان السيطرة على الورش الخارجية:</strong> إرسال بضاعة للمغاسل أو التطريز الخارجي واستلامها ناقصة دون وسيلة إثبات رقمية.</div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4 p-3 rounded-xl bg-rose-950/30 border border-rose-500/30 text-rose-300 text-xs font-bold text-center">
+                        ⚠️ النتيجة: خسائر مالية شهرية بمئات الآلاف وتوتر دائم مع العملاء
+                    </div>
+                </div>
+
+                <!-- The HMS Digital Solution -->
+                <div class="glass-card p-5 sm:p-6 border-emerald-500/40 bg-emerald-950/10 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2.5 mb-4 text-emerald-400">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-sm border border-emerald-500/40">
+                                <i class="fas fa-circle-check"></i>
+                            </div>
+                            <h3 class="text-base sm:text-lg font-black text-white">الحل الرقابي الجذري والنهائي مع منظومة HMS</h3>
+                        </div>
+                        <ul class="space-y-3.5 text-xs text-slate-300">
+                            <li class="flex items-start gap-2.5">
+                                <i class="fas fa-shield-halved text-emerald-400 mt-0.5 text-sm flex-shrink-0"></i>
+                                <div><strong class="text-white">بصمة رقمية مشفرة لكل قطعة (Unique Serial Barcode):</strong> كل بنطلون أو قطعة لها شفرة منفصلة مستحيل تكرارها أو اختلاطها بأوردر آخر.</div>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <i class="fas fa-lock text-emerald-400 mt-0.5 text-sm flex-shrink-0"></i>
+                                <div><strong class="text-white">قفل المسار التعاقبي الإجباري:</strong> يستحيل مسح قطعة في المغسلة أو التعبئة إلا بعد إثبات مرورها رسمياً من المراحل السابقة.</div>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <i class="fas fa-radar text-emerald-400 mt-0.5 text-sm flex-shrink-0"></i>
+                                <div><strong class="text-white">كاشف العجز اللحظي (Unscanned Pieces Radar):</strong> بضغطة زر واحدة يظهر تقرير يحدد أرقام القطع التي لم تُمسح ومكان توقفها بالضبط.</div>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <i class="fas fa-file-invoice text-emerald-400 mt-0.5 text-sm flex-shrink-0"></i>
+                                <div><strong class="text-white">توثيق بالثانية وهوية العامل:</strong> تسجيل اسم المشغل ومحطة العمل وتوقيت كل ضربة بدقة 100% لإلغاء أي خلافات.</div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4 p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-xs font-bold text-center">
+                        🎯 النتيجة: انعدام الفواقد بنسبة 100% وتسليم الأوردرات في مواعيدها باحترافية
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>HIGH ROI PROPOSITION · ELIMINATING PRODUCTION DEFICIT</div>
+            <div>SLIDE 2 OF 10</div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 3: فتح الأوردر وتخصيص مراحل خط الإنتاج بمرونة تامة
+         ========================================== -->
+    <section class="slide" id="slide-3">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div>
+                <span class="badge-blue callout-tag mb-1">DYNAMIC PRODUCTION PIPELINE ENGINE</span>
+                <h2 class="text-xl font-bold text-white">فتح الأوردر وتخصيص مسار خط الإنتاج بمرونة مطلقة</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">SLIDE 3 / 10</span>
+        </div>
+
+        <div class="slide-inner py-5">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Feature Explanation -->
+                <div class="lg:col-span-5 space-y-3.5">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-bold border border-cyan-500/25">
+                        <i class="fas fa-sliders"></i> ميزة حصرية تنفرد بها المنظومة
+                    </div>
+                    <h3 class="text-2xl font-black text-white leading-tight">
+                        لكل أوردر مساره الخاص.. بدون قيود وبدون تعقيد
+                    </h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        ندرك أن كل نوع ملابس يمر بعمليات مختلفة (بعضها يحتاج ليزر وتطريز، وبعضها يدخل المغسلة فقط، والبعض الآخر سنفرة ورش). يتيح النظام لمدير الإنتاج تحديد المراحل المطلوبة فقط بضغطة زر أثناء فتح الأوردر:
+                    </p>
+
+                    <div class="space-y-2 text-xs">
+                        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+                            <span class="font-bold text-white flex items-center gap-2"><i class="fas fa-bolt text-yellow-400"></i> عمليات الليزر والرسم</span>
+                            <span class="badge-gold text-[10px]">Laser Stage</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+                            <span class="font-bold text-white flex items-center gap-2"><i class="fas fa-gem text-orange-400"></i> السنفرة والويسكر والحجر</span>
+                            <span class="badge-gold text-[10px]">Sanding / Whisker</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+                            <span class="font-bold text-white flex items-center gap-2"><i class="fas fa-soap text-cyan-400"></i> الغسيل الكيماوي والتجهيز</span>
+                            <span class="badge-cyan text-[10px]">Wash & Treatment</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+                            <span class="font-bold text-white flex items-center gap-2"><i class="fas fa-shirt text-purple-400"></i> التطريز والطباعة والكي</span>
+                            <span class="badge-blue text-[10px]">Embroidery & Ironing</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+                            <span class="font-bold text-white flex items-center gap-2"><i class="fas fa-box-check text-emerald-400"></i> الجودة والفرز والتعبئة</span>
+                            <span class="badge-emerald text-[10px]">Packing & Final QA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Realistic UI Mockup: CreateOrderPage -->
+                <div class="lg:col-span-7">
+                    <div class="mockup-frame">
+                        <div class="mockup-header">
+                            <div class="flex items-center gap-1.5">
+                                <span class="mockup-dot bg-rose-500"></span>
+                                <span class="mockup-dot bg-amber-500"></span>
+                                <span class="mockup-dot bg-emerald-500"></span>
+                            </div>
+                            <span class="text-[10px] text-slate-300 font-mono">شاشة فتح أمر التشغيل وتحديد مسار الإنتاج · Create Order & Pipeline</span>
+                            <span class="badge-blue text-[9px] font-mono">STEP-BY-STEP WIZARD</span>
+                        </div>
+                        <div class="p-4 space-y-3 bg-[#080d19]">
+                            <!-- Form Mockup -->
+                            <div class="grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                    <label class="text-[10px] text-slate-400 block mb-1">رقم أمر الشغل *</label>
+                                    <div class="bg-slate-900 border border-sky-500/40 rounded px-2.5 py-1.5 font-mono text-white text-xs font-bold">ORD-2026-8800</div>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-slate-400 block mb-1">اسم العميل *</label>
+                                    <div class="bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-slate-200 text-xs">مجموعة زارا العالمية</div>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-slate-400 block mb-1">الكمية الكلية للقطع *</label>
+                                    <div class="bg-slate-900 border border-emerald-500/40 rounded px-2.5 py-1.5 font-mono text-emerald-400 text-xs font-bold">20,000 قطعة</div>
+                                </div>
+                            </div>
+
+                            <!-- Stage Selection Cards Simulation -->
+                            <div class="bg-[#0b1324] p-3 rounded-xl border border-slate-700/80 space-y-2">
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="font-bold text-white"><i class="fas fa-layer-group text-sky-400 ml-1"></i> اختيار مراحل خط الإنتاج للأوردر:</span>
+                                    <span class="text-[10px] text-sky-300 font-mono">تم تفعيل 4 مراحل</span>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div class="p-2 rounded-lg bg-sky-950/40 border border-sky-400/50 flex items-center justify-between text-white font-bold">
+                                        <span class="flex items-center gap-1.5"><i class="fas fa-check-square text-sky-400"></i> 1. ليزر ورسم هندسي</span>
+                                        <span class="text-[9px] bg-sky-500/20 px-1 rounded text-sky-300 font-mono">STAGE 1</span>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-sky-950/40 border border-sky-400/50 flex items-center justify-between text-white font-bold">
+                                        <span class="flex items-center gap-1.5"><i class="fas fa-check-square text-sky-400"></i> 2. سنفرة وحجر</span>
+                                        <span class="text-[9px] bg-sky-500/20 px-1 rounded text-sky-300 font-mono">STAGE 2</span>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-sky-950/40 border border-sky-400/50 flex items-center justify-between text-white font-bold">
+                                        <span class="flex items-center gap-1.5"><i class="fas fa-check-square text-sky-400"></i> 3. مغسلة وتجهيز</span>
+                                        <span class="text-[9px] bg-sky-500/20 px-1 rounded text-sky-300 font-mono">STAGE 3</span>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-sky-950/40 border border-sky-400/50 flex items-center justify-between text-white font-bold">
+                                        <span class="flex items-center gap-1.5"><i class="fas fa-check-square text-sky-400"></i> 4. التعبئة والجودة</span>
+                                        <span class="text-[9px] bg-sky-500/20 px-1 rounded text-sky-300 font-mono">STAGE 4</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Action Simulation -->
+                            <div class="flex justify-between items-center pt-1 text-xs">
+                                <span class="text-[11px] text-slate-400">السيستم سيولد 20,000 باركود فريد مشفر ويربطها بالمراحل الأربعة تلقائياً</span>
+                                <div class="px-4 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold text-xs shadow-md shadow-sky-500/20">
+                                    <i class="fas fa-barcode ml-1"></i> فتح الأوردر وتوليد الاستيكرات
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>DYNAMIC PIPELINE CUSTOMIZATION · TAILORED WORKFLOWS</div>
+            <div>SLIDE 3 OF 10</div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 4: محطة السكانر الصاروخية للمشغلين
+         ========================================== -->
+    <section class="slide" id="slide-4">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div>
+                <span class="badge-emerald callout-tag mb-1">ULTRA-FAST INDUSTRIAL SCANNER TERMINAL</span>
+                <h2 class="text-xl font-bold text-white">محطة مسح الباركود الصاروخية: مصممة لسرعة صالات الإنتاج</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">SLIDE 4 / 10</span>
+        </div>
+
+        <div class="slide-inner py-5">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Mockup Screen of Scanner -->
+                <div class="lg:col-span-7">
+                    <div class="mockup-frame">
+                        <div class="mockup-header">
+                            <div class="flex items-center gap-1.5">
+                                <span class="mockup-dot bg-rose-500"></span>
+                                <span class="mockup-dot bg-amber-500"></span>
+                                <span class="mockup-dot bg-emerald-500"></span>
+                            </div>
+                            <span class="text-[10px] text-slate-300 font-mono">محطة المسح والتشغيل الميدانية · High-Speed Terminal #02</span>
+                            <span class="badge-emerald text-[9px] font-mono">RESPONSE &lt; 18ms</span>
+                        </div>
+                        <div class="p-4 space-y-3 bg-[#080d19]">
+                            <!-- Active Session Box -->
+                            <div class="glass-card p-3 border-slate-700 text-xs">
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <span class="text-[10px] text-slate-400 block">الأوردر النشط</span>
+                                        <strong class="font-mono text-white text-sm">ORD-2026-8800</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-[10px] text-slate-400 block">المرحلة الحالية المقيدة</span>
+                                        <span class="badge-blue text-[10px] px-2 py-0.5 rounded-full font-bold">2. سنفرة وحجر</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-[10px] text-slate-400 block">اسم المشغل المسجل</span>
+                                        <strong class="text-amber-300 text-xs">أحمد محمود (محطة 4)</strong>
+                                    </div>
+                                </div>
+                                <div class="mt-2.5">
+                                    <div class="flex justify-between text-[10px] text-slate-300 mb-1">
+                                        <span>تقدم إنجاز المرحلة الحالية:</span>
+                                        <strong class="text-emerald-400 font-mono">16,240 / 20,000 قطعة (81.2%)</strong>
+                                    </div>
+                                    <div class="w-full bg-slate-800 rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-sky-500 via-blue-500 to-emerald-400 h-2 rounded-full" style="width:81.2%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Barcode strike input simulator -->
+                            <div class="glass-card p-3 border-emerald-500/40 bg-emerald-950/20">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] text-emerald-300 font-bold">استقبال مسدس الليزر (Auto-Focus Laser Input Loop)</span>
+                                    <span class="text-[9px] text-emerald-400 font-mono">ضربة صحيحة وموثقة ✓</span>
+                                </div>
+                                <div class="bg-slate-950 border border-emerald-500/60 rounded-lg p-2.5 flex items-center justify-between font-mono text-emerald-400 text-sm">
+                                    <span class="flex items-center gap-2"><i class="fas fa-barcode"></i> ORD88-00016241</span>
+                                    <span class="text-[10px] bg-emerald-500/25 text-emerald-300 px-2 py-0.5 rounded font-bold font-sans">مسجل بنجاح 🔊</span>
+                                </div>
+                            </div>
+
+                            <!-- Counter Cards -->
+                            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                                <div class="glass-card p-2">
+                                    <div class="text-slate-400 text-[10px]">الكمية المستهدفة</div>
+                                    <div class="text-amber-400 font-mono font-bold text-sm">20,000</div>
+                                </div>
+                                <div class="glass-card p-2 border-emerald-500/30 bg-emerald-950/10">
+                                    <div class="text-slate-400 text-[10px]">الممسوح الفعلي</div>
+                                    <div class="text-emerald-400 font-mono font-bold text-sm">16,241</div>
+                                </div>
+                                <div class="glass-card p-2">
+                                    <div class="text-slate-400 text-[10px]">المتبقي للمرحلة</div>
+                                    <div class="text-slate-300 font-mono font-bold text-sm">3,759</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Annotations -->
+                <div class="lg:col-span-5 space-y-3.5">
+                    <div class="glass-card p-3.5 border-l-4 border-sky-500">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-bolt text-sky-400 text-sm"></i>
+                            <h4 class="font-bold text-white text-xs">استجابة فائقة السرعة (&lt; 20ms)</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            المشغل يستطيع مسح القطع بسرعة البرق بدون أي تأخير، بفضل المعالجة المباشرة في الذاكرة المزامنة وفهارس قواعد البيانات المتقدمة.
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-3.5 border-l-4 border-emerald-500">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-volume-high text-emerald-400 text-sm"></i>
+                            <h4 class="font-bold text-white text-xs">تغذية صوتية وبصرية فورية (Audio-Visual)</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            أصوات مختلفة واضحة: نغمة ناعمة للنجاح، تنبيه مزدوج للقطعة الممسوحة سابقاً، وإنذار صريح عند محاولة إدخال قطعة خارج تسلسلها. العامل لا يحتاج للنظر إلى الشاشة!
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-3.5 border-l-4 border-rose-500">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-ban text-rose-400 text-sm"></i>
+                            <h4 class="font-bold text-white text-xs">منع التكرار وقفل التعاقب الذكي</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            يستحيل ضرب نفس الباركود مرتين في نفس المرحلة، ويستحيل إدخاله في مرحلة تالية قبل إثبات خروجه من السابقة، مما يمنع خلط الدفعات واختلاس القطع.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>HIGH-EFFICIENCY PRODUCTION SCANNER ENGINE</div>
+            <div>SLIDE 4 OF 10</div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 5: لوحة المتابعة والتدقيق الحي 360 درجة
+         ========================================== -->
+    <section class="slide" id="slide-5">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div>
+                <span class="badge-gold callout-tag mb-1">REAL-TIME PRODUCTION COMMAND CENTER</span>
+                <h2 class="text-xl font-bold text-white">مركز القيادة والمتابعة اللحظية 360 درجة لجميع الأوردرات</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">SLIDE 5 / 10</span>
+        </div>
+
+        <div class="slide-inner py-5">
+            <!-- Table Mockup -->
+            <div class="mockup-frame mb-4">
+                <div class="mockup-header">
+                    <span class="text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-layer-group text-sky-400"></i> شاشة متابعة ومراقبة حركة أوامر التشغيل في صالة الإنتاج
+                    </span>
+                    <span class="badge-emerald text-[9px] font-mono">LIVE PRODUCTION TELEMETRY</span>
+                </div>
+                <div class="p-3 overflow-x-auto bg-[#080d19]">
+                    <table class="w-full text-right text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-700/80 text-slate-400 text-[11px]">
+                                <th class="p-2 font-bold">رقم الأوردر</th>
+                                <th class="p-2 font-bold">العميل</th>
+                                <th class="p-2 text-center font-bold">الكمية الكلية</th>
+                                <th class="p-2 text-center font-bold">ليزر ورسم</th>
+                                <th class="p-2 text-center font-bold">سنفرة وحجر</th>
+                                <th class="p-2 text-center font-bold">مغسلة</th>
+                                <th class="p-2 text-center font-bold">تعبئة وجودة</th>
+                                <th class="p-2 text-center font-bold">نسبة الإنجاز</th>
+                                <th class="p-2 text-center font-bold">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 font-mono text-[11px]">
+                            <tr class="hover:bg-slate-800/40">
+                                <td class="p-2 font-bold text-white">ORD-2026-8800</td>
+                                <td class="p-2 text-slate-300 font-sans">مجموعة زارا العالمية</td>
+                                <td class="p-2 text-center text-amber-400 font-bold">20,000</td>
+                                <td class="p-2 text-center text-emerald-400">20,000 ✅</td>
+                                <td class="p-2 text-center text-sky-400 font-bold">16,241</td>
+                                <td class="p-2 text-center text-slate-400">0</td>
+                                <td class="p-2 text-center text-slate-500">0</td>
+                                <td class="p-2 text-center">
+                                    <div class="w-20 bg-slate-800 rounded-full h-1.5 mx-auto mb-1">
+                                        <div class="bg-sky-500 h-1.5 rounded-full" style="width:45%"></div>
+                                    </div>
+                                    <span class="text-[10px] text-sky-400 font-bold">45.3%</span>
+                                </td>
+                                <td class="p-2 text-center"><span class="badge-gold text-[9px] px-2 py-0.5 rounded-full font-sans">قيد التشغيل</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/40">
+                                <td class="p-2 font-bold text-white">ORD-2026-7510</td>
+                                <td class="p-2 text-slate-300 font-sans">شركة الفرسان للملابس الجاهزة</td>
+                                <td class="p-2 text-center text-amber-400 font-bold">50,000</td>
+                                <td class="p-2 text-center text-emerald-400">50,000 ✅</td>
+                                <td class="p-2 text-center text-emerald-400">50,000 ✅</td>
+                                <td class="p-2 text-center text-emerald-400">50,000 ✅</td>
+                                <td class="p-2 text-center text-emerald-400">50,000 ✅</td>
+                                <td class="p-2 text-center">
+                                    <div class="w-20 bg-slate-800 rounded-full h-1.5 mx-auto mb-1">
+                                        <div class="bg-emerald-500 h-1.5 rounded-full" style="width:100%"></div>
+                                    </div>
+                                    <span class="text-[10px] text-emerald-400 font-bold">100%</span>
+                                </td>
+                                <td class="p-2 text-center"><span class="badge-emerald text-[9px] px-2 py-0.5 rounded-full font-sans">مكتمل ومغلق</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass-card p-3.5">
+                    <h4 class="font-bold text-white text-xs mb-1.5 flex items-center gap-1.5">
+                        <i class="fas fa-bullseye text-sky-400"></i> كشف فوري للاختناقات (Bottlenecks)
+                    </h4>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        المدير يرى في ثانية واحدة أين توقف الأوردر وفي أي قسم يتأخر الإنتاج، لاتخاذ قرارات فورية لتحريك العمالة والمعدات وتجنب تأخير مواعيد التسليم.
+                    </p>
+                </div>
+                <div class="glass-card p-3.5">
+                    <h4 class="font-bold text-white text-xs mb-1.5 flex items-center gap-1.5">
+                        <i class="fas fa-radar text-emerald-400"></i> مدقق الشفرات المفقودة (Unscanned Auditor)
+                    </h4>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        إذا كان الأوردر 10,000 والممسوح 9,985 قطعة، النظام يستخرج في ثانية قائمة الـ 15 قطعة المفقودة بأرقام باركودها للبحث عنها وإيجادها قبل الشحن.
+                    </p>
+                </div>
+                <div class="glass-card p-3.5">
+                    <h4 class="font-bold text-white text-xs mb-1.5 flex items-center gap-1.5">
+                        <i class="fas fa-chart-line text-cyan-400"></i> لوحة مؤشرات أداء KPI حية
+                    </h4>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        حساب تلقائي وفوري لمعدل ضربات المسح اليومية، متوسط إنتاجية الوردية، ومقارنة إنجاز المصنع الفعلي مع المستهدف التعاقدي.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>360° FACTORY VISIBILITY · BOTTLENECK ERADICATION</div>
+            <div>SLIDE 5 OF 10</div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 6: محرك توليد الباركود النقطي ورولات الطباعة الصناعية
+         ========================================== -->
+    <section class="slide" id="slide-6">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div>
+                <span class="badge-emerald callout-tag mb-1">VECTOR BARCODE ENGINE & THERMAL ROLL PRINTING</span>
+                <h2 class="text-xl font-bold text-white">محرك توليد الباركود النقطي ورولات الطباعة الصناعية المباشرة</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">SLIDE 6 / 10</span>
+        </div>
+
+        <div class="slide-inner py-5">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Visual Realistic Sticker Mockup -->
+                <div class="lg:col-span-5">
+                    <div class="glass-card p-4 border-amber-500/40 bg-[#0d1627] relative overflow-hidden">
+                        <div class="text-center mb-3">
+                            <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                                معتمد لطابعات الرول الحرارية (3.5 × 8 سم)
+                            </span>
+                        </div>
+
+                        <!-- Simulated Sticker -->
+                        <div class="bg-white text-slate-950 p-4 rounded-xl shadow-2xl mx-auto max-w-xs border-2 border-slate-300 text-center font-mono">
+                            <div class="flex justify-between items-center border-b border-slate-400 pb-1 mb-2 text-[10px] font-bold">
+                                <span>HMS GARMENTS</span>
+                                <span>ORD-2026-8800</span>
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-800 font-sans mb-1">مجموعة زارا العالمية - جاكيت جينز</div>
+                            
+                            <!-- Vector Barcode Lines Simulation -->
+                            <div class="my-2 py-1 bg-white">
+                                <div class="font-mono text-xl tracking-[0.2em] font-black text-black">||| | |||| | ||| |||| |</div>
+                                <div class="text-xs font-black tracking-widest text-black mt-1">ORD88-00016241</div>
+                            </div>
+
+                            <div class="flex justify-between items-center border-t border-slate-400 pt-1 text-[9px] text-slate-600 font-sans">
+                                <span>المرحلة: سنفرة وحجر</span>
+                                <span>قطعة #16,241 من 20,000</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-center">
+                            <span class="text-[11px] text-slate-300 block">توافق 100% مع طابعات:</span>
+                            <span class="text-xs text-amber-400 font-bold font-mono">Zebra · Xprinter · TSC · Honeywell · Bixolon</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation -->
+                <div class="lg:col-span-7 space-y-3.5">
+                    <div class="glass-card p-3.5 border-l-4 border-amber-400">
+                        <h4 class="font-bold text-white text-xs mb-1 flex items-center gap-1.5">
+                            <i class="fas fa-vector-square text-amber-400"></i> باركود نقطي نقي (100% Pure Vector)
+                        </h4>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            الباركود لا يتم توليده كصور مبكسلة، بل كمتجهات نقية (Vectors) لضمان حواف حادة جداً ومتباينة تقرؤها أجهزة الليزر من أول ضربة حتى مع سرعة العمال العالية.
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-3.5 border-l-4 border-sky-400">
+                        <h4 class="font-bold text-white text-xs mb-1 flex items-center gap-1.5">
+                            <i class="fas fa-microchip text-sky-400"></i> كلاستر معالجة متعدد المسارات للأوردرات الكبيرة
+                        </h4>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            أوردر به 50,000 أو 100,000 قطعة؟ محرك الكلاستر الخلفي يقوم بتجهيز ملف الرول في ثوانٍ عبر خيوط معالجة منفصلة دون أي تجميد أو إبطاء لواجهة المستخدم.
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-3.5 border-l-4 border-emerald-400">
+                        <h4 class="font-bold text-white text-xs mb-1 flex items-center gap-1.5">
+                            <i class="fas fa-print text-emerald-400"></i> مرونة الطباعة وتعدد المقاسات
+                        </h4>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            يدعم رولات الاستيكر الحراري بمقاس 3.5×8 سم ومقاس 8×3.5 سم، بالإضافة لشيتات الـ A4 المقسمة، مع إمكانية تصدير ملف الـ PDF كاملاً للطباعة في أي وقت.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>ULTRA-PRECISION VECTOR BARCODE GENERATOR</div>
+            <div>SLIDE 6 OF 10</div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 7: منظومة التشغيل الخارجي والورش الفرعية
+         ========================================== -->
+    <section class="slide" id="slide-7">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div>
+                <span class="badge-cyan callout-tag mb-1">OUTSOURCED MANUFACTURING & OPEN SCANNER</span>
+                <h2 class="text-xl font-bold text-white">منظومة التشغيل الخارجي والمسح المفتوح (Outsourced Engine)</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">SLIDE 7 / 10</span>
+        </div>
+
+        <div class="slide-inner py-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="glass-card p-4 border-cyan-500/30">
+                    <div class="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold mb-2.5">
+                        <i class="fas fa-truck-fast"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-sm mb-1.5">السيطرة الكاملة على الورش الخارجية</h3>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        إرسال واستلام البضاعة من المغاسل الخارجية وورش التطريز بموجب أذون تشغيل خارجية رقمية موثقة تمنع ضياع أي قطعة لدى المقاولين.
+                    </p>
+                </div>
+
+                <div class="glass-card p-4 border-cyan-500/30">
+                    <div class="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold mb-2.5">
+                        <i class="fas fa-barcode"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-sm mb-1.5">المسح المفتوح (Open Barcode Reader)</h3>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        استقبال باركودات العملاء أو باركودات الورش الخارجية المتنوعة وقراءتها فورياً دون الحاجة لتسجيل مسبق، مع عد وحصر الشفرات الفريدة لحظياً.
+                    </p>
+                </div>
+
+                <div class="glass-card p-4 border-cyan-500/30">
+                    <div class="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold mb-2.5">
+                        <i class="fas fa-user-lock"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-sm mb-1.5">حسابات مخصصة لمشرفي الخارجي</h3>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        صلاحية مستقلة ومقيدة تتيح للمشرفين الخارجيين إدارة طلبياتهم فقط دون الاطلاع على أسرار أو أوردرات المصنع الداخلية.
+                    </p>
+                </div>
+            </div>
+
+            <!-- External Terminal Mockup -->
+            <div class="mockup-frame">
+                <div class="mockup-header">
+                    <span class="text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-truck-loading text-cyan-400"></i> لوحة متابعة أوامر التشغيل الخارجي والمسح المفتوح
+                    </span>
+                    <span class="badge-cyan text-[9px] font-mono">EXTERNAL CONTRACTOR AUDIT</span>
+                </div>
+                <div class="p-3 bg-[#080d19] overflow-x-auto">
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+                        <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                            <span class="text-[10px] text-slate-400">إجمالي أوامر الخارجي</span>
+                            <div class="font-bold text-white font-mono text-sm">18 أمر شغل</div>
+                        </div>
+                        <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                            <span class="text-[10px] text-slate-400">القطع المستلمة من الورش</span>
+                            <div class="font-bold text-cyan-400 font-mono text-sm">42,650 قطعة</div>
+                        </div>
+                        <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                            <span class="text-[10px] text-slate-400">الشفرات الفريدة المحققة</span>
+                            <div class="font-bold text-emerald-400 font-mono text-sm">42,650 (100%)</div>
+                        </div>
+                        <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                            <span class="text-[10px] text-slate-400">الأوامر قيد التشغيل</span>
+                            <div class="font-bold text-amber-400 font-mono text-sm">5 أوامر نشطة</div>
+                        </div>
+                    </div>
+                    <div class="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex justify-between items-center text-xs text-slate-300">
+                        <span><strong class="text-white">أمر خارجي EXT-2026-104:</strong> مغسلة النيل الكبرى · مستهدف 8,000 قطعة · تم مسح 8,000 قطعة بالكامل دون عجز</span>
+                        <span class="badge-emerald text-[10px] font-bold">مطابق ومغلق ✓</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>SEAMLESS OUTSOURCING & CONTRACTOR RECONCILIATION</div>
+            <div>SLIDE 7 OF 10</div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 8: التقارير الرقابية التنفيذية والطباعة بنقرة واحدة
+         ========================================== -->
+    <section class="slide" id="slide-8">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div>
+                <span class="badge-gold callout-tag mb-1">EXECUTIVE AUDIT REPORTS & 1-CLICK EXPORT</span>
+                <h2 class="text-xl font-bold text-white">التقارير الرقابية التنفيذية والطباعة المباشرة بنقرة واحدة</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">SLIDE 8 / 10</span>
+        </div>
+
+        <div class="slide-inner py-5">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Report Features -->
+                <div class="lg:col-span-5 space-y-3.5">
+                    <div class="glass-card p-3.5 border-l-4 border-amber-400">
+                        <h4 class="font-bold text-white text-xs mb-1 flex items-center gap-1.5">
+                            <i class="fas fa-file-invoice text-amber-400"></i> التقرير الشامل لحركة المصنع (Factory Master Audit)
+                        </h4>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            تقرير إداري رفيع المستوى يُطبع أو يُحمّل PDF بضغطة زر؛ يستعرض كافة الأوردرات الجارية، نسب الإنجاز، ونقاط التوقف، ليُقدم لأصحاب المصنع والمستثمرين بثقة تامة.
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-3.5 border-l-4 border-sky-400">
+                        <h4 class="font-bold text-white text-xs mb-1 flex items-center gap-1.5">
+                            <i class="fas fa-file-pdf text-rose-400"></i> تصدير PDF مباشر + طباعة فورية على كل التقارير
+                        </h4>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            جميع تقارير النظام بلا استثناء مزودة بزرين تنفيذيين: خيار تحميل فوري كملف PDF عالي الجودة، وخيار إرسال مباشر للطابعة الورقية.
+                        </p>
+                    </div>
+
+                    <div class="glass-card p-3.5 border-l-4 border-emerald-400">
+                        <h4 class="font-bold text-white text-xs mb-1 flex items-center gap-1.5">
+                            <i class="fas fa-signature text-emerald-400"></i> تصميم عصري ذكي بدون توقيعات ورقية مهدرة
+                        </h4>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">
+                            تم استبدال مربعات الإمضاءات اليدوية القديمة بتوثيق رقمي مشفر يتضمن ساعة الاستخراج المتزامنة، واسم المستخدم، وهوية المشغل لكل عملية.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Realistic Report Mockup -->
+                <div class="lg:col-span-7">
+                    <div class="mockup-frame">
+                        <div class="mockup-header">
+                            <span class="text-xs font-bold text-white flex items-center gap-2">
+                                <i class="fas fa-file-lines text-amber-400"></i> التقرير الشامل لحركة أوامر التشغيل والإنتاج
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[9px] font-bold"><i class="fas fa-file-pdf"></i> تحميل PDF</span>
+                                <span class="bg-sky-500/20 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded text-[9px] font-bold"><i class="fas fa-print"></i> طباعة فورية</span>
+                            </div>
+                        </div>
+                        <div class="p-4 space-y-3 bg-[#0a1120] text-xs">
+                            <!-- Report Header -->
+                            <div class="flex justify-between items-center border-b border-slate-700/80 pb-2">
+                                <div>
+                                    <div class="text-sm font-black text-white">HMS EGYPT GARMENTS</div>
+                                    <div class="text-[10px] text-slate-400">سجل الجرد والتدقيق التنفيذي الموحد</div>
+                                </div>
+                                <div class="text-left font-mono text-[10px] text-slate-400">
+                                    <div>تاريخ الاستخراج: 2026-10-20</div>
+                                    <div class="text-emerald-400 font-bold">الحالة: موثق رقمياً 100%</div>
+                                </div>
+                            </div>
+
+                            <!-- Summary Metrics Bar -->
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                                    <span class="text-[10px] text-slate-400">إجمالي القطع المصنعية</span>
+                                    <div class="font-bold text-white font-mono text-sm">240,000 قطعة</div>
+                                </div>
+                                <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                                    <span class="text-[10px] text-slate-400">القطع الممسوحة والمنجزة</span>
+                                    <div class="font-bold text-emerald-400 font-mono text-sm">238,450 قطعة</div>
+                                </div>
+                                <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                                    <span class="text-[10px] text-slate-400">نسبة الإنجاز العامة</span>
+                                    <div class="font-bold text-sky-400 font-mono text-sm">99.35%</div>
+                                </div>
+                            </div>
+
+                            <div class="p-2.5 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-[11px] text-emerald-300 flex items-center justify-between">
+                                <span><i class="fas fa-check-circle ml-1"></i> تم تدقيق كافة المراحل ومطابقة مسدسات الليزر بنجاح تام</span>
+                                <span class="font-mono text-[10px]">ZERO FRAUD DETECTED</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>AUDIT-READY EXECUTIVE REPORTING · NO MANUAL PAPERS</div>
+            <div>SLIDE 8 OF 10</div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 9: الأمان الصناعي والعمل المحلي بدون إنترنت 24/7
+         ========================================== -->
+    <section class="slide" id="slide-9">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div>
+                <span class="badge-emerald callout-tag mb-1">MILITARY-GRADE SECURITY & ON-PREMISE STABILITY</span>
+                <h2 class="text-xl font-bold text-white">الأمان الصناعي والعمل المحلي بدون إنترنت 24/7</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">SLIDE 9 / 10</span>
+        </div>
+
+        <div class="slide-inner py-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch mb-4">
+                <div class="glass-card p-5 border-emerald-500/30 flex flex-col justify-between">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-bold mb-3">
+                            <i class="fas fa-network-wired"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-2">استقلالية تامة (100% On-Premise)</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            النظام يعمل بالكامل داخل شبكة المصنع الداخلية (Local LAN). انقطاع الإنترنت الخارجي لا يؤثر إطلاقاً على مسار الإنتاج ولا يعطل عمل أي ماكينة أو مسدس ليزر.
+                        </p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-800 text-[10px] text-emerald-400 font-mono">ZERO CLOUD DEPENDENCY</div>
+                </div>
+
+                <div class="glass-card p-5 border-blue-500/30 flex flex-col justify-between">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-3">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-2">قاعدة بيانات Microsoft SQL Server</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            قاعدة بيانات صناعية عملاقة مفهرسة بمؤشرات غير عنقودية (Non-Clustered Indexes) تتحمل ملايين حركات الباركود والقطع لسنوات دون أي هبوط في الأداء أو بطء في التقارير.
+                        </p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-800 text-[10px] text-blue-400 font-mono">ENTERPRISE GRADE DATA ENGINE</div>
+                </div>
+
+                <div class="glass-card p-5 border-amber-500/30 flex flex-col justify-between">
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg font-bold mb-3">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-2">ترخيص رقمي مشفر (License Guard)</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            حماية كاملة للملكية الفكرية عبر ترخيص رقمي مشفر برقم الهاردوير (Hardware-Locked RSA Signature) يضمن عدم سرقة النظام أو نسخه دون إذن مع تحكم كامل للمالك.
+                        </p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-800 text-[10px] text-amber-400 font-mono">CRYPTOGRAPHIC HARDWARE LOCK</div>
+                </div>
+            </div>
+
+            <!-- Live Clock & Server Telemetry -->
+            <div class="glass-card p-4 border-slate-700 bg-slate-900/60 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
+                <div class="flex items-center gap-3">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <div>
+                        <span class="text-white font-bold block">مزامنة التوقيت المركزي كل 60 ثانية (NTP Server Sync)</span>
+                        <span class="text-slate-400 text-[11px]">توثيق حركة كل قطعة بالثانية لإلغاء أي انزياح أو تلاعب زمني</span>
+                    </div>
+                </div>
+                <div class="text-lg font-mono font-bold text-sky-400 bg-slate-950 px-3.5 py-1.5 rounded-lg border border-slate-800" id="presLiveClock">
+                    --:--:--
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>HIGH-AVAILABILITY INDUSTRIAL INFRASTRUCTURE</div>
+            <div>SLIDE 9 OF 10</div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 10: خطة الاستثمار والتنفيذ الفوري (THE COMMERCIAL CLOSING)
+         ========================================== -->
+    <section class="slide" id="slide-10">
+        <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <div class="flex items-center gap-2">
+                <span class="badge-emerald callout-tag">INSTANT FACTORY ONBOARDING</span>
+                <h2 class="text-xl font-bold text-white">الاستثمار الصناعي الرابح: ابدأ الأتمتة الكاملة لمصنعك اليوم</h2>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">SLIDE 10 / 10</span>
+        </div>
+
+        <div class="slide-inner text-center py-6">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500 via-blue-600 to-indigo-600 text-white flex items-center justify-center text-3xl font-black mx-auto mb-3 shadow-xl shadow-sky-500/25">
+                <i class="fas fa-handshake"></i>
+            </div>
+
+            <h2 class="text-2xl sm:text-4xl font-black text-white mb-2">
+                شريكك التكنولوجي الموثوق لتحقيق أعلى ربحية وأقل فواقد
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto mb-5 leading-relaxed">
+                كل يوم يمر دون نظام باركود ذكي يعني هدر آلاف الجنيهات في قطع ضائعة وأخطاء يدوية. ابدأ التحول الرقمي لمصنعك الآن واستعد ثمن الاستثمار خلال أول أوردر إنتاج.
+            </p>
+
+            <!-- Value Proposition Pillars -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3.5 max-w-5xl mx-auto text-right mb-6">
+                <div class="glass-card p-4 border-sky-500/30">
+                    <div class="text-sky-400 font-bold text-xs mb-1 flex items-center gap-1.5"><i class="fas fa-bolt"></i> تركيب في أقل من 24 ساعة</div>
+                    <p class="text-[11px] text-slate-300">تشغيل مباشر على أجهزة المصنع وشبكتك الداخلية الحالية دون الحاجة لشراء سيرفرات باهظة.</p>
+                </div>
+                <div class="glass-card p-4 border-emerald-500/30">
+                    <div class="text-emerald-400 font-bold text-xs mb-1 flex items-center gap-1.5"><i class="fas fa-graduation-cap"></i> تدريب ميداني متكامل</div>
+                    <p class="text-[11px] text-slate-300">تأهيل عمال الخطوط والمشرفين والمديرين على استخدام النظام باحترافية وسهولة تامة.</p>
+                </div>
+                <div class="glass-card p-4 border-cyan-500/30">
+                    <div class="text-cyan-400 font-bold text-xs mb-1 flex items-center gap-1.5"><i class="fas fa-wrench"></i> دعم فني هندسي مستمر</div>
+                    <p class="text-[11px] text-slate-300">فريق دعم متواجد للمتابعة الميدانية والنسخ الاحتياطي التلقائي وضمان استقرار العمل 24/7.</p>
+                </div>
+                <div class="glass-card p-4 border-amber-500/30">
+                    <div class="text-amber-400 font-bold text-xs mb-1 flex items-center gap-1.5"><i class="fas fa-sack-dollar"></i> استرداد مؤكد للتكلفة (ROI)</div>
+                    <p class="text-[11px] text-slate-300">توفير القطع المفقودة وإلغاء غرامات التأخير يعيد تكلفة المنظومة كاملة في أول شهر تشغيل.</p>
+                </div>
+            </div>
+
+            <!-- Call to Actions -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-xl mx-auto">
+                <a href="/orders" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-sm shadow-xl shadow-sky-500/30 flex items-center justify-center gap-2 border border-sky-400/40 transition">
+                    <i class="fas fa-play"></i>
+                    <span>فتح تجربة النظام الحية الآن</span>
+                </a>
+                <button onclick="openDownloadModal()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 border border-emerald-400/40 transition">
+                    <i class="fas fa-download"></i>
+                    <span>تحميل البرزنتيشن بالكامل</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-slate-800 pt-3 text-xs text-slate-400 font-mono">
+            <div>© 2026 HMS INDUSTRIAL ECOSYSTEM · ALL RIGHTS RESERVED</div>
+            <div>PRES-10 · COMPLETE SALES DECK</div>
+        </div>
+    </section>
+
+    <!-- JavaScript Controller -->
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 10;
+
+        function updateCounter() {
+            const counter = document.getElementById('slideCounter');
+            if (counter) counter.textContent = `${currentSlide} / ${totalSlides}`;
+        }
+
+        function navigateSlide(direction) {
+            currentSlide += direction;
+            if (currentSlide < 1) currentSlide = 1;
+            if (currentSlide > totalSlides) currentSlide = totalSlides;
+            updateCounter();
+            const target = document.getElementById(`slide-${currentSlide}`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Live Clock
+        function updateLiveClock() {
+            const clockEl = document.getElementById('presLiveClock');
+            if (!clockEl) return;
+            const now = new Date();
+            let h = now.getHours();
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            const ampm = h >= 12 ? 'م' : 'ص';
+            h = h % 12 || 12;
+            const hStr = String(h).padStart(2, '0');
+            clockEl.textContent = `${hStr}:${m}:${s} ${ampm}`;
+        }
+        setInterval(updateLiveClock, 1000);
+        updateLiveClock();
+
+        // Keyboard navigation
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'PageDown' || e.key === ' ') {
+                navigateSlide(1);
+            } else if (e.key === 'ArrowRight' || e.key === 'PageUp') {
+                navigateSlide(-1);
+            }
+        });
+
+        // Touch Swipe navigation for mobile & tablets
+        let touchStartX = 0;
+        let touchEndX = 0;
+        window.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        window.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const diff = touchEndX - touchStartX;
+            if (Math.abs(diff) > 50) {
+                if (diff < 0) {
+                    navigateSlide(1); // Swipe left in RTL -> next slide
+                } else {
+                    navigateSlide(-1); // Swipe right in RTL -> prev slide
+                }
+            }
+        }
+
+        // IntersectionObserver to update slide counter while scrolling
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    const num = parseInt(id.replace('slide-', ''), 10);
+                    if (!isNaN(num)) {
+                        currentSlide = num;
+                        updateCounter();
+                    }
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('.slide').forEach(slide => observer.observe(slide));
+
+        // Fullscreen Toggle
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        // Download Modal Management
+        function openDownloadModal() {
+            document.getElementById('dlModalOverlay').classList.add('open');
+            document.getElementById('dlProgressWrap').style.display = 'none';
+        }
+        function closeDownloadModal() {
+            document.getElementById('dlModalOverlay').classList.remove('open');
+        }
+        function closeDlModalOnBg(e) {
+            if (e.target === document.getElementById('dlModalOverlay')) closeDownloadModal();
+        }
+
+        function downloadAsHTML() {
+            showDlProgress('جاري تجهيز الملف المستقل...');
+            setTimeout(() => {
+                const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+                const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'HMS-Barcode-Presentation.html';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 1000);
+                setDlProgress(100, 'تم تحميل الملف بنجاح ✓');
+                setTimeout(closeDownloadModal, 1200);
+            }, 300);
+        }
+
+        async function downloadAsPDF() {
+            closeDownloadModal();
+            showDlProgress('جاري تجهيز صفحات العرض كـ PDF...');
+
+            try {
+                if (typeof html2pdf === 'undefined') {
+                    setDlProgress(100, 'جاري فتح نافذة الطباعة...');
+                    window.print();
+                    return;
+                }
+
+                setDlProgress(25, 'جاري معالجة الشرائح والتصميم...');
+
+                const slides = document.querySelectorAll('.slide');
+                const container = document.createElement('div');
+                container.style.cssText = 'width:297mm;background:#070d18;';
+
+                slides.forEach(slide => {
+                    const clone = slide.cloneNode(true);
+                    clone.style.cssText = 'width:297mm;min-height:210mm;box-sizing:border-box;page-break-after:always;page-break-inside:avoid;padding:28px 36px;background:#070d18;color:#f1f5f9;';
+                    clone.querySelectorAll('.no-print').forEach(el => el.remove());
+                    container.appendChild(clone);
+                });
+
+                document.body.appendChild(container);
+                setDlProgress(50, 'جاري التحويل لملف عالي الدقة...');
+
+                const opt = {
+                    margin:       0,
+                    filename:     'HMS-Barcode-Presentation.pdf',
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#070d18', logging: false },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                    pagebreak:    { mode: ['avoid-all', 'css'] }
+                };
+
+                setDlProgress(75, 'جاري حفظ وتحميل ملف الـ PDF...');
+                await html2pdf().set(opt).from(container).save();
+
+                document.body.removeChild(container);
+                setDlProgress(100, 'تم تحميل ملف PDF بنجاح ✓');
+                setTimeout(() => {
+                    const wrap = document.getElementById('dlProgressWrap');
+                    if (wrap) wrap.style.display = 'none';
+                }, 2000);
+
+            } catch (err) {
+                console.error('PDF generation error:', err);
+                setDlProgress(0, 'سيتم فتح نافذة الطباعة لحفظ الملف كـ PDF...');
+                setTimeout(() => window.print(), 800);
+            }
+        }
+
+        function showDlProgress(msg) {
+            const wrap = document.getElementById('dlProgressWrap');
+            if (wrap) wrap.style.display = 'block';
+            setDlProgress(10, msg);
+        }
+        function setDlProgress(pct, msg) {
+            const fill = document.getElementById('dlProgressFill');
+            const status = document.getElementById('dlStatusText');
+            if (fill) fill.style.width = pct + '%';
+            if (status && msg) status.textContent = msg;
+        }
+    </script>
+</body>
+</html>

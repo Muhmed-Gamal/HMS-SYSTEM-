@@ -1,0 +1,29 @@
+# ===================================================================
+# HMS Industrial Barcode Tracking System - Git Ignore Rules
+# ===================================================================
+
+# Node.js dependencies (تمنع رفع مئات الميجابايتس من المكتبات)
+node_modules/
+frontend/node_modules/
+
+# Environment files & Secrets (حماية بيانات السيرفر والـ JWT)
+.env
+.env.local
+.env.*.local
+*.log
+
+# Build outputs (مخرجات البناء المؤقتة)
+frontend/.vite/
+dist/
+
+# Storage & Temporary Files (الملفات المؤقتة لتقارير الـ PDF)
+storage/temp/
+storage/reports/*.pdf
+!storage/reports/.gitkeep
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.bak
+*.tmp

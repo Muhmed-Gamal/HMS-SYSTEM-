@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محطة المسح وقراءة الباركود | HMS Group</title>
+    <script src="js/tailwind.min.js"></script>
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="navy-slate-bg min-h-screen flex flex-col">
+
+    <!-- Header الموحد الاحترافي -->
+    <!-- Header الموحد الاحترافي العالمي -->
+    <header class="app-header px-3 sm:px-6 py-2 sticky top-0 z-40 no-print">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+            
+            <!-- 1. الشعار والهوية الموحدة للنظام -->
+            <a href="/orders_tracking.html" class="flex items-center gap-2.5 flex-shrink-0 group">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white text-sm shadow-md shadow-blue-500/20 border border-sky-400/30 group-hover:scale-105 transition-transform">
+                    <i class="fas fa-barcode"></i>
+                </div>
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-1.5 leading-none">
+                        <span class="text-sm font-black tracking-wider text-white group-hover:text-sky-300 transition-colors">HMS</span>
+                        <span class="text-[9.5px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">SYSTEM</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-mono mt-0.5">HMS Barcode Hub</span>
+                </div>
+            </a>
+
+            <!-- 2. شريط التبويبات الموحد الانسيابي (Segmented Navigation Tabs) -->
+            <nav id="navTabsContainer" class="flex items-center bg-[#070d19]/90 p-1 rounded-xl border border-slate-800 shadow-inner overflow-x-auto gap-1">
+                <!-- 1. الأوردرات الداخلية -->
+                <a href="/orders_tracking.html" id="navOrdersBtn" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all font-medium whitespace-nowrap">
+                    <i class="fas fa-layer-group text-xs"></i>
+                    <span>الأوردرات</span>
+                </a>
+
+                <!-- 2. التشغيل الخارجي -->
+                <a href="/external_tracking.html" id="navExternalBtn" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/10 transition-all font-medium whitespace-nowrap" title="متابعة أوامر التشغيل الخارجي والمسح المفتوح">
+                    <i class="fas fa-truck-loading text-xs"></i>
+                    <span>التشغيل الخارجي</span>
+                </a>
+
+                <!-- 3. محطة السكانر (نشط) -->
+                <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-blue-600 text-white font-bold shadow-sm shadow-blue-500/20 border border-blue-400/30 whitespace-nowrap">
+                    <i class="fas fa-barcode text-xs"></i>
+                    <span>محطة السكانر</span>
+                </span>
+
+                <!-- 4. المستخدمين -->
+                <a href="/admin.html" id="navAdminBtn" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all font-medium whitespace-nowrap">
+                    <i class="fas fa-users-cog text-xs"></i>
+                    <span>المستخدمين</span>
+                </a>
+
+                <!-- 5. البرزنتيشن (مالك السيستم) -->
+                <a href="/presentation.html" id="navPresBtn" target="_blank" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-all font-medium whitespace-nowrap" title="الملف التعريفي والبرزنتيشن الشامل">
+                    <i class="fas fa-file-powerpoint text-xs"></i>
+                    <span>البرزنتيشن</span>
+                </a>
+            </nav>
+
+            <!-- 3. كبسولة المستخدم والساعة وزر الخروج -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070d19]/80 border border-slate-800/80 text-[11px] font-mono text-slate-300 shadow-inner" title="توقيت النظام المركزي المتزامن">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="headerLiveClock">--:--:--</span>
+                </div>
+
+                <div id="headerUserCapsule" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0f172a] border border-slate-700/60 shadow-sm">
+                    <span id="headerUserRoleBadge" class="badge-clean text-[10px] font-bold">مستخدم</span>
+                    <span id="headerUserName" class="text-xs font-mono font-bold text-white px-1">--</span>
+                </div>
+
+                <button onclick="logoutSystem()" class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/25 flex items-center justify-center text-xs transition shadow-sm" title="تسجيل الخروج">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <main class="flex-1 p-3 sm:p-5 max-w-6xl w-full mx-auto space-y-4">
+
+        <!-- إعدادات الجلسة ورقم الأوردر -->
+        <div class="slate-card p-5">
+            <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-sliders-h text-blue-400 text-xs"></i>
+                    <h2 class="text-xs sm:text-sm font-bold text-white">جلسة المسح الحالية</h2>
+                </div>
+                <span class="badge-clean badge-neutral text-[10px] font-mono">STATION #01</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">المرحلة الإنتاجية المقيدة</label>
+                    <div id="stageContainer">
+                        <input type="text" id="hallSelect" readonly 
+                            class="slate-input font-mono font-bold text-blue-300 bg-[#0a1120] cursor-not-allowed">
+                    </div>
+                </div>
+
+                <div id="externalCustomerNameWrap" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">اسم العميل / جهة التوريد الخارجية</label>
+                    <input type="text" id="externalCustomerNameInput" placeholder="اكتب اسم العميل (مثال: مصنع النور)..." 
+                        class="slate-input text-white" style="border-color: rgba(168,85,247,0.4);"
+                        onkeypress="if(event.key==='Enter') lockOrStartOrder()">
+                    <p class="text-[10.5px] text-slate-400 mt-1">يُسجل في تقارير وتتبع أمر التشغيل الخارجي.</p>
+                </div>
+
+                <div id="externalTargetQtyWrap" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">الكمية الكلية المستلمة (الهدف للتتميم)</label>
+                    <input type="number" id="externalTargetQtyInput" min="0" placeholder="أدخل الكمية المستهدفة للتتميم... (اختياري)" 
+                        class="slate-input font-mono text-white" style="border-color: rgba(168,85,247,0.4);">
+                    <p class="text-[10.5px] text-slate-400 mt-1">إذا حُددت كمية، سيتم التنبيه فور اكتمال التتميم تلقائياً.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">رقم أمر الشغل / الأوردر *</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="orderNumber" placeholder="اكتب رقم الأوردر للفتح..." 
+                            class="slate-input font-mono text-white"
+                            onkeypress="if(event.key==='Enter') lockOrStartOrder()">
+                        <button onclick="lockOrStartOrder()" id="startOrderBtn" 
+                            class="btn-slate btn-slate-primary whitespace-nowrap px-4 py-2 text-xs font-semibold">
+                            <i class="fas fa-unlock-alt text-xs"></i> فتح
+                        </button>
+                        <button onclick="closeAndResetOrder()" id="closeOrderBtn" 
+                            class="hidden btn-slate btn-slate-danger whitespace-nowrap px-4 py-2 text-xs font-semibold">
+                            <i class="fas fa-times-circle text-xs"></i> إنهاء
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- معلومات الأوردر المفتوح -->
+            <div id="customerInfoBox" class="hidden mt-4 pt-4 border-t border-slate-700/60">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#0a1120] p-3.5 rounded-xl border border-slate-700/60 text-xs">
+                    <div>
+                        <span class="text-slate-400 block text-[11px] mb-0.5">العميل</span>
+                        <strong id="detectedCustomerName" class="text-white font-bold"></strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[11px] mb-0.5">الكمية المستهدفة</span>
+                        <strong id="detectedTargetQty" class="text-amber-400 font-mono font-bold"></strong>
+                    </div>
+                    <div id="createdByContainer" style="display: none;">
+                        <span class="text-slate-400 block text-[11px] mb-0.5">أنشئ بواسطة</span>
+                        <strong id="detectedCreatedBy" class="text-slate-300 font-mono text-xs"></strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[11px] mb-0.5">حالة المرحلة</span>
+                        <span id="orderStatusLabel" class="badge-clean badge-amber text-[10px]">قيد التشغيل</span>
+                    </div>
+                </div>
+
+                <!-- شريط الإنجاز -->
+                <div class="mt-3.5 flex items-center gap-3">
+                    <span class="text-xs text-slate-300 whitespace-nowrap font-medium">نسبة الإنجاز:</span>
+                    <div class="flex-1 bg-[#0a1120] rounded-full h-2 overflow-hidden border border-slate-700/60">
+                        <div id="scanProgressBar" class="h-2 rounded-full bg-blue-500 transition-all duration-300" style="width:0%;"></div>
+                    </div>
+                    <span id="scanProgressPct" class="text-xs font-mono font-bold text-blue-400">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- منطقة المسح والعدادات -->
+        <div class="slate-card p-6 text-center space-y-6">
+            <div>
+                <span class="badge-clean badge-blue text-[11px] font-mono mb-2">
+                    <i class="fas fa-barcode"></i> BARCODE / QR SCANNER READY
+                </span>
+                <h2 class="text-base font-bold text-white mt-1">حقل إدخال وقراءة الباركود</h2>
+                <p class="text-xs text-slate-400 mt-1">وجه قارئ الباركود أو ادخل الكود يدوياً ثم اضغط Enter</p>
+            </div>
+
+            <!-- Input Form -->
+            <form onsubmit="handleBarcodeSubmit(event)" class="max-w-lg mx-auto">
+                <div class="relative">
+                    <input type="text" id="barcodeInput" disabled 
+                        placeholder="افحص بالباركود سكانر أو اكتب الكود..." 
+                        class="slate-input text-center font-mono text-lg text-emerald-400 font-bold py-3.5 tracking-wider disabled:opacity-40 disabled:cursor-not-allowed shadow-inner"
+                        autocomplete="off" autofocus>
+                </div>
+                <div class="flex gap-2 mt-3 justify-center">
+                    <button type="submit" id="addBtn" disabled 
+                        class="btn-slate btn-slate-success px-6 py-2 text-xs font-bold disabled:opacity-40">
+                        <i class="fas fa-check text-xs"></i> تسجيل الكود
+                    </button>
+                </div>
+            </form>
+
+            <!-- الكروت الإحصائية -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2 max-w-3xl mx-auto">
+                <div class="metric-tile">
+                    <div class="metric-label">المستهدف الكلي</div>
+                    <div id="targetItemsCounter" class="metric-val text-amber-400">0</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-label">الممسوح بالمرحلة</div>
+                    <div id="totalItemsCounter" class="metric-val text-emerald-400">0</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-label">المتبقي المطلوب</div>
+                    <div id="remainingItemsCounter" class="metric-val text-blue-400">0</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-label">الأكواد الفريدة</div>
+                    <div id="uniqueTypesCounter" class="metric-val text-white">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- جدول الحركات -->
+        <div class="slate-card overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-slate-700/60">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-history text-blue-400 text-xs"></i>
+                    <h3 class="text-xs sm:text-sm font-bold text-white">سجل المسح الميداني (آخر 100 حركة)</h3>
+                </div>
+                <span class="text-[11px] text-slate-400 font-mono">REAL-TIME</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="slate-table min-w-[560px]">
+                    <thead>
+                        <tr>
+                            <th class="w-12 text-center">#</th>
+                            <th>الكود الممسوح</th>
+                            <th class="text-center">الكمية</th>
+                            <th>اسم العميل</th>
+                            <th>رقم الأوردر</th>
+                            <th>المسؤول</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <tr><td colspan="6" class="text-center py-10 text-slate-500 text-xs">
+                            <i class="fas fa-barcode text-xl mb-2 block text-slate-600"></i>
+                            لا توجد قطع ممسوحة في هذه الجلسة بعد
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal اكتمال المرحلة -->
+    <div id="orderCompleteModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="slate-card p-7 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div class="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xl mx-auto">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <h3 class="text-base font-bold text-white">اكتملت المرحلة بنجاح</h3>
+            <p id="orderCompleteMessage" class="text-xs text-slate-300 leading-relaxed"></p>
+            <div class="bg-[#0a1120] border border-slate-700/60 rounded-xl p-3 text-xs text-slate-300 text-right">
+                <div class="flex items-center gap-2 text-emerald-400 font-bold mb-1">
+                    <i class="fas fa-lock text-[10px]"></i> إغلاق المرحلة
+                </div>
+                <div>تم تسجيل كامل الكمية المستهدفة لهذا الأوردر وإغلاق المرحلة رسمياً.</div>
+            </div>
+            <button onclick="confirmOrderCompletionAndReset()" class="btn-slate btn-slate-success w-full py-2.5 text-xs font-bold">
+                إغلاق وفتح أمر شغل جديد
+            </button>
+        </div>
+    </div>
+
+    <script src="/js/ui.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        window.currentUser = null;
+        window.activeOrder = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const user = initUnifiedNavbar({ activePage: 'scanner' });
+            if (!user) return;
+
+            if (user.role === 'external_admin') {
+                window.location.href = '/external_tracking.html';
+                return;
+            }
+
+            if (user.role === 'admin' || user.role === 'superadmin') {
+                const stageContainer = document.getElementById('stageContainer');
+                if (stageContainer) {
+                    stageContainer.innerHTML = `
+                        <select id="hallSelect" onchange="handleAdminStageChange(this.value)" class="slate-input font-mono font-bold text-blue-300 bg-[#0a1120]">
+                            <option value="دخول انتاج">دخول انتاج</option>
+                            <option value="خروج انتاج">خروج انتاج</option>
+                            <option value="دخول مغسلة">دخول مغسلة</option>
+                            <option value="خروج مغسلة">خروج مغسلة</option>
+                            <option value="دخول تعبئة">دخول تعبئة</option>
+                            <option value="خروج تعبئة">خروج تعبئة</option>
+                            <option value="تشغيل خارجي">🏭 تشغيل خارجي (مفتوح لأي باركود)</option>
+                        </select>
+                    `;
+                }
+            } else if (user.role === 'external_operator') {
+                window.isExternalMode = true;
+                const dirLabel = user.stage_action || 'تشغيل خارجي (عام)';
+                const stageContainer = document.getElementById('stageContainer');
+                if (stageContainer) {
+                    stageContainer.innerHTML = `
+                        <div class="slate-input font-mono font-bold text-cyan-300 bg-[#0a1926] border border-cyan-500/40 py-2 px-3 rounded-lg flex items-center justify-between">
+                            <span class="flex items-center gap-2"><i class="fas fa-boxes text-cyan-400"></i> ${dirLabel}</span>
+                            <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded font-mono">EXTERNAL</span>
+                        </div>
+                    `;
+                }
+                document.getElementById('externalTargetQtyWrap')?.classList.remove('hidden');
+                document.getElementById('externalCustomerNameWrap')?.classList.remove('hidden');
+                const orderInput = document.getElementById('orderNumber');
+                if (orderInput) {
+                    orderInput.placeholder = 'اكتب رقم أمر التشغيل الخارجي (مثال: EXT-101)...';
+                }
+            } else if (user.role === 'production') {
+                const stageInput = document.getElementById('hallSelect');
+                if (stageInput) stageInput.value = user.stage_action || 'دخول انتاج';
+            }
+
+            const stageLabel = document.getElementById('userLoggedStageLabel');
+            if (stageLabel) {
+                let roleDisplay = 'إنتاج ميداني';
+                if (user.role === 'superadmin') roleDisplay = 'مالك السيستم';
+                else if (user.role === 'admin') roleDisplay = 'إشراف عام';
+                else if (user.role === 'admin_view') roleDisplay = 'متابعة إدارية';
+                else if (user.role === 'external_operator') roleDisplay = 'مشغل تشغيل خارجي (مسح مفتوح)';
+                stageLabel.textContent = `المشغل: ${user.full_name || user.username} | الصلاحية: ${roleDisplay}`;
+            }
+        });
+
+        function handleAdminStageChange(val) {
+            window.isExternalMode = (val === 'تشغيل خارجي');
+            const orderInput = document.getElementById('orderNumber');
+            if (orderInput) {
+                orderInput.placeholder = window.isExternalMode 
+                    ? 'اكتب رقم أمر التشغيل الخارجي (مثال: EXT-101)...'
+                    : 'اكتب رقم الأوردر للفتح...';
+            }
+            const targetQtyWrap = document.getElementById('externalTargetQtyWrap');
+            const custWrap = document.getElementById('externalCustomerNameWrap');
+            if (targetQtyWrap) {
+                if (window.isExternalMode) {
+                    targetQtyWrap.classList.remove('hidden');
+                } else {
+                    targetQtyWrap.classList.add('hidden');
+                }
+            }
+            if (custWrap) {
+                if (window.isExternalMode) {
+                    custWrap.classList.remove('hidden');
+                } else {
+                    custWrap.classList.add('hidden');
+                }
+            }
+        }
+
+        function confirmOrderCompletionAndReset() {
+            document.getElementById('orderCompleteModal').classList.add('hidden');
+            closeAndResetOrder();
+            setTimeout(() => document.getElementById('orderNumber')?.focus(), 100);
+        }
+    </script>
+</body>
+</html>

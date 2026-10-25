@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة المستخدمين والصلاحيات | HMS Group</title>
+    <script src="js/tailwind.min.js"></script>
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="navy-slate-bg min-h-screen flex flex-col">
+
+    <!-- Header الموحد الاحترافي العالمي -->
+    <header class="app-header px-3 sm:px-6 py-2 sticky top-0 z-40 no-print">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+            
+            <!-- 1. الشعار والهوية الموحدة للنظام -->
+            <a href="/orders_tracking.html" class="flex items-center gap-2.5 flex-shrink-0 group">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white text-sm shadow-md shadow-blue-500/20 border border-sky-400/30 group-hover:scale-105 transition-transform">
+                    <i class="fas fa-barcode"></i>
+                </div>
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-1.5 leading-none">
+                        <span class="text-sm font-black tracking-wider text-white group-hover:text-sky-300 transition-colors">HMS</span>
+                        <span class="text-[9.5px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">SYSTEM</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-mono mt-0.5">HMS Barcode Hub</span>
+                </div>
+            </a>
+
+            <!-- 2. شريط التبويبات الموحد الانسيابي (Segmented Navigation Tabs) -->
+            <nav id="navTabsContainer" class="flex items-center bg-[#070d19]/90 p-1 rounded-xl border border-slate-800 shadow-inner overflow-x-auto gap-1">
+                <!-- 1. الأوردرات -->
+                <a href="/orders_tracking.html" id="navOrdersBtn" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all font-medium whitespace-nowrap">
+                    <i class="fas fa-layer-group text-xs"></i>
+                    <span>الأوردرات</span>
+                </a>
+
+                <!-- 2. التشغيل الخارجي -->
+                <a href="/external_tracking.html" id="navExternalBtn" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/10 transition-all font-medium whitespace-nowrap" title="متابعة أوامر التشغيل الخارجي والمسح المفتوح">
+                    <i class="fas fa-truck-loading text-xs"></i>
+                    <span>التشغيل الخارجي</span>
+                </a>
+
+                <!-- 3. محطة السكانر -->
+                <a href="/index.html" id="navScannerBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all font-medium whitespace-nowrap">
+                    <i class="fas fa-barcode text-xs"></i>
+                    <span>محطة السكانر</span>
+                </a>
+
+                <!-- 4. المستخدمين (نشط) -->
+                <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-blue-600 text-white font-bold shadow-sm shadow-blue-500/20 border border-blue-400/30 whitespace-nowrap">
+                    <i class="fas fa-users-cog text-xs"></i>
+                    <span>المستخدمين</span>
+                </span>
+
+                <!-- 5. البرزنتيشن (مالك السيستم) -->
+                <a href="/presentation.html" id="navPresBtn" target="_blank" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-all font-medium whitespace-nowrap" title="الملف التعريفي والبرزنتيشن الشامل">
+                    <i class="fas fa-file-powerpoint text-xs"></i>
+                    <span>البرزنتيشن</span>
+                </a>
+            </nav>
+
+            <!-- 3. كبسولة المستخدم والساعة وزر الخروج -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070d19]/80 border border-slate-800/80 text-[11px] font-mono text-slate-300 shadow-inner" title="توقيت النظام المركزي المتزامن">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="headerLiveClock">--:--:--</span>
+                </div>
+
+                <div id="headerUserCapsule" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0f172a] border border-slate-700/60 shadow-sm">
+                    <span id="headerUserRoleBadge" class="badge-clean text-[10px] font-bold">مستخدم</span>
+                    <span id="headerUserName" class="text-xs font-mono font-bold text-white px-1">--</span>
+                </div>
+
+                <button onclick="logoutSystem()" class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/25 flex items-center justify-center text-xs transition shadow-sm" title="تسجيل الخروج">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <main class="flex-1 p-3 sm:p-5 max-w-6xl w-full mx-auto space-y-4">
+
+        <!-- تبويبات التبديل الخاصة بمالك السيستم (إدارة المستخدمين vs التراخيص) -->
+        <div id="adminSubTabs" class="hidden flex items-center gap-2 p-1.5 bg-[#070d19]/90 border border-slate-800 rounded-xl overflow-x-auto">
+            <button type="button" id="tabBtnUsers" onclick="switchAdminTab('users')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white shadow-sm shadow-blue-500/20 border border-blue-400/30 whitespace-nowrap">
+                <i class="fas fa-users-cog"></i>
+                <span>إدارة حسابات المشغلين والمستخدمين</span>
+            </button>
+            <button type="button" id="tabBtnLicense" onclick="switchAdminTab('license')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all text-amber-400 hover:text-amber-300 hover:bg-amber-950/30 border border-amber-500/20 whitespace-nowrap">
+                <i class="fas fa-crown text-amber-300"></i>
+                <span>بارتشن توليد وتمديد التراخيص (الملاك)</span>
+                <span class="badge-clean text-[9px] font-mono px-1.5 py-0.5 rounded" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);">LICENSE</span>
+            </button>
+            <button type="button" id="tabBtnPipeline" onclick="switchAdminTab('pipeline')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30 border border-cyan-500/20 whitespace-nowrap">
+                <i class="fas fa-sitemap text-cyan-300"></i>
+                <span>تهيئة مسار ومراحل خط الإنتاج</span>
+                <span class="badge-clean text-[9px] font-mono px-1.5 py-0.5 rounded" style="background:rgba(6,182,212,0.2);color:#22d3ee;border:1px solid rgba(6,182,212,0.3);">PIPELINE</span>
+            </button>
+        </div>
+
+        <!-- بارتشن إدارة المستخدمين (القسم الافتراضي) -->
+        <div id="usersMainSection" class="space-y-4">
+
+        <!-- بطاقات الإحصائيات -->
+        <div id="adminStatsCards" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="metric-tile">
+                <div class="metric-label">إجمالي الحسابات</div>
+                <div id="stat-users" class="metric-val text-white">-</div>
+            </div>
+            <div class="metric-tile">
+                <div class="metric-label">مشغلو خطوط الإنتاج</div>
+                <div id="stat-production" class="metric-val text-emerald-400">-</div>
+            </div>
+            <div class="metric-tile">
+                <div class="metric-label">متابعون إداريون</div>
+                <div id="stat-admin-view" class="metric-val text-blue-400">-</div>
+            </div>
+            <div class="metric-tile">
+                <div class="metric-label">مديرو النظام (أدمن)</div>
+                <div id="stat-admins" class="metric-val text-amber-400">-</div>
+            </div>
+        </div>
+
+        <!-- إضافة مستخدم جديد -->
+        <div class="slate-card p-5">
+            <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-user-plus text-blue-400 text-xs"></i>
+                    <h2 id="formSectionTitle" class="text-xs sm:text-sm font-bold text-white">إضافة مستخدم جديد وتحديد الصلاحية</h2>
+                </div>
+                <span class="text-[11px] text-slate-400 font-mono">NEW USER</span>
+            </div>
+
+            <form id="addUserForm" onsubmit="handleCreateUser(event)">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">اسم الدخول (Username) *</label>
+                        <input type="text" id="newUsername" required placeholder="مثال: ahmed.hassan" class="slate-input font-mono text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">كلمة المرور *</label>
+                        <input type="text" id="newPassword" required placeholder="كلمة المرور..." class="slate-input font-mono text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">نوع الصلاحية</label>
+                        <select id="newUserRole" onchange="toggleStageField()" class="slate-input text-xs cursor-pointer">
+                            <option value="production">يوزر إنتاج (مسح خطوط الإنتاج)</option>
+                            <option value="external_operator">مشغل تشغيل خارجي (مسح أي باركود)</option>
+                            <option value="external_admin">مشرف تشغيل خارجي (متابعة أوامر التشغيل الخارجي فقط)</option>
+                            <option value="admin_view">متابع إداري (اطلاع فقط)</option>
+                            <option value="admin">مدير نظام (أدمن كامل)</option>
+                        </select>
+                    </div>
+                    <div id="stageSelectWrap">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">المرحلة الإنتاجية المقيدة</label>
+                        <select id="newUserStage" class="slate-input text-xs cursor-pointer">
+                            <option value="دخول انتاج">دخول انتاج</option>
+                            <option value="خروج انتاج">خروج انتاج</option>
+                            <option value="دخول مغسلة">دخول مغسلة</option>
+                            <option value="خروج مغسلة">خروج مغسلة</option>
+                            <option value="دخول تعبئة">دخول تعبئة</option>
+                            <option value="خروج تعبئة">خروج تعبئة</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="submit" id="addUserBtn" class="btn-slate btn-slate-primary w-full py-2.5 text-xs font-semibold">
+                            <i class="fas fa-plus text-xs"></i> إضافة الحساب
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- جدول المستخدمين -->
+        <div class="slate-card overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b border-slate-700/60">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-users-cog text-blue-400 text-xs"></i>
+                    <h3 class="text-xs sm:text-sm font-bold text-white">سجل المستخدمين المعتمدين</h3>
+                </div>
+                <button onclick="loadUsersList()" class="btn-slate btn-slate-secondary text-xs py-1 px-2.5">
+                    <i class="fas fa-sync-alt text-[10px]"></i> تحديث
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="slate-table min-w-[620px]">
+                    <thead>
+                        <tr>
+                            <th class="w-12 text-center">#</th>
+                            <th>اسم الدخول</th>
+                            <th>الاسم المسجل</th>
+                            <th>نوع الحساب</th>
+                            <th>المرحلة المقيدة</th>
+                            <th class="text-center w-24">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="6" class="text-center py-10 text-slate-500 text-xs">
+                            <i class="fas fa-circle-notch fa-spin text-lg mb-1.5 block text-slate-500"></i>
+                            جاري تحميل سجل المستخدمين...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- دليل الصلاحيات السريع -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="slate-card p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="badge-clean badge-green text-[11px]"><span class="badge-clean-dot"></span> يوزر إنتاج</span>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    مسح ضوئي وتسجيل مباشر للملصقات في مرحلته فقط، دون صلاحيات الإدارة أو تعديل الأوردرات.
+                </p>
+            </div>
+            <div class="slate-card p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="badge-clean badge-blue text-[11px]"><span class="badge-clean-dot"></span> متابع إداري</span>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    متابعة تقدم الأوردرات ونسب الإنجاز وطباعة التقارير الرسمية لحظياً.
+                </p>
+            </div>
+            <div class="slate-card p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="badge-clean badge-amber text-[11px]"><span class="badge-clean-dot"></span> مدير نظام</span>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    تحكم كامل: فتح الأوردرات وتوليد الباركودات، حذف السجلات، وإدارة حسابات المشغلين.
+                </p>
+            </div>
+        </div>
+        </div>
+
+        <!-- بارتشن توليد وتصدير التراخيص (SUPER ADMIN ONLY) -->
+        <div id="licensePartitionWrap" class="space-y-4 hidden">
+            <div class="slate-card p-6 border-amber-500/50 bg-gradient-to-br from-[#172554]/50 via-[#1e1b4b]/40 to-[#0f172a] shadow-xl shadow-amber-950/20">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 mb-5 border-b border-amber-500/30">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/30 to-amber-700/20 border border-amber-400/50 flex items-center justify-center text-amber-300 text-xl shadow-inner">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-sm sm:text-base font-bold text-white tracking-wide">
+                                    بارتشن توليد وتصدير تراخيص السيستم
+                                </h2>
+                                <span class="badge-clean text-[10px] font-mono font-bold" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);">
+                                    👑 SUPER ADMIN ONLY
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-300 mt-1">
+                                أنشئ ترخيص تشغيل معتمد باسم الشركة والمصنع مع تنزيل فوري للملف وتفعيله تلقائياً.
+                            </p>
+                        </div>
+                    </div>
+                    <div id="licenseStatusBox" class="bg-slate-900/80 border border-amber-500/30 rounded-xl p-3 px-4 font-mono text-xs shadow-md">
+                        <span class="text-slate-400 text-[11px] block mb-0.5">حالة الترخيص الحالي بالخادم:</span>
+                        <div class="flex items-center gap-2">
+                            <span id="licStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                            <span id="licStatusText" class="font-bold text-sm text-slate-300">جاري الفحص...</span>
+                        </div>
+                        <span id="licStatusClient" class="text-slate-400 text-[11px] block mt-1 hidden">
+                            العميل: <strong id="licStatusClientName" class="text-amber-300">--</strong>
+                        </span>
+                    </div>
+                </div>
+
+                <form id="generateLicenseForm" onsubmit="handleGenerateLicense(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
+                                <i class="fas fa-building text-amber-400 text-[11px]"></i>
+                                <span>اسم العميل / الشركة المرخص لها *</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="licClientName"
+                                required
+                                placeholder="مثال: مصنع النور للملابس الجاهزة"
+                                class="slate-input text-xs py-2.5 bg-slate-900/90 border-slate-700 focus:border-amber-400 text-white"
+                            />
+                            <span class="text-[10px] text-slate-400 mt-1 block">
+                                سيتم تسمية الملف المنزّل تلقائياً بناءً على هذا الاسم
+                            </span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
+                                <i class="fas fa-calendar-alt text-amber-400 text-[11px]"></i>
+                                <span>مدة سريان الترخيص *</span>
+                            </label>
+                            <select
+                                id="licDurationDays"
+                                class="slate-input text-xs py-2.5 bg-slate-900/90 border-slate-700 focus:border-amber-400 text-white cursor-pointer font-mono"
+                            >
+                                <option value="15">15 يوم (فترة تجريبية / مهلة سداد)</option>
+                                <option value="30">شهر واحد (30 يوماً)</option>
+                                <option value="90">3 شهور (ربع سنوي - 90 يوماً)</option>
+                                <option value="180">6 شهور (نصف سنوي - 180 يوماً)</option>
+                                <option value="365" selected>سنة كاملة (365 يوماً - تعاقد سنوي معتمد)</option>
+                                <option value="730">سنتين (730 يوماً)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
+                                <i class="fas fa-satellite-dish text-amber-400 text-[11px]"></i>
+                                <span>رابط القفل عن بُعد Kill Switch (اختياري)</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="licKillSwitch"
+                                placeholder="https://your-domain.com/status.json"
+                                class="slate-input text-xs py-2.5 bg-slate-900/90 border-slate-700 focus:border-amber-400 font-mono text-slate-200"
+                            />
+                            <span class="text-[10px] text-slate-400 mt-1 block">
+                                رابط لفحص حالة العقد عن بُعد لإيقافه في حال فسخ التعاقد
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-700/40">
+                        <div class="flex items-center gap-2 text-xs text-slate-300">
+                            <i class="fas fa-download text-emerald-400"></i>
+                            <span>بمجرد الضغط سيتم توليد وتوقيع الترخيص وتحميل ملف <strong>(.lic)</strong> باسم المصنع مباشرة.</span>
+                        </div>
+                        <button
+                            type="submit"
+                            id="generateLicBtn"
+                            class="btn-slate w-full sm:w-auto px-6 py-2.5 text-xs font-bold bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-400 border border-amber-300/60 text-slate-950 shadow-lg shadow-amber-500/25 transition-all"
+                        >
+                            <span class="flex items-center gap-2 justify-center">
+                                <i class="fas fa-file-download text-sm ml-1"></i>
+                                <span>توليد الترخيص وتحميل الملف الآن</span>
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- بارتشن تهيئة مسار ومراحل خط الإنتاج للمصنع (خاص بمالك السيستم) -->
+        <div id="pipelineMainSection" class="hidden space-y-4">
+            <div class="slate-card p-6 border-cyan-500/40 bg-gradient-to-br from-[#082f49]/40 via-[#0c1e3d]/40 to-[#070d19] shadow-xl shadow-cyan-950/20">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 mb-5 border-b border-cyan-500/30">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/30 to-blue-700/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 text-xl shadow-inner">
+                            <i class="fas fa-sitemap"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-sm sm:text-base font-bold text-white tracking-wide">
+                                    تهيئة ومواءمة خط الإنتاج والمراحل للمصنع
+                                </h2>
+                                <span class="badge-clean text-[10px] font-mono font-bold" style="background:rgba(6,182,212,0.2);color:#22d3ee;border:1px solid rgba(6,182,212,0.4);">
+                                    👑 SUPER ADMIN PIPELINE
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-300 mt-1">
+                                خصص مسار التشغيل حسب طلب المصنع (تفعيل أو تعطيل السنفرة، الليزر، التطريز، الطباعة، أو إضافة أي مرحلة مخصصة قبل التسليم).
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="loadStagesConfig()" class="btn-slate btn-slate-secondary text-xs py-1.5 px-3">
+                            <i class="fas fa-sync-alt text-[10px]"></i> تحديث المسار
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 1. الشريط العلوي الذكي: القوالب الجاهزة + الإحصائيات + زر الإضافة -->
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                            <span class="text-xs font-bold text-white">قالب مسار المصنع:</span>
+                        </div>
+                        <select id="pipelineTemplateSelect" onchange="handleSelectTemplateChange(this.value)" class="slate-input text-xs py-1 px-3 bg-slate-950 border-cyan-500/40 text-cyan-300 font-bold cursor-pointer">
+                            <option value="">⚡ اختر قالباً صناعياً جاهزاً للمصنع...</option>
+                            <option value="standard">⚙️ الخط القياسي الكلاسيكي (6 مراحل أساسية)</option>
+                            <option value="denim">👖 مصنع جينز ومعالجات متكامل (قص + إنتاج + ليزر + سنفرة + مغسلة + فحص + تعبئة)</option>
+                            <option value="knitwear">👕 مصنع تيشرتات وتريكو (قص + تطريز + طباعة + إنتاج + فحص + تعبئة)</option>
+                            <option value="laundry">🧼 مغسلة وصباغة وتشطيب خارجي (مغسلة + صباغة + كي + تعبئة + مخزن)</option>
+                            <option value="all">🟢 تفعيل كافة المراحل الـ 26 بالكامل</option>
+                            <option value="none">🔴 إيقاف الكل والاحتفاظ بالإنتاج فقط</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+                        <div class="flex items-center gap-2 text-xs font-mono bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-800">
+                            <span class="text-slate-400 text-[11px]">المراحل المفعلة:</span>
+                            <strong id="activeStagesCount" class="text-emerald-400 font-bold">--</strong>
+                            <span class="text-slate-600">/</span>
+                            <span class="text-slate-400">26</span>
+                        </div>
+                        <button type="button" onclick="toggleAddCustomStageForm()" class="btn-slate btn-slate-primary text-xs py-1.5 px-3 font-bold shadow-sm shadow-cyan-500/20 whitespace-nowrap">
+                            <i class="fas fa-plus ml-1"></i> إضافة مرحلة مخصصة
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. كارت إضافة مرحلة مخصصة (منسدل عند الطلب - نظيف ومدمج) -->
+                <div id="addCustomStageCard" class="hidden p-4 rounded-xl bg-slate-900 border border-cyan-500/40 mb-4 transition-all">
+                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                        <div class="text-xs font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-plus-circle text-cyan-400"></i>
+                            <span>إضافة مرحلة جديدة مخصصة بالاسم الذي يطلبه العميل:</span>
+                        </div>
+                        <button type="button" onclick="toggleAddCustomStageForm()" class="text-slate-400 hover:text-white text-xs">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form onsubmit="handleCreateCustomStage(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-300 mb-1">اسم المرحلة *</label>
+                            <input type="text" id="newStageName" required placeholder="مثال: دخول كرمشة وتكسير" class="slate-input text-xs py-2 bg-slate-950 border-slate-700">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-300 mb-1">كود المرحلة (اختياري)</label>
+                            <input type="text" id="newStageCode" placeholder="مثال: IN_CRUSH" class="slate-input text-xs py-2 font-mono uppercase bg-slate-950 border-slate-700">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-300 mb-1">الترتيب في خط الإنتاج</label>
+                            <input type="number" id="newStageOrder" min="1" max="99" value="15" class="slate-input text-xs py-2 font-mono bg-slate-950 border-slate-700">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" id="addStageBtn" class="btn-slate btn-slate-primary flex-1 py-2 text-xs font-bold shadow-lg shadow-cyan-500/20">
+                                <i class="fas fa-plus ml-1"></i> حفظ وإضافة
+                            </button>
+                            <button type="button" onclick="toggleAddCustomStageForm()" class="btn-slate text-xs py-2 px-3">
+                                إلغاء
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 3. شريط المسار المرئي للمصنع (Live Sequence Flow) -->
+                <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 mb-4 overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                            <i class="fas fa-project-diagram text-cyan-400"></i>
+                            <span>تسلسل خط الإنتاج الفعلي المعتمد للمصنع:</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 font-mono">LIVE FLOW SEQUENCE</span>
+                    </div>
+                    <div id="livePipelineFlow" class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                        <span class="text-slate-500 text-xs py-1">جاري رسم مسار المراحل...</span>
+                    </div>
+                </div>
+
+                <!-- 4. شريط التبديل بين طريقة العرض والبحث (Toolbar) -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 mb-4">
+                    <!-- تبويبات العرض: حسب الأقسام (المجمع) vs جدول تفصيلي -->
+                    <div class="flex items-center gap-1 p-1 bg-slate-950 rounded-lg border border-slate-800 text-xs">
+                        <button type="button" id="viewModeGroupedBtn" onclick="switchPipelineViewMode('grouped')" class="px-3 py-1.5 rounded-md font-bold transition-all bg-cyan-600 text-white shadow-sm flex items-center gap-1.5">
+                            <i class="fas fa-th-large text-xs"></i>
+                            <span>عرض الأقسام المجمعة (13 قسم)</span>
+                        </button>
+                        <button type="button" id="viewModeTableBtn" onclick="switchPipelineViewMode('table')" class="px-3 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5">
+                            <i class="fas fa-list-ul text-xs"></i>
+                            <span>عرض جدول المراحل التفصيلي (26 مرحلة)</span>
+                        </button>
+                    </div>
+
+                    <!-- البحث وفلترة الحالة -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="text" id="stageSearchInput" oninput="filterPipelineView()" placeholder="بحث باسم المرحلة أو الكود..." class="slate-input text-xs py-1.5 px-3 bg-slate-950 border-slate-700 w-full sm:w-56">
+                        <select id="stageFilterStatus" onchange="filterPipelineView()" class="slate-input text-xs py-1.5 px-2 bg-slate-950 border-slate-700 cursor-pointer text-slate-300">
+                            <option value="all">كل الحالات</option>
+                            <option value="active">المفعلة فقط</option>
+                            <option value="inactive">المعطلة فقط</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 5. عرض الأقسام الصناعية المجمعة (Grouped Pipeline Board - المنظم والمتناسق) -->
+                <div id="pipelineGroupedView" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-4">
+                    <!-- يُبنى ديناميكياً بواسطة JavaScript: بطاقة لكل قسم تحتوي على مراحله مباشرة -->
+                </div>
+
+                <!-- 6. العرض البديل: جدول المراحل التفصيلي الموحد (Flat Table View) -->
+                <div id="pipelineTableView" class="hidden overflow-x-auto rounded-xl border border-slate-800 mb-4 bg-slate-900/60 p-3">
+                    <table class="slate-table w-full text-xs">
+                        <thead>
+                            <tr class="bg-slate-900/90 text-slate-300">
+                                <th class="w-16 text-center">الترتيب</th>
+                                <th>اسم المرحلة الصناعية</th>
+                                <th class="text-center w-28">الكود المختصر</th>
+                                <th class="text-center w-36">القسم الصناعي</th>
+                                <th class="text-center w-28">الحالة في المصنع</th>
+                                <th class="text-center w-40">التحكم الفوري (المالك)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stagesTableBody">
+                            <tr><td colspan="6" class="text-center p-6 text-slate-400">جاري تحميل مسار المراحل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4 p-3 rounded-lg bg-blue-950/20 border border-blue-500/20 flex items-center gap-2.5 text-xs text-blue-300">
+                    <i class="fas fa-info-circle text-blue-400"></i>
+                    <span>بصفتك مالك السيستم (Super Admin)، تملك حرية تفعيل أو إيقاف أي مرحلة على الإطلاق بدون قيود، ويطبّق التغيير فوراً على الأوامر الجديدة والمشغلين والتتبع.</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/ui.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const user = initUnifiedNavbar({ activePage: 'admin' });
+            if (!user) return;
+            const isMaster = user && ((user.role === 'superadmin') || ['gamal', 'auf'].includes((user.username || '').toLowerCase()));
+            if (isMaster) {
+                user.role = 'superadmin';
+                user.can_view_orders = 1;
+                user.can_create_orders = 1;
+                user.can_print_reports = 1;
+                user.can_manage_users = 1;
+                user.is_master = true;
+            }
+            if (user.role !== 'admin' && user.role !== 'superadmin' && user.role !== 'external_admin') {
+                window.location.href = '/orders_tracking.html';
+                return;
+            }
+
+            // مالك السيستم (superadmin): صلاحية مطلقة وإظهار بارتشن التراخيص
+            if (user.role === 'superadmin') {
+                document.getElementById('adminSubTabs')?.classList.remove('hidden');
+                const roleSelect = document.getElementById('newUserRole');
+                if (roleSelect && !roleSelect.querySelector('option[value="superadmin"]')) {
+                    const opt = document.createElement('option');
+                    opt.value = 'superadmin';
+                    opt.textContent = '👑 مالك السيستم (Super Admin - صلاحية مطلقة)';
+                    roleSelect.appendChild(opt);
+                }
+                loadLicenseStatus();
+
+                // التبديل التلقائي إذا كان الرابط يحتوي على #license أو #pipeline أو المعاملات
+                const urlParams = new URLSearchParams(window.location.search);
+                if (window.location.hash === '#license' || urlParams.get('tab') === 'license') {
+                    switchAdminTab('license');
+                } else if (window.location.hash === '#pipeline' || urlParams.get('tab') === 'pipeline') {
+                    switchAdminTab('pipeline');
+                }
+            } else if (user.role === 'external_admin') {
+                // تخصيص الصفحة لمشرف التشغيل الخارجي
+                document.getElementById('navOrdersBtn')?.classList.add('hidden');
+                document.getElementById('navScannerBtn')?.classList.add('hidden');
+                document.getElementById('adminStatsCards')?.classList.add('hidden');
+                const roleSelect = document.getElementById('newUserRole');
+                if (roleSelect) {
+                    roleSelect.innerHTML = `
+                        <option value="تشغيل خارجي (دخول)">مشغل تشغيل خارجي — دخول</option>
+                        <option value="تشغيل خارجي (خروج)">مشغل تشغيل خارجي — خروج</option>
+                        <option value="تشغيل خارجي (عام)">مشغل تشغيل خارجي — عام (دخول وخروج)</option>
+                    `;
+                }
+                const stageWrap = document.getElementById('stageSelectWrap');
+                if (stageWrap) stageWrap.classList.add('hidden');
+                const formTitle = document.getElementById('formSectionTitle');
+                if (formTitle) formTitle.textContent = 'إضافة مشغل تشغيل خارجي جديد وتحديد الصلاحية';
+            }
+
+            loadUsersList();
+            loadStagesConfig(); // مزامنة خيارات مراحل المشغلين مع المراحل النشطة
+        });
+
+        function switchAdminTab(tab) {
+            const btnUsers = document.getElementById('tabBtnUsers');
+            const btnLic = document.getElementById('tabBtnLicense');
+            const btnPipe = document.getElementById('tabBtnPipeline');
+            const secUsers = document.getElementById('usersMainSection');
+            const secLic = document.getElementById('licensePartitionWrap');
+            const secPipe = document.getElementById('pipelineMainSection');
+
+            // إخفاء كل الأقسام أولاً
+            secUsers?.classList.add('hidden');
+            secLic?.classList.add('hidden');
+            secPipe?.classList.add('hidden');
+
+            // إعادة تعيين أزرار التبويب
+            if (btnUsers) btnUsers.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent whitespace-nowrap';
+            if (btnLic) btnLic.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all text-amber-400 hover:text-amber-300 hover:bg-amber-950/30 border border-amber-500/20 whitespace-nowrap';
+            if (btnPipe) btnPipe.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30 border border-cyan-500/20 whitespace-nowrap';
+
+            if (tab === 'license') {
+                secLic?.classList.remove('hidden');
+                if (btnLic) btnLic.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-500/25 border border-amber-400/50 whitespace-nowrap';
+                loadLicenseStatus();
+            } else if (tab === 'pipeline') {
+                secPipe?.classList.remove('hidden');
+                if (btnPipe) btnPipe.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-cyan-600 to-cyan-700 text-white shadow-lg shadow-cyan-500/25 border border-cyan-400/50 whitespace-nowrap';
+                loadStagesConfig();
+            } else {
+                secUsers?.classList.remove('hidden');
+                if (btnUsers) btnUsers.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white shadow-sm shadow-blue-500/20 border border-blue-400/30 whitespace-nowrap';
+            }
+        }
+
+        async function loadLicenseStatus() {
+            try {
+                const res = await fetch('/api/license/status', { headers: authHeaders() });
+                const data = await res.json();
+                const dot = document.getElementById('licStatusDot');
+                const text = document.getElementById('licStatusText');
+                const clientBox = document.getElementById('licStatusClient');
+                const clientName = document.getElementById('licStatusClientName');
+
+                if (data && data.valid) {
+                    if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+                    if (text) {
+                        text.className = 'font-bold text-sm text-emerald-400';
+                        text.textContent = `سارٍ (${data.days_remaining} يوم متبقي)`;
+                    }
+                    if (data.client && clientBox && clientName) {
+                        clientName.textContent = data.client;
+                        clientBox.classList.remove('hidden');
+                    }
+                } else {
+                    if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+                    if (text) {
+                        text.className = 'font-bold text-sm text-rose-400';
+                        text.textContent = data?.message || 'منتهي أو غير مفعل';
+                    }
+                }
+            } catch (e) {
+                console.error('Error fetching license status:', e);
+            }
+        }
+
+        async function handleGenerateLicense(event) {
+            event.preventDefault();
+            const client = document.getElementById('licClientName').value.trim();
+            const days = parseInt(document.getElementById('licDurationDays').value, 10) || 365;
+            const killSwitchUrl = document.getElementById('licKillSwitch').value.trim();
+
+            if (!client) {
+                FreedomUI.alert('حقل مطلوب', 'يرجى إدخال اسم العميل أو المصنع المرخص له.', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('generateLicBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري التوليد والتصدير...';
+
+            try {
+                const res = await fetch('/api/license/generate', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ client, days, killSwitchUrl })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (data.license_file_content) {
+                        const blob = new Blob([data.license_file_content], { type: 'application/octet-stream' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        const safeName = client.replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, '_');
+                        a.download = `hms_license_${safeName}.lic`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    }
+
+                    await FreedomUI.alert(
+                        'تم توليد الترخيص بنجاح',
+                        `تم إنشاء ترخيص رسمي للمصنع (${client}) وتفعيله!\n\n` +
+                        `🏷️ كود العقد: ${data.license?.contract_id || '-'}\n` +
+                        `📅 تاريخ الصلاحية: ${data.license?.expires_at ? new Date(data.license.expires_at).toLocaleDateString('ar-EG-u-nu-latn') : '-'}\n` +
+                        `⏳ المدة: ${data.license?.duration_days || days} يوماً\n\n` +
+                        `📥 تم بدء تحميل ملف الترخيص (hms_license_${client}.lic) تلقائياً.`,
+                        'success'
+                    );
+                    loadLicenseStatus();
+                } else {
+                    FreedomUI.alert('فشل التوليد', data.message || 'حدث خطأ أثناء توليد ملف الترخيص', 'error');
+                }
+            } catch (err) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل إرسال طلب توليد الترخيص إلى الخادم', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-file-download text-sm ml-1"></i> توليد الترخيص وتحميل الملف الآن';
+            }
+        }
+
+        function toggleStageField() {
+            const role = document.getElementById('newUserRole').value;
+            const stageWrap = document.getElementById('stageSelectWrap');
+            const stageSelect = document.getElementById('newUserStage');
+            if (role === 'production') {
+                stageSelect.disabled = false;
+                stageWrap.style.opacity = '1';
+            } else {
+                stageSelect.disabled = true;
+                stageWrap.style.opacity = '0.4';
+            }
+        }
+
+        async function loadUsersList() {
+            try {
+                const res = await fetch('/api/users', { headers: authHeaders() });
+                const data = await res.json();
+                if (data.success) {
+                    renderUsersTable(data.users);
+                    updateStats(data.users);
+                } else {
+                    FreedomUI.toast('فشل تحميل قائمة المستخدمين', 'error');
+                }
+            } catch (err) {
+                FreedomUI.toast('فشل الاتصال بالخادم', 'error');
+            }
+        }
+
+        function updateStats(users) {
+            const elUsers = document.getElementById('stat-users');
+            if (elUsers) elUsers.textContent = users.length;
+            const elProd = document.getElementById('stat-production');
+            if (elProd) elProd.textContent = users.filter(u => u.role === 'production').length;
+            const elAdminView = document.getElementById('stat-admin-view');
+            if (elAdminView) elAdminView.textContent = users.filter(u => u.role === 'admin_view').length;
+            const elAdmins = document.getElementById('stat-admins');
+            if (elAdmins) elAdmins.textContent = users.filter(u => u.role === 'admin' || u.role === 'superadmin').length;
+        }
+
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('usersTableBody');
+            if (!users || users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500 text-xs">لا يوجد مستخدمون مسجلون</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = users.map((u, i) => {
+                let roleBadge = '';
+                if (u.role === 'superadmin') {
+                    roleBadge = `<span class="badge-clean text-[10px] font-bold" style="background:linear-gradient(135deg,#78350f,#92400e);color:#fef3c7;border:1px solid #b45309;"><i class="fas fa-crown text-amber-300 ml-1"></i>مالك السيستم</span>`;
+                } else if (u.role === 'admin') {
+                    roleBadge = `<span class="badge-clean badge-amber text-[10px]"><span class="badge-clean-dot"></span> مدير نظام</span>`;
+                } else if (u.role === 'admin_view') {
+                    roleBadge = `<span class="badge-clean badge-blue text-[10px]"><span class="badge-clean-dot"></span> متابع إداري</span>`;
+                } else if (u.role === 'external_operator') {
+                    roleBadge = `<span class="badge-clean text-[10px] font-bold" style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.3);"><span class="badge-clean-dot" style="background:#c084fc;"></span> مشغل خارجي</span>`;
+                } else if (u.role === 'external_admin') {
+                    roleBadge = `<span class="badge-clean text-[10px] font-bold" style="background:rgba(6,182,212,0.15);color:#22d3ee;border:1px solid rgba(6,182,212,0.3);"><span class="badge-clean-dot" style="background:#22d3ee;"></span> مشرف خارجي</span>`;
+                } else {
+                    roleBadge = `<span class="badge-clean badge-green text-[10px]"><span class="badge-clean-dot"></span> يوزر إنتاج</span>`;
+                }
+
+                let stageDisplay = '<span class="text-slate-500">-</span>';
+                if (u.role === 'production') {
+                    stageDisplay = u.stage_action || 'غير محدد';
+                } else if (u.role === 'external_operator') {
+                    stageDisplay = `<span class="text-purple-300 font-bold font-mono">${u.stage_action || 'مسح مفتوح (أي كود)'}</span>`;
+                } else if (u.role === 'external_admin') {
+                    stageDisplay = '<span class="text-cyan-300 font-bold font-mono">متابعة خارجي فقط</span>';
+                }
+
+                return `<tr>
+                    <td class="p-3 text-slate-500 font-mono text-xs text-center">${i + 1}</td>
+                    <td class="p-3 font-bold text-white font-mono text-xs">${u.username}</td>
+                    <td class="p-3 text-slate-300 text-xs">${u.full_name || u.username}</td>
+                    <td class="p-3">${roleBadge}</td>
+                    <td class="p-3 text-slate-300 text-xs font-mono">${stageDisplay}</td>
+                    <td class="p-3 text-center">
+                        ${(u.username !== 'admin' && u.username.toLowerCase() !== 'gamal' && u.username.toLowerCase() !== 'auf' && u.role !== 'superadmin') ? `
+                        <button onclick="askDeleteUser(${u.id}, '${u.username}')" 
+                            class="btn-slate btn-slate-danger text-[11px] py-1 px-2 mx-auto">
+                            <i class="fas fa-trash-alt text-[10px]"></i> حذف
+                        </button>` : (u.username.toLowerCase() === 'gamal' || u.username.toLowerCase() === 'auf') ? '<span class="text-[11px] text-amber-400 font-mono font-bold"><i class="fas fa-crown text-[10px] ml-1"></i>مالك محمي</span>' : '<span class="text-[11px] text-slate-500 font-mono">أساسي</span>'}
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function handleCreateUser(e) {
+            e.preventDefault();
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newPassword').value.trim();
+            let role = document.getElementById('newUserRole').value;
+            let stage_action = document.getElementById('newUserStage')?.value;
+
+            if (role.startsWith('تشغيل خارجي')) {
+                stage_action = role;
+                role = 'external_operator';
+            }
+
+            if (!username || !password) {
+                FreedomUI.alert('بيانات غير مكتملة', 'يرجى إدخال اسم المستخدم وكلمة المرور', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('addUserBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري الإضافة...';
+
+            try {
+                const res = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ username, password, role, stage_action })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    FreedomUI.toast(`تم إنشاء الحساب (${username}) بنجاح`, 'success');
+                    document.getElementById('addUserForm').reset();
+                    toggleStageField();
+                    loadUsersList();
+                } else {
+                    FreedomUI.alert('تعذر الإضافة', data.message || 'فشل إضافة المستخدم', 'error');
+                }
+            } catch (err) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل إرسال الطلب إلى الخادم', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plus text-xs"></i> إضافة الحساب';
+            }
+        }
+
+        async function askDeleteUser(id, username) {
+            const confirmed = await FreedomUI.confirm('تأكيد حذف الحساب', `هل أنت متأكد من حذف الحساب (${username}) نهائياً؟`);
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: authHeaders() });
+                const data = await res.json();
+
+                if (data.success) {
+                    FreedomUI.toast(`تم حذف المستخدم (${username}) بنجاح`, 'success');
+                    loadUsersList();
+                } else {
+                    FreedomUI.alert('فشل الحذف', data.message || 'تعذر إتمام عملية الحذف', 'error');
+                }
+            } catch (err) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+            }
+        }
+
+        // ==========================================
+        // إدارة مراحل خط الإنتاج الشاملة (Pipeline Master Control)
+        // ==========================================
+
+        const PIPELINE_DEPARTMENTS = [
+            { key: 'cutting', label: 'القص والتجهيز', icon: 'fa-cut', color: 'text-amber-400', desc: 'دخول وخروج قص الأقمشة' },
+            { key: 'embroidery', label: 'التطريز', icon: 'fa-feather-alt', color: 'text-purple-400', desc: 'دخول وخروج التطريز الآلي' },
+            { key: 'printing', label: 'الطباعة', icon: 'fa-palette', color: 'text-emerald-400', desc: 'دخول وخروج طباعة السلك سكرين/ديجيتال' },
+            { key: 'production', label: 'الإنتاج والحياكة', icon: 'fa-industry', color: 'text-blue-400', desc: 'دخول وخروج خطوط التجميع والخياطة' },
+            { key: 'laser', label: 'الليزر والمعالجة الضوئية', icon: 'fa-crosshairs', color: 'text-cyan-400', desc: 'دخول وخروج حرق وتقطيع الليزر' },
+            { key: 'sanding', label: 'السنفرة والمعالجة الجافة', icon: 'fa-hand-sparkles', color: 'text-amber-300', desc: 'دخول وخروج السنفرة والويشير' },
+            { key: 'crushing', label: 'الكرمشة والتكسير', icon: 'fa-water', color: 'text-indigo-400', desc: 'دخول وخروج 3D Crushing' },
+            { key: 'wash', label: 'المغسلة والمعالجة الرطبة', icon: 'fa-soap', color: 'text-teal-400', desc: 'دخول وخروج الغسيل والإنزيمات' },
+            { key: 'dyeing', label: 'الصباغة الكيميائية', icon: 'fa-flask', color: 'text-rose-400', desc: 'دخول وخروج صباغة الملابس والصبغات' },
+            { key: 'qc', label: 'فحص الجودة والمطابقة', icon: 'fa-clipboard-check', color: 'text-lime-400', desc: 'دخول وخروج التفتيش والـ QC' },
+            { key: 'ironing', label: 'الكي والبخار والتشطيب', icon: 'fa-fire-alt', color: 'text-orange-400', desc: 'دخول وخروج الكي بالبخار والمكابس' },
+            { key: 'packing', label: 'التعبئة والتغليف', icon: 'fa-box-open', color: 'text-emerald-300', desc: 'دخول وخروج التكييس والكرتون النهائي' },
+            { key: 'warehouse', label: 'المخزن النهائي والشحن', icon: 'fa-warehouse', color: 'text-sky-400', desc: 'دخول وخروج المخازن وشحن البضاعة' }
+        ];
+
+        let _stagesCache = [];
+        let _pipelineViewMode = 'grouped'; // 'grouped' | 'table'
+
+        function toggleAddCustomStageForm() {
+            const card = document.getElementById('addCustomStageCard');
+            if (card) card.classList.toggle('hidden');
+        }
+
+        function switchPipelineViewMode(mode) {
+            _pipelineViewMode = mode;
+            const btnGrouped = document.getElementById('viewModeGroupedBtn');
+            const btnTable = document.getElementById('viewModeTableBtn');
+            const secGrouped = document.getElementById('pipelineGroupedView');
+            const secTable = document.getElementById('pipelineTableView');
+
+            if (mode === 'grouped') {
+                secGrouped?.classList.remove('hidden');
+                secTable?.classList.add('hidden');
+                if (btnGrouped) btnGrouped.className = 'px-3 py-1.5 rounded-md font-bold transition-all bg-cyan-600 text-white shadow-sm flex items-center gap-1.5';
+                if (btnTable) btnTable.className = 'px-3 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5';
+            } else {
+                secGrouped?.classList.add('hidden');
+                secTable?.classList.remove('hidden');
+                if (btnTable) btnTable.className = 'px-3 py-1.5 rounded-md font-bold transition-all bg-cyan-600 text-white shadow-sm flex items-center gap-1.5';
+                if (btnGrouped) btnGrouped.className = 'px-3 py-1.5 rounded-md font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5';
+            }
+        }
+
+        async function handleSelectTemplateChange(val) {
+            if (!val) return;
+            await applyPipelineTemplate(val);
+            const selectEl = document.getElementById('pipelineTemplateSelect');
+            if (selectEl) selectEl.value = '';
+        }
+
+        async function loadStagesConfig() {
+            try {
+                const res = await fetch('/api/system/stages', { headers: authHeaders() });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.success) return;
+
+                _stagesCache = data.stages || [];
+                _stagesCache.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+
+                const activeCount = _stagesCache.filter(s => s.is_active).length;
+                const activeCountEl = document.getElementById('activeStagesCount');
+                if (activeCountEl) activeCountEl.textContent = activeCount;
+
+                renderLivePipelineFlow(_stagesCache);
+                filterPipelineView();
+                populateStageDropdown(_stagesCache);
+            } catch (e) {
+                console.warn('loadStagesConfig error:', e);
+            }
+        }
+
+        // رسم تسلسل المراحل المباشر التفاعلي
+        function renderLivePipelineFlow(stages) {
+            const container = document.getElementById('livePipelineFlow');
+            if (!container) return;
+            const activeStages = stages.filter(s => s.is_active);
+
+            if (activeStages.length === 0) {
+                container.innerHTML = `
+                    <div class="p-2 text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs w-full text-center">
+                        <i class="fas fa-exclamation-triangle ml-1"></i> تنبيه: لا توجد أي مرحلة مفعلة حالياً! فعّل مرحلة واحدة على الأقل لبدء التشغيل.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = activeStages.map((s, idx) => `
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/90 border border-cyan-500/30 text-white shadow-sm hover:border-cyan-400 transition-all">
+                        <span class="w-3.5 h-3.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono text-[9px] flex items-center justify-center font-bold">${idx + 1}</span>
+                        <span class="font-bold text-[11px] whitespace-nowrap">${s.stage_name}</span>
+                        ${s.stage_code ? `<span class="text-[9px] font-mono px-1 rounded bg-slate-900 text-slate-400">${s.stage_code}</span>` : ''}
+                    </div>
+                    ${idx < activeStages.length - 1 ? '<i class="fas fa-chevron-left text-cyan-500/50 text-[9px] mx-0.5"></i>' : ''}
+                </div>
+            `).join('');
+        }
+
+        // الفلترة والبحث الموحد للعرضين
+        function filterPipelineView() {
+            const search = (document.getElementById('stageSearchInput')?.value || '').trim().toLowerCase();
+            const status = document.getElementById('stageFilterStatus')?.value || 'all';
+
+            let filtered = _stagesCache.slice();
+            if (status === 'active') {
+                filtered = filtered.filter(s => s.is_active);
+            } else if (status === 'inactive') {
+                filtered = filtered.filter(s => !s.is_active);
+            }
+
+            if (search) {
+                filtered = filtered.filter(s =>
+                    (s.stage_name && s.stage_name.toLowerCase().includes(search)) ||
+                    (s.stage_code && s.stage_code.toLowerCase().includes(search))
+                );
+            }
+
+            renderGroupedPipelineView(filtered);
+            renderStagesTable(filtered);
+        }
+
+        // رسم عرض الأقسام الصناعية المجمعة (Grouped Pipeline Board - المنظم والمتناسق)
+        function renderGroupedPipelineView(filteredStages) {
+            const container = document.getElementById('pipelineGroupedView');
+            if (!container) return;
+
+            // تجميع المراحل بحسب الأقسام
+            container.innerHTML = PIPELINE_DEPARTMENTS.map((dept, deptIdx) => {
+                const deptStages = _stagesCache.filter(s => s.stage_category === dept.key);
+                if (deptStages.length === 0) return '';
+
+                // الفحص مع الفلتر الحالي
+                const visibleStages = deptStages.filter(s => filteredStages.some(fs => fs.id === s.id));
+                if (visibleStages.length === 0 && (document.getElementById('stageSearchInput')?.value || document.getElementById('stageFilterStatus')?.value !== 'all')) {
+                    return ''; // إخفاء القسم إذا لم تطابق أي من مراحله الفلتر
+                }
+
+                const activeInDept = deptStages.filter(s => s.is_active);
+                const allActive = deptStages.length > 0 && activeInDept.length === deptStages.length;
+                const someActive = activeInDept.length > 0 && !allActive;
+
+                let statusBadge = '';
+                if (allActive) {
+                    statusBadge = `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">مفعل بالكامل (${activeInDept.length}/${deptStages.length})</span>`;
+                } else if (someActive) {
+                    statusBadge = `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">مفعل جزئياً (${activeInDept.length}/${deptStages.length})</span>`;
+                } else {
+                    statusBadge = `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-500 border border-slate-700">معطل (${activeInDept.length}/${deptStages.length})</span>`;
+                }
+
+                const stagesRows = (visibleStages.length > 0 ? visibleStages : deptStages).map(s => {
+                    const isActive = Boolean(s.is_active);
+                    return `
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border ${isActive ? 'border-slate-800' : 'border-slate-800/40 opacity-60'} hover:border-cyan-500/40 transition-all">
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-0.5 font-mono text-[10px] text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                                    <span>#${s.order_index}</span>
+                                    <div class="flex flex-col text-[8px] leading-tight mr-1">
+                                        <button type="button" onclick="shiftStageOrder(${s.id}, -1)" class="hover:text-cyan-400">▲</button>
+                                        <button type="button" onclick="shiftStageOrder(${s.id}, 1)" class="hover:text-cyan-400">▼</button>
+                                    </div>
+                                </div>
+                                <span class="font-bold text-xs text-white">${s.stage_name}</span>
+                                ${s.stage_code ? `<span class="text-[9px] font-mono px-1 rounded bg-slate-900 text-cyan-300 font-bold border border-slate-800">${s.stage_code}</span>` : ''}
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="toggleSingleStage(${s.id})"
+                                    class="btn-slate text-[10px] py-1 px-2.5 font-bold transition-all ${isActive ? 'text-rose-400 hover:bg-rose-500/10 border-rose-500/30' : 'text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/30'}">
+                                    <i class="fas fa-${isActive ? 'toggle-off' : 'toggle-on'} ml-1"></i>
+                                    <span>${isActive ? 'إيقاف' : 'تفعيل'}</span>
+                                </button>
+                                <button type="button" onclick="promptEditStage(${s.id}, '${s.stage_name.replace(/'/g, "\\'")}', '${s.stage_code || ''}', ${s.order_index})"
+                                    class="text-slate-500 hover:text-cyan-300 text-xs px-1" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${!s.is_system ? `
+                                    <button type="button" onclick="deleteCustomStage(${s.id}, '${s.stage_name.replace(/'/g, "\\'")}')"
+                                        class="text-rose-500 hover:text-rose-400 text-xs px-1" title="حذف">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="p-3.5 rounded-xl bg-slate-900/90 border ${allActive ? 'border-cyan-500/40' : 'border-slate-800'} flex flex-col justify-between shadow-sm hover:border-slate-700 transition-all">
+                        <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-800/80">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-xs ${dept.color}">
+                                    <i class="fas ${dept.icon}"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                                        <span>${deptIdx + 1}. ${dept.label}</span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-500">${dept.desc}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${statusBadge}
+                                <button type="button" onclick="toggleCategoryPreset('${dept.key}')"
+                                    class="btn-slate text-[10px] py-1 px-2.5 font-bold transition-all ${allActive ? 'text-rose-400 hover:bg-rose-500/10 border-rose-500/30' : 'text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/30'}"
+                                    title="تفعيل أو تعطيل كافة مراحل هذا القسم بنقرة واحدة">
+                                    <i class="fas fa-${allActive ? 'toggle-off' : 'toggle-on'} ml-1"></i>
+                                    <span>${allActive ? 'تعطيل' : 'تفعيل القسم'}</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5">
+                            ${stagesRows}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // رسم جدول المراحل التفصيلي الموحد (Flat Table View)
+        function renderStagesTable(stages) {
+            const tbody = document.getElementById('stagesTableBody');
+            if (!tbody) return;
+            if (!stages || stages.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-slate-400">لا توجد مراحل مطابقة لمعايير البحث</td></tr>`;
+                return;
+            }
+
+            const deptMap = {};
+            PIPELINE_DEPARTMENTS.forEach(d => { deptMap[d.key] = d; });
+
+            tbody.innerHTML = stages.map((s, i) => {
+                const dept = deptMap[s.stage_category] || { label: s.stage_category || 'مخصص', color: 'text-slate-400' };
+                const isActive = Boolean(s.is_active);
+
+                const activeBadge = isActive
+                    ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>نشطة</span>`
+                    : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-500 border border-slate-700"><span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>معطلة</span>`;
+
+                const toggleBtn = `
+                    <button type="button" onclick="toggleSingleStage(${s.id})"
+                        class="btn-slate text-[11px] py-1 px-2.5 font-bold transition-all ${isActive ? 'text-rose-400 hover:bg-rose-500/10 border-rose-500/30' : 'text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/30'}">
+                        <i class="fas fa-${isActive ? 'toggle-off' : 'toggle-on'} ml-1"></i>
+                        <span>${isActive ? 'إيقاف' : 'تفعيل'}</span>
+                    </button>
+                `;
+
+                const editBtn = `
+                    <button type="button" onclick="promptEditStage(${s.id}, '${s.stage_name.replace(/'/g, "\\'")}', '${s.stage_code || ''}', ${s.order_index})"
+                        class="btn-slate text-[11px] py-1 px-2 text-slate-400 hover:text-cyan-300" title="تعديل">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                `;
+
+                const deleteBtn = !s.is_system ? `
+                    <button type="button" onclick="deleteCustomStage(${s.id}, '${s.stage_name.replace(/'/g, "\\'")}')"
+                        class="btn-slate text-[11px] py-1 px-2 font-bold text-rose-500 hover:bg-rose-500/10 border-rose-500/20" title="حذف">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                ` : '';
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-all ${isActive ? '' : 'opacity-60'}">
+                        <td class="p-2.5 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <span class="font-mono text-xs font-bold text-slate-300">${s.order_index || i + 1}</span>
+                                <div class="flex flex-col text-[8px] leading-tight mr-1 text-slate-500">
+                                    <button type="button" onclick="shiftStageOrder(${s.id}, -1)" class="hover:text-cyan-400">▲</button>
+                                    <button type="button" onclick="shiftStageOrder(${s.id}, 1)" class="hover:text-cyan-400">▼</button>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-2.5 font-bold text-white text-xs">
+                            ${s.stage_name}
+                            ${s.is_system ? '' : '<span class="text-[9px] font-mono mr-1.5 px-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">مخصصة</span>'}
+                        </td>
+                        <td class="p-2.5 text-center font-mono text-xs text-cyan-300 font-bold">${s.stage_code || '-'}</td>
+                        <td class="p-2.5 text-center"><span class="text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700 bg-slate-900 ${dept.color}">${dept.label}</span></td>
+                        <td class="p-2.5 text-center">${activeBadge}</td>
+                        <td class="p-2.5 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                ${toggleBtn}
+                                ${editBtn}
+                                ${deleteBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // تقديم أو تأخير الترتيب
+        async function shiftStageOrder(id, delta) {
+            const idx = _stagesCache.findIndex(s => s.id === id);
+            if (idx === -1) return;
+            const targetIdx = idx + delta;
+            if (targetIdx < 0 || targetIdx >= _stagesCache.length) return;
+
+            const current = _stagesCache[idx];
+            const target = _stagesCache[targetIdx];
+
+            // تبديل order_index
+            const tmp = current.order_index;
+            current.order_index = target.order_index;
+            target.order_index = tmp;
+
+            try {
+                await fetch('/api/system/stages/reorder', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        items: [
+                            { id: current.id, order_index: current.order_index },
+                            { id: target.id, order_index: target.order_index }
+                        ]
+                    })
+                });
+                await loadStagesConfig();
+            } catch (e) {
+                console.error('Error shifting stage order:', e);
+            }
+        }
+
+        // تعديل اسم وكود المرحلة
+        async function promptEditStage(id, currentName, currentCode, currentOrder) {
+            const newName = window.prompt('تعديل اسم المرحلة:', currentName);
+            if (newName === null) return;
+            const newCode = window.prompt('تعديل كود المرحلة المختصر:', currentCode);
+            if (newCode === null) return;
+
+            try {
+                const res = await fetch(`/api/system/stages/${id}`, {
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        stage_name: newName.trim() || currentName,
+                        stage_code: newCode.trim().toUpperCase() || currentCode,
+                        order_index: currentOrder
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast('تم تحديث بيانات المرحلة بنجاح', 'success');
+                    await loadStagesConfig();
+                } else {
+                    FreedomUI.alert('خطأ', data.message || 'تعذر التحديث', 'error');
+                }
+            } catch (e) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+            }
+        }
+
+        function populateStageDropdown(stages) {
+            const sel = document.getElementById('newUserStage');
+            if (!sel) return;
+            const activeStages = stages.filter(s => s.is_active);
+            const currentVal = sel.value;
+            sel.innerHTML = activeStages.map(s =>
+                `<option value="${s.stage_name}">${s.stage_name}</option>`
+            ).join('');
+            if (currentVal && activeStages.some(s => s.stage_name === currentVal)) {
+                sel.value = currentVal;
+            }
+        }
+
+        async function toggleSingleStage(id) {
+            try {
+                const res = await fetch(`/api/system/stages/${id}/toggle`, { method: 'PUT', headers: authHeaders() });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast(data.message, 'success');
+                    await loadStagesConfig();
+                } else {
+                    FreedomUI.alert('فشل التبديل', data.message || 'فشل تغيير حالة المرحلة', 'error');
+                }
+            } catch (e) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+            }
+        }
+
+        async function toggleCategoryPreset(category) {
+            try {
+                const res = await fetch('/api/system/stages/toggle-category', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ category })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast(data.message, 'success');
+                    await loadStagesConfig();
+                } else {
+                    FreedomUI.alert('فشل التبديل', data.message || 'فشل تحديث الفئة', 'error');
+                }
+            } catch (e) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+            }
+        }
+
+        async function handleCreateCustomStage(event) {
+            event.preventDefault();
+            const name = document.getElementById('newStageName')?.value.trim();
+            const code = document.getElementById('newStageCode')?.value.trim().toUpperCase();
+            const order = parseInt(document.getElementById('newStageOrder')?.value || '15', 10);
+
+            if (!name) {
+                FreedomUI.alert('حقل مطلوب', 'يرجى إدخال اسم المرحلة المخصصة', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('addStageBtn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري الإضافة...'; }
+
+            try {
+                const res = await fetch('/api/system/stages', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ stage_name: name, stage_code: code || null, order_index: order, stage_category: 'custom' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast(`تمت إضافة مرحلة [${name}] بنجاح إلى مسار الإنتاج`, 'success');
+                    document.getElementById('newStageName').value = '';
+                    document.getElementById('newStageCode').value = '';
+                    await loadStagesConfig();
+                } else {
+                    FreedomUI.alert('فشل الإضافة', data.message || 'تعذر إضافة المرحلة المخصصة', 'error');
+                }
+            } catch (e) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل إرسال الطلب إلى الخادم', 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus ml-1"></i> إضافة للمسار'; }
+            }
+        }
+
+        async function deleteCustomStage(id, name) {
+            const confirmed = await FreedomUI.confirm(
+                'حذف المرحلة المخصصة',
+                `هل أنت متأكد من حذف مرحلة [${name}] نهائياً من مسار الإنتاج؟ لا يمكن التراجع عن هذا الإجراء.`
+            );
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/system/stages/${id}`, { method: 'DELETE', headers: authHeaders() });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast(`تم حذف مرحلة [${name}] بنجاح`, 'success');
+                    await loadStagesConfig();
+                } else {
+                    FreedomUI.alert('فشل الحذف', data.message || 'تعذر حذف المرحلة', 'error');
+                }
+            } catch (e) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+            }
+        }
+
+    </script>
+</body>
+</html>

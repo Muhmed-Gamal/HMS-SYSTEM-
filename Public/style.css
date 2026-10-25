@@ -1,0 +1,817 @@
+/* ==========================================================================
+   HMS GROUP BARCODE SYSTEM - MODERN SLATE & STEEL THEME (v7.0)
+   Sophisticated hybrid: Deep Charcoal / Slate base, Crisp White Cards,
+   Electric Cyan & Indigo Accents, IBM Plex Arabic + Space Grotesk typography
+   ========================================================================== */
+
+:root {
+    /* Background Canvas - Elegant Deep Charcoal with Blue Undertone */
+    --bg-page: #0b0f19;
+    --bg-page-gradient: radial-gradient(circle at 50% 0%, #172554 0%, #0b0f19 75%);
+
+    /* Surface & Containers - High Contrast Crisp Modern Card (Bright Slate Surface) */
+    --bg-surface: #131b2e;
+    --bg-surface-elevated: #1a253e;
+    --bg-surface-hover: #223152;
+    --bg-surface-light: #f8fafc;
+    --bg-input: #0a0e1a;
+
+    /* Borders & Outlines - Polished Glassmorphism & Steel Borders */
+    --border-light: rgba(203, 213, 225, 0.14);
+    --border-medium: rgba(203, 213, 225, 0.28);
+    --border-hover: rgba(56, 189, 248, 0.5);
+    --border-focus: #0284c7;
+
+    /* Brand Primary - Electric Cyan & Precision Blue */
+    --brand-primary: #0284c7;
+    --brand-primary-hover: #0369a1;
+    --brand-accent: #38bdf8;
+    --brand-glow: rgba(56, 189, 248, 0.25);
+    --brand-subtle: rgba(56, 189, 248, 0.1);
+
+    /* Text Hierarchy - Super Clear Contrast */
+    --text-heading: #ffffff;
+    --text-body: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-faint: #64748b;
+
+    /* Semantic Status Badges */
+    --badge-green-bg: rgba(16, 185, 129, 0.15);
+    --badge-green-border: rgba(16, 185, 129, 0.35);
+    --badge-green-text: #34d399;
+
+    --badge-amber-bg: rgba(245, 158, 11, 0.15);
+    --badge-amber-border: rgba(245, 158, 11, 0.35);
+    --badge-amber-text: #fbbf24;
+
+    --badge-red-bg: rgba(239, 68, 68, 0.15);
+    --badge-red-border: rgba(239, 68, 68, 0.35);
+    --badge-red-text: #f87171;
+
+    --badge-blue-bg: rgba(56, 189, 248, 0.15);
+    --badge-blue-border: rgba(56, 189, 248, 0.35);
+    --badge-blue-text: #38bdf8;
+
+    --badge-neutral-bg: rgba(148, 163, 184, 0.12);
+    --badge-neutral-border: rgba(148, 163, 184, 0.25);
+    --badge-neutral-text: #cbd5e1;
+
+    /* Premium Modern Typography */
+    --font-ar: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-en: 'Space Grotesk', -apple-system, sans-serif;
+    --font-code: 'JetBrains Mono', 'Space Grotesk', monospace;
+    --font-report: 'IBM Plex Sans Arabic', sans-serif;
+
+    /* Report Palette */
+    --rpt-navy: #0f172a;
+    --rpt-navy-deep: #020617;
+    --rpt-gold: #0284c7;
+    --rpt-gold-soft: rgba(56, 189, 248, 0.15);
+    --rpt-ink: #0f172a;
+    --rpt-muted: #475569;
+    --rpt-paper: #ffffff;
+    --rpt-line: rgba(148, 163, 184, 0.3);
+
+    /* Shadows & Elevation */
+    --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border-light);
+    --shadow-glow: 0 0 25px -5px rgba(56, 189, 248, 0.2);
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-page);
+    color: var(--text-body);
+    font-family: var(--font-ar);
+    direction: rtl;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-ar);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Background Texture — Elegant Deep Navy Canvas */
+.navy-slate-bg {
+    background-color: var(--bg-page);
+    background-image: 
+        radial-gradient(circle at 50% -20%, rgba(30, 58, 138, 0.35) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(14, 116, 144, 0.12) 0%, transparent 40%),
+        linear-gradient(180deg, #0f172a 0%, #0b0f19 100%);
+    background-attachment: fixed;
+}
+
+/* Modern Monospace Numbers & Tabular Formatting */
+.font-mono, .tabular-nums {
+    font-family: var(--font-code) !important;
+    font-feature-settings: "tnum" 1, "zero" 1;
+    letter-spacing: 0.02em;
+}
+
+/* App Header - Sleek Glassmorphic Bar */
+.app-header {
+    background: rgba(15, 23, 42, 0.90);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border-light);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    position: relative;
+}
+.app-header::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, #0284c7 0%, #38bdf8 50%, #6366f1 100%);
+}
+
+/* Unified Navigation Tabs Container - Scrollbar-free horizontal strip */
+#navTabsContainer {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+#navTabsContainer::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.brand-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    flex-shrink: 0;
+}
+
+/* Cards & Surfaces - Refined Dark Container */
+.slate-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slate-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-glow), var(--shadow-card);
+}
+
+/* Metric Display Tile (High-Contrast Counter) */
+.metric-tile {
+    background: linear-gradient(135deg, #131c31 0%, #0d1527 100%);
+    border: 1px solid var(--border-light);
+    border-right: 3px solid #38bdf8;
+    border-radius: 14px;
+    padding: 18px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+}
+
+.metric-tile:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(56, 189, 248, 0.15);
+}
+
+.metric-tile .metric-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.metric-tile .metric-val {
+    font-family: var(--font-code);
+    font-size: 26px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-top: 6px;
+}
+
+/* Inputs & Form Controls */
+.slate-input {
+    background: var(--bg-input);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    color: #ffffff;
+    font-family: var(--font-ar);
+    font-size: 13.5px;
+    padding: 11px 14px;
+    outline: none;
+    transition: all 0.15s ease;
+    width: 100%;
+}
+
+.slate-input:focus {
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 3px var(--brand-glow);
+    background: #0f1526;
+}
+
+.slate-input::placeholder {
+    color: var(--text-faint);
+}
+
+/* Interactive Buttons */
+.btn-slate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 16px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: var(--font-ar);
+    line-height: 1.3;
+    user-select: none;
+    border: 1px solid transparent;
+}
+
+.btn-slate:active {
+    transform: scale(0.98);
+}
+
+.btn-slate-primary {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    font-weight: 600;
+}
+.btn-slate-primary:hover {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.45);
+    color: #ffffff;
+}
+
+.btn-slate-secondary {
+    background: #172138;
+    color: #f1f5f9;
+    border: 1px solid var(--border-light);
+}
+.btn-slate-secondary:hover {
+    background: #1e2c4a;
+    border-color: var(--border-hover);
+    color: #ffffff;
+}
+
+.btn-slate-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.btn-slate-danger:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.btn-slate-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.btn-slate-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+/* Status Badges */
+.badge-clean {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3.5px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.badge-clean-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.badge-green {
+    background: var(--badge-green-bg);
+    border: 1px solid var(--badge-green-border);
+    color: var(--badge-green-text);
+}
+.badge-green .badge-clean-dot { background: #10b981; }
+
+.badge-amber {
+    background: var(--badge-amber-bg);
+    border: 1px solid var(--badge-amber-border);
+    color: var(--badge-amber-text);
+}
+.badge-amber .badge-clean-dot { background: #fbbf24; }
+
+.badge-red {
+    background: var(--badge-red-bg);
+    border: 1px solid var(--badge-red-border);
+    color: var(--badge-red-text);
+}
+.badge-red .badge-clean-dot { background: #ef4444; }
+
+.badge-blue {
+    background: var(--badge-blue-bg);
+    border: 1px solid var(--badge-blue-border);
+    color: var(--badge-blue-text);
+}
+.badge-blue .badge-clean-dot { background: #38bdf8; }
+
+.badge-neutral {
+    background: var(--badge-neutral-bg);
+    border: 1px solid var(--badge-neutral-border);
+    color: var(--badge-neutral-text);
+}
+
+/* Modern Slate Table */
+.slate-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    text-align: right;
+}
+
+.slate-table th {
+    background: #0d1527;
+    color: #94a3b8;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 12px 16px;
+    border-bottom: 2px solid rgba(56, 189, 248, 0.35);
+    letter-spacing: 0.02em;
+}
+
+.slate-table td {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-body);
+    background: var(--bg-surface);
+    transition: background 0.12s ease;
+}
+
+.slate-table tbody tr:hover td {
+    background: #19233c;
+}
+
+/* Animations for Scanners */
+@keyframes flashGreen {
+    0% { background-color: rgba(16, 185, 129, 0.3); border-color: #10b981; }
+    100% { background-color: var(--bg-input); border-color: var(--border-light); }
+}
+
+@keyframes shakeRed {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+
+.scan-flash-success {
+    animation: flashGreen 0.45s ease-out;
+}
+
+.scan-shake-error {
+    animation: shakeRed 0.35s ease-in-out;
+    border-color: #ef4444 !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-page); }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+
+/* Modals */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 15, 25, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 80;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.modal-overlay.active { display: flex; }
+.modal-content { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Print Signatures and Print Formats */
+.print-signatures, .fge-signs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 25px;
+    page-break-inside: avoid;
+}
+
+.print-sign-box, .fge-sign {
+    border: 1px dashed rgba(148, 163, 184, 0.4);
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+    height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: rgba(15, 23, 42, 0.5);
+}
+
+@media print {
+    *, *::before, *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        filter: none !important;
+        backdrop-filter: none !important;
+    }
+    @page {
+        size: A4 portrait;
+        margin: 8mm 8mm 10mm 8mm;
+    }
+    html, body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-family: 'IBM Plex Sans Arabic', 'Cairo', Arial, sans-serif !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .no-print, header, .app-header { display: none !important; }
+    .print-only { display: block !important; }
+    
+    .modal-overlay {
+        position: static !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        display: block !important;
+        padding: 0 !important;
+    }
+    .modal-content {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+    }
+    .slate-table, .fge-report-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 11px !important;
+    }
+    .slate-table th, .fge-report-table th {
+        background: #0f172a !important;
+        color: #ffffff !important;
+        border: 1px solid #0f172a !important;
+        padding: 6px 8px !important;
+        font-weight: 700 !important;
+    }
+    .slate-table td, .fge-report-table td {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 8px !important;
+    }
+    .slate-table tbody tr:nth-child(even) td,
+    .fge-report-table tbody tr:nth-child(even) td {
+        background: #f8fafc !important;
+    }
+    .print-sign-box, .fge-sign {
+        border: 1.5px dashed #475569 !important;
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        height: 90px !important;
+    }
+    .badge-clean, .badge {
+        border: 1px solid #94a3b8 !important;
+        color: #0f172a !important;
+        background: #f1f5f9 !important;
+    }
+}
+
+/* ==========================================================================
+   FGE REPORT CARD SYSTEM - Order Details Modal
+   ========================================================================== */
+
+/* الكارت الرئيسي */
+.fge-report {
+    background: #0d1527;
+    border: 1px solid rgba(196, 163, 90, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+    direction: rtl;
+    font-family: 'Cairo', 'Tajawal', Arial, sans-serif;
+}
+
+/* الشريط الذهبي في الأعلى */
+.fge-report-goldbar {
+    height: 4px;
+    background: linear-gradient(90deg, #c4a35a, #e0c47a, #c4a35a);
+}
+
+/* رأس الكارت */
+.fge-report-head {
+    background: linear-gradient(135deg, #0a1120 0%, #102038 100%);
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(196, 163, 90, 0.2);
+}
+
+.fge-report-head-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.fge-report-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fge-report-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #c4a35a, #e0c47a);
+    color: #0a0f1e;
+    font-weight: 900;
+    font-size: 12px;
+    font-family: monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.fge-report-company {
+    font-size: 11px;
+    font-weight: 800;
+    color: #e0c47a;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+}
+
+.fge-report-company-ar {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 1px;
+}
+
+.fge-report-title-block {
+    text-align: center;
+    flex: 1;
+}
+
+.fge-report-doctype {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #c4a35a;
+    font-family: monospace;
+    margin-bottom: 2px;
+}
+
+.fge-report-title-block h2 {
+    font-size: 15px;
+    font-weight: 900;
+    color: #ffffff;
+    margin: 0 0 2px 0;
+}
+
+.fge-report-subtitle {
+    font-size: 11px;
+    color: #94a3b8;
+    margin: 0;
+    font-family: monospace;
+}
+
+.fge-report-ref {
+    text-align: center;
+}
+
+.fge-report-ref label {
+    display: block;
+    font-size: 9px;
+    color: #64748b;
+    font-family: monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+}
+
+.fge-report-ref strong {
+    font-size: 11px;
+    color: #e0c47a;
+    font-family: monospace;
+}
+
+/* جسم الكارت */
+.fge-report-body {
+    padding: 20px;
+    background: #0d1527;
+}
+
+/* شبكة حقول المعلومات */
+.fge-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    padding: 14px 16px;
+    background: rgba(10, 17, 32, 0.6);
+    border: 1px solid rgba(196, 163, 90, 0.18);
+    border-radius: 10px;
+    margin-bottom: 4px;
+}
+
+/* حقل معلومة واحدة */
+.fge-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 12px;
+    background: rgba(196, 163, 90, 0.04);
+    border: 1px solid rgba(196, 163, 90, 0.12);
+    border-radius: 8px;
+    transition: border-color 0.2s;
+}
+
+.fge-field:hover {
+    border-color: rgba(196, 163, 90, 0.28);
+}
+
+.fge-field label {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    line-height: 1.2;
+}
+
+.fge-field strong {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e2e8f0;
+    line-height: 1.4;
+}
+
+/* عنوان قسم */
+.fge-report-section-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: #c4a35a;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(196, 163, 90, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fge-report-section-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 14px;
+    background: currentColor;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* جدول التقرير */
+.fge-report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.fge-report-table thead th {
+    padding: 9px 10px;
+    background: #0a1120;
+    color: #94a3b8;
+    font-weight: 700;
+    font-size: 11px;
+    text-align: right;
+    border-bottom: 1px solid rgba(196, 163, 90, 0.25);
+    white-space: nowrap;
+}
+
+.fge-report-table tbody td {
+    padding: 8px 10px;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+    vertical-align: middle;
+    line-height: 1.4;
+}
+
+.fge-report-table tbody tr:hover td {
+    background: rgba(196, 163, 90, 0.04);
+}
+
+.fge-report-table tbody tr:nth-child(even) td {
+    background: rgba(10, 17, 32, 0.4);
+}
+
+/* تذييل الكارت */
+.fge-report-foot {
+    padding: 14px 20px;
+    background: #0a1120;
+    border-top: 1px solid rgba(196, 163, 90, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* ===== طباعة الكارت ===== */
+@media print {
+    .fge-report-head {
+        background: #1e293b !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .fge-report-goldbar {
+        background: #c4a35a !important;
+        -webkit-print-color-adjust: exact !important;
+    }
+    .fge-field {
+        border: 1px solid #cbd5e1 !important;
+        background: #f8fafc !important;
+    }
+    .fge-field label { color: #475569 !important; }
+    .fge-field strong { color: #0f172a !important; }
+    .fge-report-section-title { color: #0f172a !important; border-bottom-color: #cbd5e1 !important; }
+    .fge-report-table thead th { background: #f1f5f9 !important; color: #334155 !important; }
+    .fge-report-table tbody td { color: #0f172a !important; border-bottom-color: #e2e8f0 !important; }
+    .fge-report-table tbody tr:nth-child(even) td { background: #f8fafc !important; }
+}
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE ENHANCEMENTS
+   ========================================================================== */
+html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+@media screen and (max-width: 768px) {
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+    .modal-content {
+        width: 95% !important;
+        max-width: 95vw !important;
+        max-height: 90vh !important;
+        margin: auto !important;
+        padding: 14px !important;
+    }
+}

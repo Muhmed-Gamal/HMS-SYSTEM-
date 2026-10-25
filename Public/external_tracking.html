@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متابعة أوامر التشغيل الخارجي | HMS Group</title>
+    <script src="js/tailwind.min.js"></script>
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        @media print {
+            *, *::before, *::after {
+                box-shadow: none !important;
+                text-shadow: none !important;
+                filter: none !important;
+                backdrop-filter: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            @page { size: A4 portrait; margin: 10mm; }
+            html, body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+            }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .modal-overlay {
+                position: static !important;
+                background: transparent !important;
+                padding: 0 !important;
+            }
+            .modal-overlay.active .print-section {
+                position: static !important;
+                width: 100% !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="navy-slate-bg min-h-screen flex flex-col">
+
+    <!-- Header الموحد الاحترافي العالمي -->
+    <header class="app-header px-3 sm:px-6 py-2 sticky top-0 z-40 no-print border-b border-slate-800/80 bg-[#080d1a]/95 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
+            
+            <!-- 1. المنطقة اليمنى (الشريط العلوي في الموبايل / أقصى اليمين في الكمبيوتر) -->
+            <div class="flex items-center justify-between md:justify-start gap-2.5 sm:gap-3 flex-shrink-0">
+                <a href="/orders" class="flex items-center gap-2 group" title="الانتقال إلى لوحة متابعة الأوردرات">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white text-sm shadow-md shadow-blue-500/20 border border-sky-400/30 group-hover:scale-105 transition-transform">
+                        <i class="fas fa-barcode"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="flex items-center gap-1 leading-none">
+                            <span class="text-sm font-black tracking-wider text-white group-hover:text-sky-300 transition-colors">HMS</span>
+                            <span class="text-[9px] font-bold text-sky-400 bg-sky-500/10 px-1 py-0.5 rounded border border-sky-500/20">SYSTEM</span>
+                        </div>
+                        <span class="text-[9.5px] text-slate-400 font-mono mt-0.5 hidden sm:block">HMS Hub</span>
+                    </div>
+                </a>
+
+                <!-- كبسولة المستخدم وخروج في شاشات الموبايل فقط -->
+                <div class="flex items-center gap-1.5 md:hidden">
+                    <div class="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#0f172a] border border-slate-700/60 shadow-sm text-xs">
+                        <span id="headerUserRoleBadgeMobile" class="badge-clean text-[10px] font-bold">مستخدم</span>
+                        <span id="headerUserNameMobile" class="text-[11px] font-mono font-bold text-white px-0.5 truncate max-w-[85px]">--</span>
+                    </div>
+                    <button onclick="logoutSystem()" class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/25 flex items-center justify-center text-xs transition shadow-sm" title="تسجيل الخروج">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+
+                <div class="h-5 w-px bg-slate-800 hidden md:block"></div>
+
+                <!-- زر الإجراء المميز في شاشات الكمبيوتر والتابلت -->
+                <a href="/create-order" id="navCreateOrderBtn" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 hover:text-sky-300 border border-sky-500/25 hover:border-sky-500/40 transition-all whitespace-nowrap shadow-sm" title="فتح أمر تشغيل جديد وتحديد مراحل خط الإنتاج المطلوبة">
+                    <i class="fas fa-plus-circle text-xs"></i>
+                    <span>أوردر جديد</span>
+                </a>
+            </div>
+
+            <!-- 2. شريط التبويبات الموحد الانسيابي (أفقي متزامن يدعم السحب باللمس) -->
+            <nav id="navTabsContainer" class="flex items-center bg-[#050914]/85 p-1 rounded-xl border border-slate-800/80 shadow-inner overflow-x-auto no-scrollbar gap-1 max-w-full">
+                <!-- زر فتح أوردر جديد لشاشات الموبايل في بداية شريط التمرير -->
+                <a href="/create-order" id="navCreateOrderMobileBtn" class="flex md:hidden items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500/15 text-sky-400 border border-sky-500/30 whitespace-nowrap flex-shrink-0">
+                    <i class="fas fa-plus-circle text-xs"></i>
+                    <span>+ أوردر جديد</span>
+                </a>
+
+                <!-- 1. الأوردرات -->
+                <a href="/orders" id="navOrdersBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all font-medium whitespace-nowrap flex-shrink-0" title="متابعة أوامر التشغيل وحركة القطع والمراحل">
+                    <i class="fas fa-layer-group text-xs"></i>
+                    <span>الأوردرات</span>
+                </a>
+
+                <!-- 2. التشغيل الخارجي (نشط) -->
+                <a href="/external_tracking.html" id="navExternalBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-cyan-600 text-white font-bold shadow-sm shadow-cyan-500/25 border border-cyan-400/40 whitespace-nowrap flex-shrink-0" title="متابعة أوامر التشغيل الخارجي والمسح المفتوح">
+                    <i class="fas fa-truck-loading text-xs"></i>
+                    <span>التشغيل الخارجي</span>
+                </a>
+
+                <!-- 3. السكانر -->
+                <a href="/" id="navScannerBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all font-medium whitespace-nowrap flex-shrink-0" title="محطة مسح وقراءة الباركود للإنتاج">
+                    <i class="fas fa-barcode text-xs"></i>
+                    <span>السكانر</span>
+                </a>
+
+                <!-- 4. المستخدمين -->
+                <a href="/admin" id="navAdminBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all font-medium whitespace-nowrap flex-shrink-0" title="إدارة المستخدمين والصلاحيات وقواعد البيانات">
+                    <i class="fas fa-users-cog text-xs"></i>
+                    <span>المستخدمين</span>
+                </a>
+
+                <!-- 5. البرزنتيشن في الموبايل -->
+                <a href="/presentation.html" id="navPresMobileBtn" target="_blank" rel="noreferrer" class="flex md:hidden items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 whitespace-nowrap flex-shrink-0 font-medium" title="الملف التعريفي والبرزنتيشن الشامل للنظام">
+                    <i class="fas fa-file-powerpoint text-xs"></i>
+                    <span>البرزنتيشن</span>
+                </a>
+            </nav>
+
+            <!-- 3. كبسولة المستخدم والساعة وزر الخروج لشاشات الديسك توب والتابلت الكبيرة -->
+            <div class="hidden md:flex items-center gap-2 flex-shrink-0">
+                <!-- البرزنتيشن -->
+                <a href="/presentation.html" id="navPresBtn" target="_blank" rel="noreferrer" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-all font-medium whitespace-nowrap" title="الملف التعريفي والبرزنتيشن الشامل للنظام">
+                    <i class="fas fa-file-powerpoint text-xs"></i>
+                    <span class="hidden xl:inline">البرزنتيشن</span>
+                </a>
+
+                <div class="h-5 w-px bg-slate-800 hidden lg:block"></div>
+
+                <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070d19]/80 border border-slate-800/80 text-[11px] font-mono text-slate-300 shadow-inner" title="توقيت النظام المركزي المتزامن">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="headerLiveClock">--:--:--</span>
+                </div>
+
+                <div id="headerUserCapsule" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0f172a] border border-slate-700/60 shadow-sm">
+                    <span id="headerUserRoleBadge" class="badge-clean text-[10px] font-bold">مستخدم</span>
+                    <span id="headerUserName" class="text-xs font-mono font-bold text-white px-1">--</span>
+                </div>
+
+                <button onclick="logoutSystem()" class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/25 flex items-center justify-center text-xs transition shadow-sm" title="تسجيل الخروج">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+        </div>
+    </header>
+
+    <main class="flex-1 p-3 sm:p-5 max-w-7xl w-full mx-auto space-y-4 no-print">
+
+        <!-- بطاقات الإحصائيات الحية الفاخرة -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div class="metric-tile relative overflow-hidden bg-[#0d1629] border border-cyan-500/25 hover:border-cyan-500/50 p-4 rounded-xl shadow-lg shadow-cyan-950/20 transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-300">إجمالي أوامر التشغيل الخارجي</span>
+                    <span class="w-8 h-8 rounded-lg bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 flex items-center justify-center text-xs shadow-inner">
+                        <i class="fas fa-truck-loading"></i>
+                    </span>
+                </div>
+                <div id="stat-total-orders" class="text-2xl sm:text-3xl font-black font-mono text-white tracking-tight mb-1">-</div>
+                <div class="text-[11px] font-mono text-slate-400">سجل التشغيل المنفصل</div>
+            </div>
+
+            <div class="metric-tile relative overflow-hidden bg-[#0d1629] border border-emerald-500/25 hover:border-emerald-500/50 p-4 rounded-xl shadow-lg shadow-emerald-950/20 transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-emerald-300">إجمالي القطع الممسوحة</span>
+                    <span class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center justify-center text-xs shadow-inner">
+                        <i class="fas fa-barcode"></i>
+                    </span>
+                </div>
+                <div id="stat-total-scanned" class="text-2xl sm:text-3xl font-black font-mono text-emerald-400 tracking-tight mb-1">-</div>
+                <div class="text-[11px] font-mono text-slate-400">قطعة تم مسحها بنجاح</div>
+            </div>
+
+            <div class="metric-tile relative overflow-hidden bg-[#0d1629] border border-amber-500/25 hover:border-amber-500/50 p-4 rounded-xl shadow-lg shadow-amber-950/20 transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-amber-300">أوامر قيد التشغيل (نشطة)</span>
+                    <span class="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/25 flex items-center justify-center text-xs shadow-inner">
+                        <i class="fas fa-spinner fa-spin-pulse"></i>
+                    </span>
+                </div>
+                <div id="stat-active-orders" class="text-2xl sm:text-3xl font-black font-mono text-amber-400 tracking-tight mb-1">-</div>
+                <div class="text-[11px] font-mono text-slate-400">تحت مسح واستلام السكانر</div>
+            </div>
+
+            <div class="metric-tile relative overflow-hidden bg-[#0d1629] border border-blue-500/25 hover:border-blue-500/50 p-4 rounded-xl shadow-lg shadow-blue-950/20 transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-blue-300">أوامر مغلقة ومكتملة</span>
+                    <span class="w-8 h-8 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center justify-center text-xs shadow-inner">
+                        <i class="fas fa-check-double"></i>
+                    </span>
+                </div>
+                <div id="stat-closed-orders" class="text-2xl sm:text-3xl font-black font-mono text-blue-400 tracking-tight mb-1">-</div>
+                <div class="text-[11px] font-mono text-slate-400">تم إغلاقها واعتمادها</div>
+            </div>
+        </div>
+
+        <!-- شريط العمليات والبحث والفلترة -->
+        <div class="slate-card p-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+                <div class="flex flex-1 items-center gap-2 w-full md:w-auto">
+                    <div class="relative flex-1 max-w-md">
+                        <input type="text" id="searchInput" oninput="filterOrders()" 
+                            placeholder="بحث برقم أمر التشغيل، الوصف، أو المنشئ..." 
+                            class="slate-input pr-9 text-xs">
+                        <i class="fas fa-search absolute right-3 top-3 text-slate-400 text-xs"></i>
+                    </div>
+                    <select id="statusFilter" onchange="filterOrders()" class="slate-input text-xs w-36 cursor-pointer">
+                        <option value="all">كل الحالات</option>
+                        <option value="active">قيد التشغيل فقط</option>
+                        <option value="closed">مغلق ومكتمل</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
+                    <button onclick="loadExternalOrders()" class="btn-slate btn-slate-secondary text-xs py-2 px-3 whitespace-nowrap flex items-center gap-1.5">
+                        <i class="fas fa-sync-alt text-xs"></i><span>تحديث</span>
+                    </button>
+                    <button id="manageOperatorsBtn" onclick="openManageOperatorsModal()" class="hidden btn-slate btn-slate-secondary text-xs py-2 px-3.5 whitespace-nowrap flex items-center gap-1.5" style="color:#22d3ee;border-color:rgba(6,182,212,0.4);">
+                        <i class="fas fa-user-plus text-xs"></i><span>إدارة مشغلي التشغيل الخارجي</span>
+                    </button>
+                    <button onclick="printComprehensiveExternalReport()" class="btn-slate btn-slate-secondary text-xs py-2 px-3.5 whitespace-nowrap flex items-center gap-1.5" style="color:#fbbf24;border-color:rgba(251,191,36,0.3);" title="طباعة تقرير شامل رسمي A4 لجميع أوامر التشغيل الخارجي">
+                        <i class="fas fa-print text-xs"></i><span>التقرير الشامل (A4)</span>
+                    </button>
+                    <button onclick="openNewExternalOrderModal()" class="btn-slate btn-slate-primary text-xs py-2 px-3.5 whitespace-nowrap flex items-center gap-1.5 font-bold" style="background:linear-gradient(135deg,#0e7490,#0891b2);">
+                        <i class="fas fa-plus text-xs"></i><span>فتح أمر خارجي جديد</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- جدول أوامر التشغيل الخارجي -->
+        <div class="slate-card overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b border-slate-700/60">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-truck-loading text-cyan-400 text-xs"></i>
+                    <h3 class="text-xs sm:text-sm font-bold text-white">سجل أوامر التشغيل الخارجي المنفصلة</h3>
+                </div>
+                <span class="text-[11px] text-cyan-300 font-mono bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">SEPARATE DATABASE</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="slate-table min-w-[800px]">
+                    <thead>
+                        <tr>
+                            <th class="w-12 text-center">#</th>
+                            <th>رقم أمر التشغيل الخارجي</th>
+                            <th>العميل / الجهة</th>
+                            <th>الوصف / ملاحظات</th>
+                            <th class="text-center">إجمالي الممسوح</th>
+                            <th class="text-center">الكمية المستهدفة</th>
+                            <th>المشغلون</th>
+                            <th>تاريخ الفتح</th>
+                            <th>تاريخ الإغلاق</th>
+                            <th class="text-center">الحالة</th>
+                            <th class="text-center w-40">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="externalOrdersTableBody">
+                        <tr><td colspan="11" class="text-center py-12 text-slate-500 text-xs">
+                            <i class="fas fa-circle-notch fa-spin text-xl mb-2 block text-cyan-400"></i>
+                            جاري تحميل سجل أوامر التشغيل الخارجي...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal إنشاء أمر تشغيل خارجي جديد -->
+    <div id="newExternalOrderModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="slate-card p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700/60">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-white">فتح أمر تشغيل خارجي جديد</h3>
+                </div>
+                <button onclick="closeNewExternalOrderModal()" class="text-slate-400 hover:text-white text-xs"><i class="fas fa-times"></i></button>
+            </div>
+
+            <form onsubmit="handleCreateExternalOrder(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">رقم أمر التشغيل الخارجي *</label>
+                    <input type="text" id="newOrderNumberInput" required placeholder="مثال: EXT-2026-001" class="slate-input font-mono text-xs">
+                    <p class="text-[10.5px] text-slate-400 mt-1">يجب أن يكون الرقم فريداً. سيتم فتح عداد مسح له فوراً.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">اسم العميل / جهة التوريد الخارجية</label>
+                    <input type="text" id="newOrderCustomerInput" placeholder="مثال: مصنع النور / شركة الهدى" class="slate-input text-xs">
+                    <p class="text-[10.5px] text-slate-400 mt-1">اسم العميل أو المصنع الذي استلمت منه هذا الأوردر.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">الكمية الكلية المستلمة (الهدف للتتميم)</label>
+                    <input type="number" id="newOrderTargetQtyInput" min="0" placeholder="مثال: 500 (اتركه 0 إذا كان مفتوحاً)" class="slate-input font-mono text-xs">
+                    <p class="text-[10.5px] text-slate-400 mt-1">إذا حُددت كمية، سيقوم النظام باحتساب المتبقي وتنبيه المشغل عند اكتمال التتميم.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">الوصف / ملاحظات</label>
+                    <input type="text" id="newOrderDescInput" placeholder="مثال: تشغيل قمصان رجالي كود 402" class="slate-input text-xs">
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="submit" id="saveNewOrderBtn" class="btn-slate btn-slate-primary flex-1 py-2 text-xs font-bold" style="background:linear-gradient(135deg,#9333ea,#7e22ce);">
+                        <i class="fas fa-check text-xs"></i> تأكيد الفتح
+                    </button>
+                    <button type="button" onclick="closeNewExternalOrderModal()" class="btn-slate btn-slate-secondary py-2 text-xs font-semibold px-4">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal تفاصيل الأوردر وحركات الباركود والطباعة الفاخر -->
+    <div id="orderDetailsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-3 sm:p-5">
+        <div class="slate-card p-5 sm:p-6 max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl space-y-4 print-section bg-[#0a1120] border border-slate-700/80">
+            
+            <div class="flex items-center justify-between pb-3.5 border-b border-slate-700/60 no-print">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center text-base shadow-inner">
+                        <i class="fas fa-truck-loading"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span id="modalOrderNumber" class="font-mono text-cyan-400 font-bold text-base"></span>
+                            <span class="badge-clean text-xs font-bold py-0.5 px-2 bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">أمر تشغيل خارجي</span>
+                            <span id="modalStatusBadge" class="badge-clean text-xs font-bold py-0.5 px-2">نشط</span>
+                        </div>
+                        <p class="text-xs text-slate-300 font-mono mt-0.5 flex items-center gap-2">
+                            <span id="modalCustomerName" class="text-slate-100 font-bold">العميل</span>
+                            <span>·</span>
+                            <span id="modalOrderDesc" class="text-slate-400">تشغيل خارجي مفتوح</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="printOrderReport()" class="btn-slate btn-slate-primary text-xs py-1.5 px-3">
+                        <i class="fas fa-print text-xs"></i> طباعة تقرير رسمي (A4)
+                    </button>
+                    <button onclick="exportToCSV()" class="btn-slate btn-slate-secondary text-xs py-1.5 px-3">
+                        <i class="fas fa-file-excel text-xs"></i> Excel
+                    </button>
+                    <button onclick="closeDetailsModal()" class="btn-slate btn-slate-secondary w-8 h-8 p-0 flex items-center justify-center text-slate-400 hover:text-white rounded-lg">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- بطاقات مؤشرات الأداء للأمر في المودال (4 Executive KPI Cards) -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <div class="metric-tile relative overflow-hidden bg-[#0d1629] border border-slate-700/60 p-3 rounded-xl">
+                    <span class="text-slate-400 text-[10.5px] block mb-1">الكمية المستهدفة</span>
+                    <div id="modalTargetQty" class="text-xl font-bold font-mono text-cyan-300">0</div>
+                    <span class="text-[10px] text-slate-400">المطلوب استلامه</span>
+                </div>
+                <div class="metric-tile relative overflow-hidden bg-[#0d1629] border border-slate-700/60 p-3 rounded-xl">
+                    <span class="text-slate-400 text-[10.5px] block mb-1">إجمالي الممسوح</span>
+                    <div id="modalTotalScanned" class="text-xl font-bold font-mono text-emerald-400">0</div>
+                    <span class="text-[10px] text-slate-400">القطع الممسوحة فعلياً</span>
+                </div>
+                <div class="metric-tile relative overflow-hidden bg-[#0d1629] border border-slate-700/60 p-3 rounded-xl">
+                    <span class="text-slate-400 text-[10.5px] block mb-1">المتبقي للإنجاز</span>
+                    <div id="modalRemainingQty" class="text-xl font-bold font-mono text-amber-400">-</div>
+                    <span class="text-[10px] text-slate-400">قطعة متبقية</span>
+                </div>
+                <div class="metric-tile relative overflow-hidden bg-[#0d1629] border border-slate-700/60 p-3 rounded-xl">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-slate-400 text-[10.5px]">نسبة الإنجاز</span>
+                        <span id="modalCompletionPct" class="font-mono font-bold text-xs text-emerald-400">0%</span>
+                    </div>
+                    <div class="w-full bg-[#070d19] rounded-full h-2 overflow-hidden border border-slate-700/60 my-1">
+                        <div id="modalProgressBar" class="h-full rounded-full transition-all duration-300 bg-emerald-500" style="width:0%;"></div>
+                    </div>
+                    <span class="text-[10px] text-slate-400">معدل الإنجاز العام</span>
+                </div>
+            </div>
+
+            <!-- بطاقة البيانات الإدارية المصغرة -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 bg-[#070d19] p-3 rounded-xl border border-slate-700/60 text-xs">
+                <div>
+                    <span class="text-slate-400 block text-[10.5px]">أنشئ بواسطة</span>
+                    <span id="modalCreatedBy" class="text-slate-200 font-semibold">-</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10.5px]">تاريخ الفتح</span>
+                    <span id="modalCreatedAt" class="text-slate-300 font-mono text-[11px]">-</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10.5px]">تاريخ الإغلاق</span>
+                    <span id="modalClosedAt" class="text-slate-300 font-mono text-[11px]">-</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10.5px]">أُغلق بواسطة</span>
+                    <span id="modalClosedBy" class="text-slate-300 text-[11px]">-</span>
+                </div>
+            </div>
+
+            <!-- بحث داخل أكواد الأوردر -->
+            <div class="flex items-center justify-between gap-2 no-print">
+                <div class="relative flex-1 max-w-sm">
+                    <input type="text" id="barcodeSearchInput" oninput="filterModalBarcodes()" placeholder="بحث في الأكواد الممسوحة..." class="slate-input pr-8 text-xs font-mono">
+                    <i class="fas fa-search absolute right-3 top-3 text-slate-400 text-xs"></i>
+                </div>
+                <span id="modalBarcodesCount" class="text-xs text-slate-400 font-mono">0 حركة مسح</span>
+            </div>
+
+            <!-- جدول الأكواد -->
+            <div class="flex-1 overflow-y-auto max-h-[48vh] border border-slate-700/60 rounded-xl">
+                <table class="slate-table">
+                    <thead class="sticky top-0 bg-[#070d19]">
+                        <tr>
+                            <th class="w-12 text-center">#</th>
+                            <th>الباركود الممسوح</th>
+                            <th>المشغل المسؤول</th>
+                            <th>وقت وتاريخ المسح</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalBarcodesTableBody">
+                        <!-- تُملأ ديناميكياً -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pt-2 flex justify-between items-center text-xs text-slate-400 border-t border-slate-700/60 no-print">
+                <span>نظام HMS Group للتشغيل الخارجي والمسح المفتوح</span>
+                <button onclick="closeDetailsModal()" class="btn-slate btn-slate-secondary text-xs py-1 px-4">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم التقرير المطبوع الرسمي (Print-only) -->
+    <div id="printReportSection" class="hidden print-only p-8 text-black">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px;">
+            <div>
+                <h1 style="font-size:22px;font-weight:900;margin:0;">HMS Group</h1>
+                <p style="font-size:12px;color:#555;margin:2px 0 0 0;">INDUSTRIAL AUDITING & BARCODE ENGINE</p>
+            </div>
+            <div style="text-align:left;">
+                <h2 style="font-size:16px;font-weight:bold;margin:0;">تقرير تشغيل خارجي رسمي</h2>
+                <p style="font-size:11px;color:#555;margin:2px 0 0 0;" id="printDateReport">التاريخ: --</p>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#f3f4f6;padding:12px;border-radius:6px;margin-bottom:18px;font-size:12px;">
+            <div><strong>رقم الأمر:</strong> <span id="printOrderNum"></span></div>
+            <div><strong>الوصف:</strong> <span id="printOrderDesc"></span></div>
+            <div><strong>إجمالي الممسوح:</strong> <span id="printTotalScanned"></span> قطعة</div>
+            <div><strong>الحالة:</strong> <span id="printStatus"></span></div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:24px;">
+            <thead>
+                <tr style="background:#e5e7eb;border-bottom:1.5px solid #000;">
+                    <th style="padding:6px;text-align:center;width:40px;">#</th>
+                    <th style="padding:6px;text-align:right;">الباركود</th>
+                    <th style="padding:6px;text-align:right;">المشغل</th>
+                    <th style="padding:6px;text-align:right;">تاريخ ووقت المسح</th>
+                </tr>
+            </thead>
+            <tbody id="printTableBody"></tbody>
+        </table>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center;margin-top:30px;font-size:12px;">
+            <div>
+                <p style="font-weight:bold;margin-bottom:40px;">مشرف التشغيل الخارجي</p>
+                <div style="border-top:1px dashed #000;width:80%;margin:0 auto;padding-top:4px;">التوقيع</div>
+            </div>
+            <div>
+                <p style="font-weight:bold;margin-bottom:40px;">إدارة مراقبة الجودة</p>
+                <div style="border-top:1px dashed #000;width:80%;margin:0 auto;padding-top:4px;">التوقيع</div>
+            </div>
+            <div>
+                <p style="font-weight:bold;margin-bottom:40px;">المدير العام / الاعتماد</p>
+                <div style="border-top:1px dashed #000;width:80%;margin:0 auto;padding-top:4px;">الختم والتوقيع</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal إدارة مشغلي التشغيل الخارجي (للـ external_admin فقط) -->
+    <div id="manageOperatorsModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="slate-card p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700/60">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs" style="background:rgba(6,182,212,0.15);color:#22d3ee;">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-white">إدارة مشغلي التشغيل الخارجي</h3>
+                </div>
+                <button onclick="closeManageOperatorsModal()" class="text-slate-400 hover:text-white text-xs"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="addOperatorForm" onsubmit="handleCreateOperator(event)" class="space-y-3 border border-slate-700/60 rounded-xl p-4 bg-[#0a1120]">
+                <h4 class="text-xs font-bold text-slate-300 mb-2"><i class="fas fa-plus text-cyan-400 ml-1"></i>إضافة مشغل تشغيل خارجي جديد</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">اسم الدخول (Username) *</label>
+                        <input type="text" id="opUsername" required placeholder="مثال: worker.ext" class="slate-input font-mono text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">كلمة المرور *</label>
+                        <input type="text" id="opPassword" required placeholder="كلمة المرور..." class="slate-input font-mono text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">الاسم الكامل</label>
+                        <input type="text" id="opFullName" placeholder="مثال: أحمد محمد" class="slate-input text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">نوع الصلاحية المقيدة</label>
+                        <select id="opStageAction" class="slate-input text-xs cursor-pointer font-bold" style="color:#c084fc;">
+                            <option value="تشغيل خارجي (دخول)">تشغيل خارجي — دخول</option>
+                            <option value="تشغيل خارجي (خروج)">تشغيل خارجي — خروج</option>
+                            <option value="تشغيل خارجي (عام)">تشغيل خارجي — عام (دخول وخروج)</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" id="addOperatorBtn" class="btn-slate btn-slate-primary text-xs py-2 px-4 font-bold" style="background:linear-gradient(135deg,#0e7490,#155e75);">
+                    <i class="fas fa-plus text-xs"></i> إضافة المشغل
+                </button>
+            </form>
+            <div class="flex-1 overflow-y-auto">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-xs font-bold text-slate-300"><i class="fas fa-users text-cyan-400 ml-1"></i>المشغلون الحاليون</h4>
+                    <button onclick="loadOperatorsList()" class="btn-slate btn-slate-secondary text-xs py-1 px-2"><i class="fas fa-sync-alt text-[10px]"></i> تحديث</button>
+                </div>
+                <div class="overflow-x-auto border border-slate-700/60 rounded-xl">
+                    <table class="slate-table">
+                        <thead>
+                            <tr>
+                                <th class="w-10 text-center">#</th>
+                                <th>اسم الدخول</th>
+                                <th>الاسم الكامل</th>
+                                <th>نوع الصلاحية</th>
+                                <th class="text-center w-20">حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="operatorsTableBody">
+                            <tr><td colspan="5" class="text-center py-6 text-slate-500 text-xs">جاري التحميل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="pt-2 flex justify-end border-t border-slate-700/60">
+                <button onclick="closeManageOperatorsModal()" class="btn-slate btn-slate-secondary text-xs py-1.5 px-4">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/ui.js"></script>
+    <script>
+        let allExternalOrders = [];
+        let currentModalOrder = null;
+        let currentModalScans = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const user = initUnifiedNavbar({ activePage: 'external' });
+            if (!user) return;
+
+            // التحقق من الصلاحية: مسموح لـ external_admin و admin و superadmin و admin_view
+            if (user.role === 'production' || user.role === 'external_operator') {
+                window.location.href = '/';
+                return;
+            }
+
+            loadExternalOrders();
+
+            // إظهار زر إدارة المشغلين للـ external_admin أو الأدمن
+            if (user.role === 'external_admin' || user.role === 'admin' || user.role === 'superadmin') {
+                document.getElementById('manageOperatorsBtn')?.classList.remove('hidden');
+            }
+        });
+
+        async function loadExternalOrders() {
+            try {
+                const res = await fetch('/api/external/orders', { headers: authHeaders() });
+                const data = await res.json();
+                if (data.success) {
+                    allExternalOrders = data.orders || [];
+                    renderOrdersTable(allExternalOrders);
+                    updateStats(allExternalOrders);
+
+                    // استعادة المودال تلقائياً في حال وجود المعرف في الرابط بعد الريفريش
+                    if (window.location.hash && window.location.hash.startsWith('#order=')) {
+                        const hashId = window.location.hash.replace('#order=', '');
+                        if (hashId) {
+                            viewOrderDetails(hashId);
+                        }
+                    }
+                } else {
+                    FreedomUI.toast(data.message || 'فشل جلب أوامر التشغيل الخارجي', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                FreedomUI.toast('فشل الاتصال بالخادم', 'error');
+            }
+        }
+
+        function updateStats(orders) {
+            const totalOrders = orders.length;
+            const totalScanned = orders.reduce((sum, o) => sum + (o.total_scanned || 0), 0);
+            const activeOrders = orders.filter(o => o.status !== 'closed').length;
+            const closedOrders = orders.filter(o => o.status === 'closed').length;
+
+            document.getElementById('stat-total-orders').textContent = totalOrders.toLocaleString('en-US');
+            document.getElementById('stat-total-scanned').textContent = totalScanned.toLocaleString('en-US');
+            document.getElementById('stat-active-orders').textContent = activeOrders.toLocaleString('en-US');
+            document.getElementById('stat-closed-orders').textContent = closedOrders.toLocaleString('en-US');
+        }
+
+        function filterOrders() {
+            const search = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+
+            const filtered = allExternalOrders.filter(o => {
+                const matchesStatus = (status === 'all') || (o.status === status);
+                const matchesSearch = !search ||
+                    (o.order_number && o.order_number.toLowerCase().includes(search)) ||
+                    (o.customer_name && o.customer_name.toLowerCase().includes(search)) ||
+                    (o.description && o.description.toLowerCase().includes(search)) ||
+                    (o.created_by && o.created_by.toLowerCase().includes(search)) ||
+                    (o.scanners_list && o.scanners_list.toLowerCase().includes(search));
+                return matchesStatus && matchesSearch;
+            });
+
+            renderOrdersTable(filtered);
+        }
+
+        function renderOrdersTable(orders) {
+            const tbody = document.getElementById('externalOrdersTableBody');
+            if (!tbody) return;
+
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="11" class="text-center py-10 text-slate-500 text-xs">
+                    <i class="fas fa-truck-loading text-xl mb-1.5 block text-slate-600"></i>
+                    لا توجد أوامر تشغيل خارجي مسجلة
+                </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = orders.map((o, idx) => {
+                const isClosed = o.status === 'closed';
+                const targetQty = Number(o.target_quantity) || 0;
+                const totalScanned = Number(o.total_scanned) || 0;
+                const isCompleted = targetQty > 0 && totalScanned >= targetQty;
+                const statusBadge = isClosed 
+                    ? `<span class="badge-clean badge-green text-[10px]">مكتمل ومغلق</span>`
+                    : `<span class="badge-clean text-[10px] font-bold" style="background:rgba(6,182,212,0.15);color:#22d3ee;border:1px solid rgba(6,182,212,0.3);">قيد التشغيل</span>`;
+
+                const createdDate = o.created_at ? new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn') : '-';
+                const closedDate = o.closed_at ? new Date(o.closed_at).toLocaleDateString('ar-EG-u-nu-latn') + ' ' + new Date(o.closed_at).toLocaleTimeString('ar-EG-u-nu-latn', {hour:'2-digit',minute:'2-digit'}) : '-';
+                const targetDisplay = targetQty > 0
+                    ? `<span class="font-mono font-bold ${isCompleted ? 'text-emerald-400' : 'text-amber-400'}">${targetQty.toLocaleString('en-US')}</span>`
+                    : `<span class="text-slate-500">∞ مفتوح</span>`;
+
+                return `<tr class="hover:bg-white/[0.02] transition-colors border-b border-white/[0.05]">
+                    <td class="p-3 text-slate-500 font-mono text-xs text-center">${idx + 1}</td>
+                    <td class="p-3 font-mono font-bold text-cyan-400 text-xs sm:text-sm tracking-wide">${o.order_number} <span class="text-[9px] text-cyan-500/70 font-normal">[خارجي]</span></td>
+                    <td class="p-3 font-bold text-white text-xs truncate max-w-[130px]">${o.customer_name || '-'}</td>
+                    <td class="p-3 text-slate-300 text-xs truncate max-w-[150px]">${o.description || 'تشغيل خارجي مفتوح'}</td>
+                    <td class="p-3 text-center font-bold text-emerald-400 text-xs sm:text-sm font-mono">${totalScanned.toLocaleString('en-US')}</td>
+                    <td class="p-3 text-center text-xs font-mono">${targetDisplay}</td>
+                    <td class="p-3 text-blue-300 text-xs truncate max-w-[130px]">${o.scanners_list || o.created_by || 'مشغل خارجي'}</td>
+                    <td class="p-3 text-slate-400 text-xs font-mono">${createdDate}</td>
+                    <td class="p-3 text-slate-400 text-xs font-mono">${closedDate}</td>
+                    <td class="p-3 text-center">${statusBadge}</td>
+                    <td class="p-3 text-center">
+                        <div class="flex items-center justify-center gap-1 flex-wrap">
+                            <button onclick="viewOrderDetails(${o.id})" class="btn-slate btn-slate-primary text-[11px] py-1 px-2 flex items-center gap-1" title="عرض التفاصيل">
+                                <i class="fas fa-eye text-[10px]"></i><span>تفاصيل</span>
+                            </button>
+                            <button onclick="printSingleExternalReportById(${o.id})" class="btn-slate btn-slate-secondary text-[11px] py-1 px-2 flex items-center gap-1" style="color:#22d3ee;" title="تقرير A4">
+                                <i class="fas fa-print text-[10px]"></i><span>تقرير</span>
+                            </button>
+                            <button onclick="toggleOrderStatus(${o.id}, '${isClosed ? 'active' : 'closed'}')" class="btn-slate btn-slate-secondary text-[11px] py-1 px-2" title="${isClosed ? 'إعادة فتح' : 'إغلاق'}">
+                                <i class="fas ${isClosed ? 'fa-unlock' : 'fa-lock'} text-[10px]"></i>
+                            </button>
+                            <button onclick="deleteExternalOrder(${o.id}, '${o.order_number}')" class="btn-slate btn-slate-danger text-[11px] py-1 px-2" title="حذف">
+                                <i class="fas fa-trash-alt text-[10px]"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        // ===== Modal إضافة أمر خارجي جديد =====
+        function openNewExternalOrderModal() {
+            document.getElementById('newOrderNumberInput').value = '';
+            document.getElementById('newOrderCustomerInput').value = '';
+            document.getElementById('newOrderTargetQtyInput').value = '';
+            document.getElementById('newOrderDescInput').value = '';
+            document.getElementById('newExternalOrderModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('newOrderNumberInput').focus(), 100);
+        }
+
+        function closeNewExternalOrderModal() {
+            document.getElementById('newExternalOrderModal').classList.add('hidden');
+        }
+
+        async function handleCreateExternalOrder(e) {
+            e.preventDefault();
+            const order_number = document.getElementById('newOrderNumberInput').value.trim();
+            const customer_name = document.getElementById('newOrderCustomerInput').value.trim();
+            const target_quantity = parseInt(document.getElementById('newOrderTargetQtyInput').value, 10) || 0;
+            const description = document.getElementById('newOrderDescInput').value.trim();
+            if (!order_number) return;
+
+            const btn = document.getElementById('saveNewOrderBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري الفتح...';
+
+            try {
+                const res = await fetch('/api/external/orders/open', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ order_number, customer_name, target_quantity, description })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast(`تم فتح أمر التشغيل الخارجي: [${order_number}] بنجاح`, 'success');
+                    closeNewExternalOrderModal();
+                    loadExternalOrders();
+                } else {
+                    FreedomUI.alert('تعذر الفتح', data.message || 'حدث خطأ', 'error');
+                }
+            } catch (err) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل إرسال الطلب للخادم', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check text-xs"></i> تأكيد الفتح';
+            }
+        }
+
+        // ===== تفاصيل الأوردر وحركات الباركود الفاخرة =====
+        async function viewOrderDetails(orderId) {
+            try {
+                const res = await fetch(`/api/external/orders/${orderId}`, { headers: authHeaders() });
+                const data = await res.json();
+                if (!data.success) {
+                    FreedomUI.toast(data.message || 'فشل جلب التفاصيل', 'error');
+                    return;
+                }
+
+                currentModalOrder = data.order;
+                currentModalScans = data.scans || [];
+
+                document.getElementById('modalOrderNumber').textContent = currentModalOrder.order_number;
+                document.getElementById('modalCustomerName').textContent = currentModalOrder.customer_name || 'تشغيل خارجي';
+                document.getElementById('modalOrderDesc').textContent = currentModalOrder.description || 'أمر تشغيل خارجي مفتوح';
+
+                const targetQty = Number(currentModalOrder.target_quantity) || 0;
+                const totalScanned = Number(currentModalOrder.total_scanned) || 0;
+                const remQty = targetQty > 0 ? Math.max(0, targetQty - totalScanned) : 0;
+                const isClosed = currentModalOrder.status === 'closed';
+                const pct = targetQty > 0 ? Math.min(100, Math.round((totalScanned / targetQty) * 100)) : (isClosed ? 100 : 0);
+
+                document.getElementById('modalTargetQty').textContent = targetQty > 0 ? targetQty.toLocaleString('en-US') : '∞ مفتوح';
+                document.getElementById('modalTotalScanned').textContent = totalScanned.toLocaleString('en-US');
+                document.getElementById('modalRemainingQty').textContent = targetQty > 0 ? (remQty === 0 ? 'مكتمل بالكامل ✓' : remQty.toLocaleString('en-US')) : '—';
+                document.getElementById('modalCompletionPct').textContent = `${pct}%`;
+                
+                const progBar = document.getElementById('modalProgressBar');
+                progBar.style.width = `${pct}%`;
+                progBar.className = pct >= 100 ? 'h-full rounded-full transition-all duration-300 bg-emerald-500' : 'h-full rounded-full transition-all duration-300 bg-cyan-500';
+
+                document.getElementById('modalCreatedBy').textContent = currentModalOrder.created_by || 'مشغل خارجي';
+                document.getElementById('modalCreatedAt').textContent = currentModalOrder.created_at ? new Date(currentModalOrder.created_at).toLocaleString('ar-EG-u-nu-latn', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+                document.getElementById('modalClosedAt').textContent = currentModalOrder.closed_at ? new Date(currentModalOrder.closed_at).toLocaleString('ar-EG-u-nu-latn', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : 'قيد التشغيل';
+                document.getElementById('modalClosedBy').textContent = currentModalOrder.closed_by || '-';
+
+                const statusBadge = document.getElementById('modalStatusBadge');
+                statusBadge.textContent = isClosed ? 'مكتمل ومغلق' : 'قيد التشغيل';
+                statusBadge.className = isClosed ? 'badge-clean badge-green text-xs font-bold py-0.5 px-2' : 'badge-clean text-xs font-bold py-0.5 px-2';
+                statusBadge.style.cssText = isClosed ? '' : 'background:rgba(6,182,212,0.18);color:#22d3ee;border:1px solid rgba(6,182,212,0.35);';
+
+                renderModalBarcodes(currentModalScans);
+                document.getElementById('orderDetailsModal').classList.remove('hidden');
+                window.location.hash = '#order=' + orderId;
+
+            } catch (err) {
+                FreedomUI.toast('فشل الاتصال بالخادم', 'error');
+            }
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('orderDetailsModal').classList.add('hidden');
+            if (window.location.hash && window.location.hash.startsWith('#order=')) {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+        }
+
+        function renderModalBarcodes(scans) {
+            const tbody = document.getElementById('modalBarcodesTableBody');
+            document.getElementById('modalBarcodesCount').textContent = `${scans.length.toLocaleString('en-US')} حركة مسح`;
+
+            if (!scans || scans.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-500 text-xs">لا توجد حركات مسح مسجلة بعد</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = scans.map((s, i) => {
+                const dateStr = s.created_at ? new Date(s.created_at).toLocaleString('ar-EG-u-nu-latn', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}) : '-';
+                return `<tr class="hover:bg-white/[0.02] border-b border-white/[0.05]">
+                    <td class="p-2.5 text-center text-slate-500 font-mono text-xs">${i + 1}</td>
+                    <td class="p-2.5 font-mono text-emerald-400 font-bold text-xs sm:text-sm tracking-wide">${s.barcode}</td>
+                    <td class="p-2.5 text-blue-300 text-xs">${s.scanned_by || 'سكانر'}</td>
+                    <td class="p-2.5 text-slate-400 text-xs font-mono">${dateStr}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function filterModalBarcodes() {
+            const q = (document.getElementById('barcodeSearchInput').value || '').trim().toLowerCase();
+            if (!q) {
+                renderModalBarcodes(currentModalScans);
+                return;
+            }
+            const filtered = currentModalScans.filter(s => (s.barcode && s.barcode.toLowerCase().includes(q)) || (s.scanned_by && s.scanned_by.toLowerCase().includes(q)));
+            renderModalBarcodes(filtered);
+        }
+
+        // ===== تغيير الحالة (إغلاق / إعادة فتح) =====
+        async function toggleOrderStatus(orderId, newStatus) {
+            try {
+                const res = await fetch(`/api/external/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast(data.message, 'success');
+                    loadExternalOrders();
+                } else {
+                    FreedomUI.alert('تعذر التعديل', data.message, 'error');
+                }
+            } catch (err) {
+                FreedomUI.alert('خطأ', 'فشل تعديل الحالة', 'error');
+            }
+        }
+
+        // ===== حذف أمر تشغيل خارجي =====
+        async function deleteExternalOrder(orderId, orderNum) {
+            const ok = await FreedomUI.confirm('تأكيد الحذف', `هل أنت متأكد من حذف أمر التشغيل الخارجي [${orderNum}] وجميع حركات المسح المرتبطة به؟`);
+            if (!ok) return;
+
+            try {
+                const res = await fetch(`/api/external/orders/${orderId}`, {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast(data.message, 'success');
+                    loadExternalOrders();
+                } else {
+                    FreedomUI.alert('فشل الحذف', data.message, 'error');
+                }
+            } catch (err) {
+                FreedomUI.alert('خطأ', 'فشل الاتصال بالخادم لحذف الأوردر', 'error');
+            }
+        }
+
+        // ===== تصدير CSV / Excel =====
+        function exportToCSV() {
+            if (!currentModalOrder || !currentModalScans || currentModalScans.length === 0) {
+                FreedomUI.toast('لا توجد بيانات لتصديرها', 'warning');
+                return;
+            }
+
+            let csv = '\uFEFF'; // UTF-8 BOM
+            csv += 'م,الباركود,المشغل,التاريخ والوقت,رقم أمر التشغيل الخارجي\n';
+            currentModalScans.forEach((s, idx) => {
+                const dt = s.created_at ? new Date(s.created_at).toLocaleString('en-US') : '';
+                csv += `"${idx + 1}","${s.barcode}","${s.scanned_by || ''}","${dt}","${currentModalOrder.order_number}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `External-Order-${currentModalOrder.order_number}-Barcodes.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            FreedomUI.toast('تم تصدير ملف الإكسيل بنجاح', 'success');
+        }
+
+        // ===== دالة توليد شريط الإجراءات العلوي للتقارير (طباعة + تحميل PDF) بدون إمضاءات =====
+        function generatePublicReportActionBar(title, tag, fileName, isLandscape) {
+            var cleanFileName = (fileName || 'report').replace(/[^\w\u0600-\u06FF\s-]/g, '_').replace(/\s+/g, '_') + '.pdf';
+            var endScript = '</' + 'script>';
+            return {
+                topBarHtml: `
+                <div class="report-top-bar" style="position:fixed;top:0;left:0;right:0;height:48px;background:#0f172a;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:999999;font-family:'Cairo',Arial,sans-serif;direction:rtl;box-shadow:0 4px 12px rgba(0,0,0,0.25);">
+                    <div style="display:flex;align-items:center;gap:8px;color:#f8fafc;font-size:13px;font-weight:700;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:#38bdf8;display:inline-block;"></span>
+                        <strong style="color:#fff;font-size:13px;">${title}</strong>
+                        <span style="font-size:10px;padding:2px 6px;background:#1e293b;color:#94a3b8;border-radius:4px;border:1px solid #475569;font-family:monospace;">${tag || 'OFFICIAL REPORT'}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button id="pdfDownloadBtn" onclick="if(window.handleDownloadPdf){window.handleDownloadPdf()}else{window.print()}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;background:linear-gradient(135deg, #0284c7, #0369a1);color:#fff;border:1px solid #38bdf8;box-shadow:0 2px 4px rgba(2, 132, 199, 0.3);font-family:'Cairo',Arial,sans-serif;" title="تحميل التقرير كملف PDF وحفظه بالجهاز">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <span>تحميل كملف PDF</span>
+                        </button>
+                        <button onclick="window.print()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;background:#334155;color:#f1f5f9;border:1px solid #475569;font-family:'Cairo',Arial,sans-serif;" title="إرسال التقرير مباشرة إلى الطابعة">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                            <span>طباعة التقرير</span>
+                        </button>
+                        <button onclick="window.close()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;background:transparent;color:#94a3b8;border:1px solid #334155;font-family:'Cairo',Arial,sans-serif;" title="إغلاق هذه النافذة">
+                            <span>✕ إغلاق</span>
+                        </button>
+                    </div>
+                </div>
+                `,
+                topBarCss: `
+                @media screen {
+                    body { padding-top: 54px !important; }
+                }
+                @media print {
+                    .report-top-bar, .no-print { display: none !important; }
+                    body { padding-top: 0 !important; }
+                }
+                `,
+                scriptHtml: `
+                <script src="/js/html2pdf.bundle.min.js">${endScript}
+                <script>
+                    if (!window.html2pdf) {
+                        var s = document.createElement('script');
+                        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                        document.head.appendChild(s);
+                    }
+                    window.handleDownloadPdf = function() {
+                        var btn = document.getElementById('pdfDownloadBtn');
+                        var origHtml = btn ? btn.innerHTML : '';
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.innerHTML = '<span>⏳ جاري توليد PDF...</span>';
+                        }
+                        var element = document.querySelector('.sheet') || document.body;
+                        var opt = {
+                            margin: ${isLandscape ? '[4, 4, 4, 4]' : '[5, 5, 5, 5]'},
+                            filename: '${cleanFileName}',
+                            image: { type: 'jpeg', quality: 0.98 },
+                            html2canvas: { scale: 2, useCORS: true, logging: false },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: '${isLandscape ? 'landscape' : 'portrait'}' }
+                        };
+                        function doSave() {
+                            window.html2pdf().set(opt).from(element).save().then(function() {
+                                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+                            }).catch(function(e) {
+                                console.error('PDF Export Error:', e);
+                                window.print();
+                                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+                            });
+                        }
+                        if (window.html2pdf) {
+                            doSave();
+                        } else {
+                            var checker = setInterval(function() {
+                                if (window.html2pdf) {
+                                    clearInterval(checker);
+                                    doSave();
+                                }
+                            }, 200);
+                            setTimeout(function() {
+                                clearInterval(checker);
+                                if (!window.html2pdf) {
+                                    window.print();
+                                    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+                                }
+                            }, 3000);
+                        }
+                    };
+                    window.onload = function() {
+                        setTimeout(function() { window.print(); }, 400);
+                    };
+                ${endScript}
+                `
+            };
+        }
+
+        // ===== مولد التقرير الفردي الرسمي A4 لأمر التشغيل الخارجي =====
+        function generateOfficialExternalOrderPrintHtml(order, scans, printUser) {
+            const dateStr = new Date().toLocaleString('en-US');
+            const isClosed = order.status === 'closed';
+            const reportRef = `FGE-EXT-${order.order_number}-${Math.floor(1000 + Math.random() * 9000)}`;
+            const actionBar = generatePublicReportActionBar('تقرير تتميم أمر تشغيل خارجي', 'EXTERNAL AUDIT', 'External_Order_' + order.order_number, false);
+            const scanList = scans || [];
+            const totalScanned = Number(order.total_scanned) || scanList.length;
+            const targetQty = Number(order.target_quantity) || 0;
+            const isCompleted = targetQty > 0 && totalScanned >= targetQty;
+            const remainingQty = targetQty > 0 ? Math.max(0, targetQty - totalScanned) : 0;
+            const progressPct = targetQty > 0 ? Math.min(100, Math.round((totalScanned / targetQty) * 100)) : 100;
+            const completionStatus = targetQty > 0
+                ? (isCompleted ? '✅ تم التتميم الكامل على العدد الكلي' : `⏳ لم يتم التتميم بعد (الممسوح: ${totalScanned.toLocaleString('en-US')} من ${targetQty.toLocaleString('en-US')} قطعة)`)
+                : 'أمر تشغيل مفتوح (بدون كمية مستهدفة)';
+
+            const openedAt = order.created_at ? new Date(order.created_at).toLocaleString('en-US') : '-';
+            const closedAt = order.closed_at ? new Date(order.closed_at).toLocaleString('en-US') : (isClosed ? 'مغلق ومكتمل' : '— قيد التشغيل (لم يُغلق بعد) —');
+
+            // ملخص المشغلين الذين عملوا على الأوردر
+            const scannersMap = {};
+            scanList.forEach(s => {
+                const u = s.scanned_by || order.created_by || 'مشغل خارجي';
+                scannersMap[u] = (scannersMap[u] || 0) + 1;
+            });
+            if (Object.keys(scannersMap).length === 0 && order.created_by) {
+                scannersMap[order.created_by] = totalScanned;
+            }
+
+            const scannersRows = Object.entries(scannersMap).map(([name, count], i) => {
+                const pct = totalScanned > 0 ? Math.round((count / totalScanned) * 100) : 0;
+                return `<tr>
+                    <td style="text-align:center;font-family:monospace;">${i + 1}</td>
+                    <td style="font-weight:700;">${name}</td>
+                    <td style="text-align:center;font-family:monospace;font-weight:700;color:#0f766e;">${count.toLocaleString('en-US')}</td>
+                    <td style="text-align:center;font-family:monospace;font-weight:700;">${pct}%</td>
+                </tr>`;
+            }).join('');
+
+            return `<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+                <title>تقرير تتميم تشغيل خارجي - ${order.order_number}</title>
+                <meta charset="UTF-8">
+                <style>
+                    @page { size: A4 portrait; margin: 12mm 12mm 15mm 12mm; }
+                    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-shadow: none !important; text-shadow: none !important; filter: none !important; }
+                    body { margin: 0; padding: 0; font-family: 'Cairo', 'Alexandria', Arial, sans-serif; font-size: 12px; color: #0f172a; background: #ffffff !important; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .sheet { width: 100%; max-width: 800px; margin: 0 auto; }
+                    .header-bar { border-bottom: 3px solid #0891b2; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+                    .brand-box { display: flex; align-items: center; gap: 12px; }
+                    .brand-logo { width: 48px; height: 48px; background: #0c1930; color: #22d3ee; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; font-family: monospace; border: 1.5px solid #0891b2; }
+                    .brand-names h1 { margin: 0; font-size: 17px; font-weight: 800; color: #0f172a; }
+                    .brand-names p { margin: 2px 0 0; font-size: 11px; color: #0891b2; font-weight: 600; }
+                    .title-box { text-align: center; }
+                    .title-box h2 { margin: 0; font-size: 18px; font-weight: 800; color: #0f172a; }
+                    .title-box .doc-badge { display: inline-block; background: #f0fdfa; border: 1.5px solid #99f6e4; color: #0f766e; padding: 3px 10px; border-radius: 6px; font-size: 10.5px; font-weight: 700; margin-top: 4px; }
+                    .meta-box { text-align: left; font-family: monospace; font-size: 10.5px; }
+                    .meta-box strong { display: block; font-size: 11.5px; color: #0f172a; }
+
+                    .info-banner { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; }
+                    .info-banner-item span { color: #64748b; font-size: 11px; display: block; margin-bottom: 2px; }
+                    .info-banner-item strong { color: #0f172a; font-weight: 700; font-size: 13px; }
+
+                    .completion-banner { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-weight: 800; font-size: 13.5px; text-align: center; border: 2px solid; }
+                    .completion-banner.done { background: #dcfce7; color: #166534; border-color: #86efac; }
+                    .completion-banner.pending { background: #fefce8; color: #854d0e; border-color: #fde047; }
+                    .completion-banner.open { background: #f0f9ff; color: #075985; border-color: #bae6fd; }
+
+                    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+                    .kpi-card { background: #f0fdfa; border: 1.5px solid #ccfbf1; border-radius: 8px; padding: 12px; text-align: center; }
+                    .kpi-label { font-size: 11px; color: #0f766e; font-weight: 700; margin-bottom: 4px; }
+                    .kpi-val { font-size: 22px; font-weight: 900; font-family: monospace; color: #115e59; }
+
+                    .section-title { font-size: 13px; font-weight: 800; color: #0f172a; margin: 16px 0 8px; border-right: 4px solid #0891b2; padding-right: 10px; }
+
+                    .details-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; }
+                    .details-table th { background: #0c1930; color: #e0f2fe; padding: 8px 10px; border: 1px solid #0c1930; font-weight: 700; font-size: 11px; text-align: right; }
+                    .details-table td { padding: 7px 10px; border: 1px solid #e2e8f0; }
+                    .details-table tbody tr:nth-child(even) { background: #f0fdfa; }
+
+                    .summary-box { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 14px; margin-top: 14px; }
+                    .summary-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #e2e8f0; }
+                    .summary-row:last-child { border-bottom: none; }
+
+                    .printed-by-box { display: flex; justify-content: space-between; align-items: center; background: #f0fdfa; border: 1.5px solid #ccfbf1; border-radius: 8px; padding: 10px 16px; margin-top: 24px; font-size: 11px; }
+                    .print-meta-item { display: flex; align-items: center; gap: 6px; }
+                    .meta-title { color: #0891b2; font-weight: 700; }
+                    .meta-value { color: #0f172a; font-weight: 800; font-family: monospace; }
+                    ${actionBar.topBarCss}
+                </style></head><body>
+                ${actionBar.topBarHtml}
+                <div class="sheet">
+                    <div class="header-bar">
+                        <div class="brand-box">
+                            <div class="brand-logo">EXT</div>
+                            <div class="brand-names">
+                                <h1>HMS Group</h1>
+                                <p>نظام الباركود وتتبع الإنتاج الصناعي · قسم التشغيل الخارجي</p>
+                            </div>
+                        </div>
+                        <div class="title-box">
+                            <h2>تقرير تتميم أمر تشغيل خارجي</h2>
+                            <span class="doc-badge">EXTERNAL AUDIT & TALLY REPORT</span>
+                        </div>
+                        <div class="meta-box">
+                            <div>Ref: <strong>${reportRef}</strong></div>
+                            <div>Date: <strong>${dateStr}</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="info-banner">
+                        <div class="info-banner-item">
+                            <span>رقم أمر التشغيل الخارجي</span>
+                            <strong style="font-family:monospace;color:#0f766e;font-size:14px;">${order.order_number}</strong>
+                        </div>
+                        <div class="info-banner-item">
+                            <span>العميل / جهة التوريد الخارجية</span>
+                            <strong style="color:#0f172a;">${order.customer_name || 'غير محدد'}</strong>
+                        </div>
+                        <div class="info-banner-item">
+                            <span>البيان / الوصف</span>
+                            <strong>${order.description || 'تشغيل خارجي مفتوح'}</strong>
+                        </div>
+                        <div class="info-banner-item">
+                            <span>تاريخ ووقت فتح الأمر</span>
+                            <strong style="font-family:monospace;">${openedAt}</strong>
+                        </div>
+                        <div class="info-banner-item">
+                            <span>تاريخ ووقت إغلاق الأمر</span>
+                            <strong style="font-family:monospace;color:${isClosed ? '#166534' : '#64748b'};">${closedAt}</strong>
+                        </div>
+                    </div>
+
+                    <div class="completion-banner ${targetQty > 0 ? (isCompleted ? 'done' : 'pending') : 'open'}">
+                        ${completionStatus}
+                    </div>
+
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-label">الكمية الكلية المستلمة (الهدف)</div>
+                            <div class="kpi-val">${targetQty > 0 ? targetQty.toLocaleString('en-US') : '∞ مفتوح'}</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">إجمالي القطع الممسوحة فعلياً</div>
+                            <div class="kpi-val" style="color:${isCompleted ? '#166534' : '#0891b2'}">${totalScanned.toLocaleString('en-US')}</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-label">المتبقي للتتميم</div>
+                            <div class="kpi-val" style="color:${remainingQty === 0 && targetQty > 0 ? '#166534' : '#dc2626'}">${targetQty > 0 ? remainingQty.toLocaleString('en-US') : '—'}</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">المشغلون الذين عملوا وسجلوا على هذا الأمر</div>
+                    <table class="details-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;text-align:center;">#</th>
+                                <th>اسم المشغل</th>
+                                <th style="text-align:center;">الكمية التي ضربها</th>
+                                <th style="width:100px;text-align:center;">نسبة مساهمته</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${scannersRows || '<tr><td colspan="4" style="text-align:center;padding:12px;color:#64748b;">لا يوجد مشغلون مسجلون</td></tr>'}
+                        </tbody>
+                    </table>
+
+                    <div class="summary-box">
+                        <div class="summary-row">
+                            <span style="color:#64748b;">حالة التتميم الإجمالية:</span>
+                            <strong style="color:${isCompleted ? '#166534' : (targetQty > 0 ? '#b45309' : '#0369a1')};">${targetQty > 0 ? (isCompleted ? 'مكتمل ومطابق للكمية المستلمة بنسبة 100%' : `غير مكتمل — متبقي ${remainingQty.toLocaleString('en-US')} قطعة`) : 'أمر مسح مفتوح بدون تحديد كمية مستهدفة'}</strong>
+                        </div>
+                        <div class="summary-row">
+                            <span style="color:#64748b;">أنشئ بواسطة:</span>
+                            <strong style="font-family:monospace;">${order.created_by || 'مشغل خارجي'}</strong>
+                        </div>
+                        ${order.closed_by ? `
+                        <div class="summary-row">
+                            <span style="color:#64748b;">أُغلق بواسطة:</span>
+                            <strong style="font-family:monospace;color:#166534;">${order.closed_by}</strong>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    ${scanList.length > 0 ? `
+                    <div class="section-title">سجل عينة القطع والشفرات الممسوحة (أحدث ${Math.min(100, scanList.length)} حركة مسجلة)</div>
+                    <table class="details-table">
+                        <thead>
+                            <tr>
+                                <th style="width:35px;text-align:center;">م</th>
+                                <th>كود الباركود المسجل</th>
+                                <th>المشغل / السكانر</th>
+                                <th style="text-align:center;">وقت وتاريخ المسح الدقيق</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${scanList.slice(0, 100).map((s, idx) => `
+                                <tr>
+                                    <td style="text-align:center;font-family:monospace;font-size:9.5px;">${idx + 1}</td>
+                                    <td style="font-family:monospace;font-weight:800;color:#0f172a;">${s.barcode}</td>
+                                    <td>${s.scanned_by || 'مشغل خارجي'}</td>
+                                    <td style="text-align:center;font-family:monospace;font-size:9.5px;">${s.created_at ? new Date(s.created_at).toLocaleDateString('ar-EG-u-nu-latn') + ' ' + new Date(s.created_at).toLocaleTimeString('ar-EG-u-nu-latn') : '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    ` : ''}
+
+                    <div class="printed-by-box">
+                        <div class="print-meta-item">
+                            <span class="meta-title">طُبع بواسطة:</span>
+                            <strong class="meta-value">${printUser}</strong>
+                        </div>
+                        <div class="print-meta-item">
+                            <span class="meta-title">تاريخ ووقت الطباعة:</span>
+                            <strong class="meta-value">${dateStr}</strong>
+                        </div>
+                        <div class="print-meta-item">
+                            <span class="meta-title">نظام:</span>
+                            <strong class="meta-value">HMS Group</strong>
+                        </div>
+                    </div>
+                </div>
+                ${actionBar.scriptHtml}
+            </body></html>`;
+        }
+
+        // ===== طباعة تقرير فردي من المودال =====
+        function printOrderReport() {
+            if (!currentModalOrder) return;
+            const printWin = window.open('', '_blank');
+            if (!printWin) {
+                alert('يرجى السماح بالنوافذ المنبثقة للطباعة');
+                return;
+            }
+            const printUser = window.currentUser?.full_name || window.currentUser?.username || 'مشرف التشغيل الخارجي';
+            printWin.document.write(generateOfficialExternalOrderPrintHtml(currentModalOrder, currentModalScans, printUser));
+            printWin.document.close();
+        }
+
+        // ===== طباعة تقرير فردي مباشرة من الجدول برقم الـ ID =====
+        async function printSingleExternalReportById(orderId) {
+            try {
+                FreedomUI.toast('جاري تجهيز تقرير الأوردر...', 'info', 1200);
+                const res = await fetch(`/api/external/orders/${orderId}`, { headers: authHeaders() });
+                const data = await res.json();
+                if (!data.success) {
+                    FreedomUI.alert('خطأ', data.message || 'فشل جلب تفاصيل الأمر للطباعة', 'error');
+                    return;
+                }
+                const printWin = window.open('', '_blank');
+                if (!printWin) {
+                    alert('يرجى السماح بالنوافذ المنبثقة للطباعة');
+                    return;
+                }
+                const printUser = window.currentUser?.full_name || window.currentUser?.username || 'مشرف التشغيل الخارجي';
+                printWin.document.write(generateOfficialExternalOrderPrintHtml(data.order, data.scans || [], printUser));
+                printWin.document.close();
+            } catch (err) {
+                FreedomUI.alert('خطأ', 'فشل الاتصال بالخادم لطباعة التقرير', 'error');
+            }
+        }
+
+        // ===== طباعة التقرير الشامل A4 لجميع أوامر التشغيل الخارجي =====
+        function printComprehensiveExternalReport() {
+            if (!allExternalOrders || allExternalOrders.length === 0) {
+                FreedomUI.toast('لا توجد أوامر تشغيل خارجي لطباعة التقرير الشامل', 'warning');
+                return;
+            }
+
+            const printWin = window.open('', '_blank');
+            if (!printWin) {
+                alert('يرجى السماح بالنوافذ المنبثقة للطباعة');
+                return;
+            }
+
+            const printUser = window.currentUser?.full_name || window.currentUser?.username || 'مشرف التشغيل الخارجي';
+            const dateStr = new Date().toLocaleString('en-US');
+            const actionBar = generatePublicReportActionBar('التقرير الشامل لأوامر التشغيل الخارجي', 'EXTERNAL AUDIT', 'Comprehensive_External_Orders_Report', true);
+            const list = allExternalOrders;
+            const totalOrders = list.length;
+            const totalScanned = list.reduce((sum, o) => sum + (Number(o.total_scanned) || 0), 0);
+            const activeOrders = list.filter(o => o.status !== 'closed').length;
+            const closedOrders = list.filter(o => o.status === 'closed').length;
+
+            const rowsHtml = list.map((o, idx) => {
+                const isClosed = o.status === 'closed';
+                const targetQtyRow = Number(o.target_quantity) || 0;
+                const totalScannedRow = Number(o.total_scanned) || 0;
+                const isCompletedRow = targetQtyRow > 0 && totalScannedRow >= targetQtyRow;
+                const crDate = o.created_at ? new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn') : '-';
+                const clDate = o.closed_at ? new Date(o.closed_at).toLocaleDateString('ar-EG-u-nu-latn') : (isClosed ? 'مغلق' : '-');
+                const completionLabel = targetQtyRow > 0
+                    ? (isCompletedRow ? 'تم التتميم' : `${totalScannedRow}/${targetQtyRow}`)
+                    : '∞ مفتوح';
+                return `<tr>
+                    <td style="text-align:center;font-family:monospace;">${idx + 1}</td>
+                    <td style="font-family:monospace;font-weight:700;color:#0f766e;">${o.order_number}</td>
+                    <td style="font-weight:700;color:#0f172a;">${o.customer_name || '-'}</td>
+                    <td>${o.description || 'تشغيل خارجي مفتوح'}</td>
+                    <td style="text-align:center;font-family:monospace;font-weight:700;color:#166534;">${totalScannedRow.toLocaleString('en-US')}</td>
+                    <td style="text-align:center;font-family:monospace;font-weight:700;color:#0f766e;">${targetQtyRow > 0 ? targetQtyRow.toLocaleString('en-US') : '∞'}</td>
+                    <td style="text-align:center;font-weight:700;color:${isCompletedRow ? '#166534' : (targetQtyRow > 0 ? '#b45309' : '#0369a1')};">${completionLabel}</td>
+                    <td>${o.scanners_list || o.created_by || 'مشغل خارجي'}</td>
+                    <td style="text-align:center;font-family:monospace;font-size:10px;">${crDate}</td>
+                    <td style="text-align:center;font-family:monospace;font-size:10px;">${clDate}</td>
+                    <td style="text-align:center;">
+                        <span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;${isClosed ? 'background:#dcfce7;color:#166534;border:1px solid #bbf7d0;' : 'background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4;'}">
+                            ${isClosed ? 'مكتمل ومغلق' : 'قيد التشغيل'}
+                        </span>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            printWin.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+                <title>التقرير الشامل لأوامر التشغيل الخارجي</title>
+                <meta charset="UTF-8">
+                <style>
+                    @page { size: A4 landscape; margin: 8mm 8mm 10mm 8mm; }
+                    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-shadow: none !important; text-shadow: none !important; filter: none !important; }
+                    body { margin: 0; padding: 0; font-family: 'Cairo', 'Alexandria', Arial, sans-serif; font-size: 11px; color: #0f172a; background: #ffffff !important; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .header-bar { border-bottom: 2.5px solid #0891b2; padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+                    .brand-box { display: flex; align-items: center; gap: 8px; }
+                    .brand-logo { width: 38px; height: 38px; background: #0c1930; color: #22d3ee; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; font-family: monospace; border: 1px solid #0891b2; }
+                    .brand-names h1 { margin: 0; font-size: 14px; font-weight: 800; }
+                    .brand-names p { margin: 1px 0 0; font-size: 10px; color: #0891b2; font-weight: 600; }
+                    .title-box { text-align: center; }
+                    .title-box h2 { margin: 0; font-size: 15px; font-weight: 800; }
+                    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+                    .kpi-box { background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 6px; padding: 6px 10px; text-align: center; }
+                    .kpi-title { font-size: 9.5px; color: #0f766e; font-weight: 600; }
+                    .kpi-num { font-size: 14px; font-weight: 800; font-family: monospace; color: #115e59; margin-top: 2px; }
+                    .report-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+                    .report-table th { background: #0c1930; color: #e0f2fe; padding: 6px 8px; border: 1px solid #0c1930; text-align: right; font-weight: 700; font-size: 10px; }
+                    .report-table td { padding: 5px 8px; border: 1px solid #e2e8f0; }
+                    .report-table tbody tr:nth-child(even) { background: #f0fdfa; }
+                    .footer-info { display: flex; justify-content: space-between; align-items: center; background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 6px; padding: 8px 12px; margin-top: 18px; font-size: 10.5px; }
+                    ${actionBar.topBarCss}
+                </style></head><body>
+                ${actionBar.topBarHtml}
+                <div class="sheet">
+                    <div class="header-bar">
+                        <div class="brand-box">
+                            <div class="brand-logo">EXT</div>
+                            <div class="brand-names">
+                                <h1>HMS Group</h1>
+                                <p>نظام الباركود وتتبع الإنتاج · تقرير التدقيق الشامل للتشغيل الخارجي</p>
+                            </div>
+                        </div>
+                        <div class="title-box">
+                            <h2>التقرير الشامل لأوامر التشغيل الخارجي (مسح وتتميم)</h2>
+                            <span style="font-size:9.5px;color:#0891b2;font-weight:700;">EXTERNAL OPERATIONS MASTER AUDIT SHEET</span>
+                        </div>
+                        <div style="text-align:left;font-family:monospace;font-size:9.5px;">
+                            <div>Date: <strong>${dateStr}</strong></div>
+                            <div>User: <strong>${printUser}</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-row">
+                        <div class="kpi-box">
+                            <div class="kpi-title">إجمالي أوامر التشغيل الخارجي</div>
+                            <div class="kpi-num">${totalOrders.toLocaleString('en-US')} أوردر</div>
+                        </div>
+                        <div class="kpi-box">
+                            <div class="kpi-title">إجمالي القطع الممسوحة</div>
+                            <div class="kpi-num">${totalScanned.toLocaleString('en-US')} قطعة</div>
+                        </div>
+                        <div class="kpi-box">
+                            <div class="kpi-title">أوامر قيد التشغيل (نشطة)</div>
+                            <div class="kpi-num" style="color:#0f766e;">${activeOrders.toLocaleString('en-US')}</div>
+                        </div>
+                        <div class="kpi-box">
+                            <div class="kpi-title">أوامر مكتملة ومغلقة</div>
+                            <div class="kpi-num" style="color:#166534;">${closedOrders.toLocaleString('en-US')}</div>
+                        </div>
+                    </div>
+
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th style="width:25px;text-align:center;">#</th>
+                                <th>رقم الأمر</th>
+                                <th>العميل / الجهة</th>
+                                <th>البيان / الوصف</th>
+                                <th style="text-align:center;">الممسوح فعلاً</th>
+                                <th style="text-align:center;">الكمية المستهدفة</th>
+                                <th style="text-align:center;">حالة التتميم</th>
+                                <th>المشغلون</th>
+                                <th style="text-align:center;">تاريخ الفتح</th>
+                                <th style="text-align:center;">تاريخ الإغلاق</th>
+                                <th style="text-align:center;">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml || '<tr><td colspan="11" style="text-align:center;padding:12px;">لا توجد أوامر تشغيل خارجي مسجلة</td></tr>'}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#0c1930;color:#fff;font-weight:800;">
+                                <td colspan="4" style="text-align:center;padding:7px;">الإجمالي العام لكافة أوامر التشغيل الخارجي (${totalOrders} أمر)</td>
+                                <td style="text-align:center;font-family:monospace;color:#4ade80;">${totalScanned.toLocaleString('en-US')}</td>
+                                <td style="text-align:center;font-family:monospace;color:#38bdf8;">${list.reduce((sum, o) => sum + (Number(o.target_quantity) || 0), 0).toLocaleString('en-US')}</td>
+                                <td colspan="5" style="text-align:left;padding:7px;font-size:9.5px;">معدل التتميم العام للمسح الخارجي</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="footer-info">
+                        <span>HMS Group · External Operations Master Auditing Engine</span>
+                        <span>طُبع بواسطة: <strong>${printUser}</strong> · وقت الطباعة: ${dateStr}</span>
+                    </div>
+                </div>
+                ${actionBar.scriptHtml}
+            </body></html>`);
+            printWin.document.close();
+        }
+
+        // ===== إدارة مشغلي التشغيل الخارجي =====
+        function openManageOperatorsModal() {
+            document.getElementById('manageOperatorsModal').classList.remove('hidden');
+            loadOperatorsList();
+        }
+
+        function closeManageOperatorsModal() {
+            document.getElementById('manageOperatorsModal').classList.add('hidden');
+        }
+
+        async function loadOperatorsList() {
+            const tbody = document.getElementById('operatorsTableBody');
+            try {
+                const res = await fetch('/api/users', { headers: authHeaders() });
+                const data = await res.json();
+                if (!data.success) { FreedomUI.toast('فشل تحميل قائمة المشغلين', 'error'); return; }
+                const ops = (data.users || []).filter(u => u.role === 'external_operator');
+                if (ops.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500 text-xs">لا يوجد مشغلون مضافون بعد</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = ops.map((u, i) => `
+                    <tr>
+                        <td class="p-2.5 text-center text-slate-500 font-mono text-xs">${i + 1}</td>
+                        <td class="p-2.5 font-bold text-white font-mono text-xs">${u.username}</td>
+                        <td class="p-2.5 text-slate-300 text-xs">${u.full_name || '-'}</td>
+                        <td class="p-2.5 text-xs"><span class="badge-clean text-[10px]" style="background:rgba(6,182,212,0.15);color:#22d3ee;border:1px solid rgba(6,182,212,0.3);">${u.stage_action || 'تشغيل خارجي (عام)'}</span></td>
+                        <td class="p-2.5 text-center">
+                            <button onclick="deleteOperator(${u.id}, '${u.username}')" class="btn-slate btn-slate-danger text-[11px] py-1 px-2">
+                                <i class="fas fa-trash-alt text-[10px]"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-500 text-xs">فشل الاتصال بالخادم</td></tr>`;
+            }
+        }
+
+        async function handleCreateOperator(e) {
+            e.preventDefault();
+            const username = document.getElementById('opUsername').value.trim();
+            const password = document.getElementById('opPassword').value.trim();
+            const full_name = document.getElementById('opFullName').value.trim();
+            const stage_action = document.getElementById('opStageAction').value;
+            if (!username || !password) return;
+
+            const btn = document.getElementById('addOperatorBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري الإضافة...';
+            try {
+                const res = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ username, password, full_name, role: 'external_operator', stage_action })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast(`تم إضافة المشغل (${username}) بنجاح`, 'success');
+                    document.getElementById('addOperatorForm').reset();
+                    loadOperatorsList();
+                } else {
+                    FreedomUI.alert('تعذر الإضافة', data.message || 'فشل إضافة المشغل', 'error');
+                }
+            } catch (err) {
+                FreedomUI.alert('خطأ في الاتصال', 'فشل إرسال الطلب', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plus text-xs"></i> إضافة المشغل';
+            }
+        }
+
+        async function deleteOperator(id, username) {
+            const ok = await FreedomUI.confirm('تأكيد الحذف', `هل أنت متأكد من حذف حساب المشغل (${username})؟`);
+            if (!ok) return;
+            try {
+                const res = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: authHeaders() });
+                const data = await res.json();
+                if (data.success) {
+                    FreedomUI.toast(`تم حذف المشغل (${username}) بنجاح`, 'success');
+                    loadOperatorsList();
+                } else {
+                    FreedomUI.alert('فشل الحذف', data.message || 'تعذر حذف المشغل', 'error');
+                }
+            } catch (err) {
+                FreedomUI.alert('خطأ', 'فشل الاتصال بالخادم', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
