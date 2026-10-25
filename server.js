@@ -308,7 +308,7 @@ function buildTargetDbConfig(customDatabase = null) {
     return config;
 }
 
-const targetDbConfig = buildTargetDbConfig();
+let targetDbConfig = buildTargetDbConfig();
 
 let globalPool = null;
 
@@ -358,10 +358,77 @@ async function getActiveProductionStages() {
     return DEFAULT_CORE_STAGES;
 }
 
-// ===== تهيئة قاعدة البيانات =====
+// ===== تهيئة قاعدة البيانات مع خاصية الاكتشاف التلقائي للبدائل (Auto-Fallback) =====
 async function initializeDatabase() {
     try {
-        // Try master connection first (to create DB if needed), fall back to direct connection
+        let connectedPool = null;
+        
+        // 1. محاولة الاتصال بالإعداد الأساسي
+        try {
+            const pool = new sql.ConnectionPool(targetDbConfig);
+            await pool.connect();
+            connectedPool = pool;
+        } catch (initialErr) {
+            console.log('⚠️  تعذر الاتصال بعنوان السيرفر الأساسي، جاري فحص البدائل الشائعة تلقائياً...');
+            
+            const fallbackCandidates = [
+                { server: 'localhost', port: null, instance: 'SQLEXPRESS', label: 'localhost\\SQLEXPRESS' },
+                { server: '.', port: null, instance: 'SQLEXPRESS', label: '.\\SQLEXPRESS' },
+                { server: '127.0.0.1', port: null, instance: 'SQLEXPRESS', label: '127.0.0.1\\SQLEXPRESS' },
+                { server: 'localhost', port: 1433, instance: null, label: 'localhost:1433' },
+                { server: '127.0.0.1', port: 1433, instance: null, label: '127.0.0.1:1433' }
+            ];
+
+            for (const cand of fallbackCandidates) {
+                const altConfig = {
+                    ...targetDbConfig,
+                    server: cand.server,
+                    port: cand.port,
+                    options: {
+                        ...targetDbConfig.options,
+                        instanceName: cand.instance
+                    },
+                    connectionTimeout: 4000
+                };
+                if (!cand.port) delete altConfig.port;
+                if (!cand.instance) delete altConfig.options.instanceName;
+
+                try {
+                    const testPool = new sql.ConnectionPool(altConfig);
+                    await testPool.connect();
+                    connectedPool = testPool;
+                    targetDbConfig = altConfig;
+                    console.log(`✅ تم اكتشاف محرك SQL Server بنجاح والاتصال التلقائي عبر: [${cand.label}]`);
+
+                    // تحديث ملف .env تلقائياً
+                    try {
+                        const envFilePath = path.join(__dirname, '.env');
+                        if (fs.existsSync(envFilePath)) {
+                            let envText = fs.readFileSync(envFilePath, 'utf8');
+                            const correctServer = cand.instance ? `${cand.server}\\${cand.instance}` : cand.server;
+                            envText = envText.replace(/^DB_SERVER=.*/m, `DB_SERVER=${correctServer}`);
+                            if (cand.port) {
+                                envText = envText.replace(/^DB_PORT=.*/m, `DB_PORT=${cand.port}`);
+                            }
+                            fs.writeFileSync(envFilePath, envText, 'utf8');
+                        }
+                    } catch (e) {}
+                    break;
+                } catch (e) {}
+            }
+
+            if (!connectedPool) {
+                throw initialErr;
+            }
+        }
+
+        globalPool = connectedPool;
+        globalPool.on('error', err => {
+            console.error('❌ Pool error:', err.message);
+            globalPool = null;
+        });
+
+        // 2. التحقق من وجود قاعدة البيانات وإنشائها في master إن لزم
         try {
             const masterDbConfig = { ...targetDbConfig, database: 'master', pool: { max: 3, min: 1, idleTimeoutMillis: 30000 } };
             const masterPool = await new sql.ConnectionPool(masterDbConfig).connect();
@@ -373,15 +440,9 @@ async function initializeDatabase() {
             `);
             await masterPool.close();
         } catch (masterErr) {
-            console.log('⚠️  Skipping master DB check (database already exists or no access to master):', masterErr.message.split('\n')[0]);
+            console.log('⚠️  Skipping master DB check:', masterErr.message.split('\n')[0]);
         }
 
-        globalPool = new sql.ConnectionPool(targetDbConfig);
-        globalPool.on('error', err => {
-            console.error('❌ Pool error:', err.message);
-            globalPool = null;
-        });
-        await globalPool.connect();
         console.log('✅ SQL Server Connected successfully:', dbName);
 
         // إنشاء جداول بفهارس محسّنة
