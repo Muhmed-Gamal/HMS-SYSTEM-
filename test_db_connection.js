@@ -6,13 +6,15 @@ try {
     require('dotenv').config({ path: path.join(__dirname, '.env') });
 } catch (e) {}
 
-const dbUser = process.env.DB_USER || 'freedom_user';
-const dbPassword = process.env.DB_PASSWORD || 'Gs654321';
-const dbName = process.env.DB_NAME || 'freedomBarcodeDB';
+const dbUser     = process.env.DB_USER     || 'hms_user';
+const dbPassword = process.env.DB_PASSWORD || '';
+const dbName     = process.env.DB_NAME     || 'HMS_Factory_DB';
 
 console.log('================================================================');
 console.log('🔍 HMS Barcode System - أداة التشخيص والاكتشاف الآلي لقاعدة البيانات');
 console.log('================================================================\n');
+console.log(`🔑 مستخدم الاتصال : ${dbUser}`);
+console.log(`🗄️  قاعدة البيانات : ${dbName}\n`);
 
 const candidates = [
     {
@@ -58,12 +60,12 @@ async function runDiagnostic() {
 
     for (const cand of candidates) {
         process.stdout.write(`⏳ جاري فحص: [${cand.name}]... `);
-        
+
         const testConfig = {
             user: dbUser,
             password: dbPassword,
             server: cand.server,
-            database: 'master', // الاتصال بـ master أولاً للتأكد
+            database: 'master',
             options: {
                 encrypt: false,
                 trustServerCertificate: true,
@@ -81,11 +83,11 @@ async function runDiagnostic() {
         try {
             const pool = await new sql.ConnectionPool(testConfig).connect();
             console.log('✅ نجح الاتصال!');
-            
+
             // التحقق من وجود قاعدة البيانات
             const res = await pool.request().query(`SELECT DB_ID('${dbName}') AS db_exists`);
             const exists = Boolean(res.recordset[0]?.db_exists);
-            
+
             if (!exists) {
                 console.log(`   ⚠️ قاعدة البيانات [${dbName}] غير موجودة، جاري إنشاؤها تلقائياً...`);
                 await pool.request().query(`CREATE DATABASE [${dbName}]`);
@@ -101,7 +103,8 @@ async function runDiagnostic() {
             const msg = err.message || '';
             if (msg.includes('Login failed') || err.code === 'ELOGIN') {
                 console.log('❌ خطأ في تسجيل الدخول (Login failed)!');
-                console.log('   👉 السبب: المستخدم freedom_user غير موجود أو نمط المصادقة ليس Mixed Mode.');
+                console.log('   👉 السبب: المستخدم غير موجود أو نمط المصادقة ليس Mixed Mode.');
+                console.log('   💡 الحل: شغّل setup_sql_server.bat بصلاحيات مسؤول (Run as Administrator).');
             } else if (msg.includes('connect ECONNREFUSED') || err.code === 'ESOCKET' || err.code === 'ETIMEOUT') {
                 console.log('❌ السيرفر غير متاح على هذا العنوان.');
             } else {
@@ -112,17 +115,19 @@ async function runDiagnostic() {
 
     console.log('\n================================================================');
     if (successConfig) {
-        console.log('🎉 النتيجة النهائية: تم العثور على محرك SQL Server والاتصال به بنجاح 100%!');
-        console.log(`📌 الإعداد الصحيح المعتمد لجهازك هو:`);
+        console.log('🎉 النتيجة النهائية: تم العثور على محرك SQL Server والاتصال به بنجاح!');
+        console.log(`📌 الإعداد الصحيح المعتمد لجهازك:`);
         console.log(`   DB_SERVER=${successConfig.instance ? successConfig.server + '\\' + successConfig.instance : successConfig.server}`);
         if (successConfig.port) console.log(`   DB_PORT=${successConfig.port}`);
-        
+
         // تحديث ملف .env تلقائياً إن لزم
         try {
             const envPath = path.join(__dirname, '.env');
             if (fs.existsSync(envPath)) {
                 let envContent = fs.readFileSync(envPath, 'utf8');
-                const targetServerStr = successConfig.instance ? `${successConfig.server}\\${successConfig.instance}` : successConfig.server;
+                const targetServerStr = successConfig.instance
+                    ? `${successConfig.server}\\${successConfig.instance}`
+                    : successConfig.server;
                 envContent = envContent.replace(/^DB_SERVER=.*/m, `DB_SERVER=${targetServerStr}`);
                 if (successConfig.port) {
                     envContent = envContent.replace(/^DB_PORT=.*/m, `DB_PORT=${successConfig.port}`);
@@ -134,12 +139,10 @@ async function runDiagnostic() {
 
         console.log('\n🚀 يمكنك الآن تشغيل النظام مباشرة بالضغط على [start_system.bat].');
     } else {
-        console.log('⚠️ لم يتمكن النظام من الاتصال بحساب freedom_user على أي عنوان.');
-        console.log('💡 خطوات الحل السريع على جهاز العميل:');
-        console.log('   1. اضغط كليك يمين على ملف [setup_sql_server.bat] واختر Run as Administrator.');
-        console.log('   2. أو افتح برنامج SQL Server Management Studio (SSMS):');
-        console.log('      - افتح الملف: CREATE_USER_AND_DB.sql');
-        console.log('      - واضغط زر [Execute] (أو مفتاح F5).');
+        console.log(`⚠️ لم يتمكن النظام من الاتصال بالمستخدم [${dbUser}] على أي عنوان.`);
+        console.log('💡 خطوات الحل السريع:');
+        console.log('   1. اضغط كليك يمين على [setup_sql_server.bat] → Run as Administrator.');
+        console.log('   2. أو افتح SSMS وافتح ملف CREATE_USER_AND_DB.sql واضغط F5.');
         console.log('   3. ثم أعد تشغيل هذا الفحص مرة أخرى.');
     }
     console.log('================================================================\n');

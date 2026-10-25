@@ -1,65 +1,79 @@
 -- ===================================================================
 -- HMS Industrial Barcode Tracking System
--- سكربت تهيئة قاعدة البيانات والمستخدم لجهاز العميل الجديد
+-- سكربت إنشاء مستخدم النظام وقاعدة البيانات — النسخة اليدوية
 -- ===================================================================
--- التعليمات:
--- 1. افتح هذا الملف داخل SQL Server Management Studio (SSMS) على جهاز العميل
--- 2. تأكد من أنك متصل كـ Windows Authentication أو حساب sa
--- 3. اضغط على زر [Execute] أو اضغط F5 من لوحة المفاتيح
+-- الاستخدام:
+--   1. افتح هذا الملف داخل SQL Server Management Studio (SSMS)
+--   2. تأكد من الاتصال بـ Windows Auth أو حساب sa
+--   3. بدّل اسم قاعدة البيانات أسفله إن أردت، ثم اضغط F5
 -- ===================================================================
+-- [اختياري] بدّل الاسم هنا ليناسب اسم مصنعك:
+DECLARE @dbName NVARCHAR(128) = N'HMS_Factory_DB';
+DECLARE @hmsUser NVARCHAR(64) = N'hms_user';
+DECLARE @hmsPass NVARCHAR(64) = N'HMS@2024!Secure';
+GO
 
 USE [master];
 GO
 
 -- 1. تفعيل نمط المصادقة المشترك (Mixed Mode Authentication)
-EXEC xp_instance_regwrite N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'LoginMode', REG_DWORD, 2;
+EXEC xp_instance_regwrite
+    N'HKEY_LOCAL_MACHINE',
+    N'Software\Microsoft\MSSQLServer\MSSQLServer',
+    N'LoginMode', REG_DWORD, 2;
 GO
 
--- 2. إنشاء مستخدم freedom_user إذا لم يكن موجوداً، أو تحديث كلمة المرور وتفعيله
-IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'freedom_user')
+-- 2. إنشاء مستخدم hms_user أو تحديثه إذا كان موجوداً
+IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'hms_user')
 BEGIN
-    CREATE LOGIN [freedom_user] 
-    WITH PASSWORD = 'Gs654321', 
-    CHECK_POLICY = OFF, 
+    CREATE LOGIN [hms_user]
+    WITH PASSWORD = 'HMS@2024!Secure',
+    CHECK_POLICY = OFF,
     CHECK_EXPIRATION = OFF;
-    PRINT N'✅ تم إنشاء المستخدم freedom_user بنجاح.';
+    PRINT N'✅ تم إنشاء مستخدم النظام hms_user بنجاح.';
 END
 ELSE
 BEGIN
-    ALTER LOGIN [freedom_user] 
-    WITH PASSWORD = 'Gs654321', 
-    CHECK_POLICY = OFF, 
+    ALTER LOGIN [hms_user]
+    WITH PASSWORD = 'HMS@2024!Secure',
+    CHECK_POLICY = OFF,
     CHECK_EXPIRATION = OFF;
-    ALTER LOGIN [freedom_user] ENABLE;
-    PRINT N'✅ تم تحديث وتفعيل المستخدم freedom_user بنجاح.';
+    ALTER LOGIN [hms_user] ENABLE;
+    PRINT N'✅ تم تحديث وتفعيل مستخدم النظام hms_user.';
 END
 GO
 
--- 3. منح المستخدم صلاحيات إدارة قواعد البيانات (sysadmin & dbcreator)
-ALTER SERVER ROLE [sysadmin] ADD MEMBER [freedom_user];
-ALTER SERVER ROLE [dbcreator] ADD MEMBER [freedom_user];
-PRINT N'✅ تم منح المستخدم freedom_user صلاحيات المدير بنجاح.';
+-- 3. منح صلاحيات النظام الكاملة
+IF IS_SRVROLEMEMBER('sysadmin', 'hms_user') = 0
+    ALTER SERVER ROLE [sysadmin] ADD MEMBER [hms_user];
+ALTER SERVER ROLE [dbcreator] ADD MEMBER [hms_user];
+PRINT N'✅ تم منح الصلاحيات الكاملة لـ hms_user.';
 GO
 
--- 4. إنشاء قاعدة بيانات freedomBarcodeDB إذا لم تكن موجودة
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'freedomBarcodeDB')
+-- 4. إنشاء قاعدة بيانات المصنع
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'HMS_Factory_DB')
 BEGIN
-    CREATE DATABASE [freedomBarcodeDB];
-    PRINT N'✅ تم إنشاء قاعدة البيانات freedomBarcodeDB بنجاح.';
+    CREATE DATABASE [HMS_Factory_DB];
+    PRINT N'✅ تم إنشاء قاعدة البيانات HMS_Factory_DB بنجاح.';
 END
 ELSE
 BEGIN
-    PRINT N'ℹ️ قاعدة البيانات freedomBarcodeDB موجودة بالفعل.';
+    PRINT N'ℹ️ قاعدة البيانات HMS_Factory_DB موجودة بالفعل.';
 END
 GO
 
--- 5. ضبط قاعدة البيانات لتكون مملوكة للمستخدم وتفعيل الأداء العالي
-ALTER DATABASE [freedomBarcodeDB] SET OWNER TO [freedom_user];
-ALTER DATABASE [freedomBarcodeDB] SET RECOVERY SIMPLE;
-ALTER DATABASE [freedomBarcodeDB] SET AUTO_UPDATE_STATISTICS_ASYNC ON;
+-- 5. ضبط إعدادات الأداء
+ALTER DATABASE [HMS_Factory_DB] SET RECOVERY SIMPLE;
+ALTER DATABASE [HMS_Factory_DB] SET AUTO_UPDATE_STATISTICS_ASYNC ON;
 GO
+
+-- 6. تحديث ملف .env يدوياً بعد تنفيذ هذا السكربت:
+--    DB_USER=hms_user
+--    DB_PASSWORD=HMS@2024!Secure
+--    DB_NAME=HMS_Factory_DB
+--    SETUP_DONE=true
 
 PRINT N'===================================================================';
-PRINT N'🎉 تم إعداد قاعدة بيانات العميل بنجاح 100%! يمكنك الآن تشغيل السيرفر.';
+PRINT N'🎉 تم الإعداد اليدوي بنجاح! حدّث ملف .env ثم شغّل start_system.bat';
 PRINT N'===================================================================';
 GO

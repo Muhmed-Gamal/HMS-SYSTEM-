@@ -8,69 +8,52 @@ echo   HMS Industrial Barcode System - تهيئة قاعدة بيانات جها
 echo ===================================================================
 echo.
 
-:: فحص صلاحيات Administrator
+:: ─── فحص صلاحيات Administrator ──────────────────────────────────────────
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [تنبيه] يتطلب فتح هذا السكربت صلاحيات مسؤول (Run as Administrator).
+    echo [تنبيه] يتطلب هذا الملف صلاحيات مسؤول (Run as Administrator).
     echo جاري طلب الصلاحيات تلقائياً...
     powershell -Command "Start-Process '%~0' -Verb RunAs"
     exit /b
 )
 
-echo [1/3] فحص منافذ جدار حماية الويندوز (Windows Firewall)...
+:: ─── فتح منافذ جدار الحماية ──────────────────────────────────────────────
+echo [1/3] فتح المنافذ المطلوبة في جدار الحماية (Firewall)...
 netsh advfirewall firewall delete rule name="HMS Barcode Web Port 3000" >nul 2>&1
 netsh advfirewall firewall add rule name="HMS Barcode Web Port 3000" dir=in action=allow protocol=TCP localport=3000 >nul 2>&1
-
 netsh advfirewall firewall delete rule name="HMS SQL Server Port 1433" >nul 2>&1
 netsh advfirewall firewall add rule name="HMS SQL Server Port 1433" dir=in action=allow protocol=TCP localport=1433 >nul 2>&1
-echo       ✅ تم فتح المنافذ 3000 و 1433 لربط أجهزة وشاشات المصنع بالشبكة.
+echo       OK تم فتح المنافذ 3000 و 1433 بنجاح.
 echo.
 
-echo [2/3] جاري محاولة إنشاء المستخدم وقاعدة البيانات تلقائياً عبر Windows Auth...
-sqlcmd -S . -E -i "%~dp0CREATE_USER_AND_DB.sql" >nul 2>&1
-if %errorlevel% equ 0 goto VERIFY_SUCCESS
-
-sqlcmd -S 127.0.0.1 -E -i "%~dp0CREATE_USER_AND_DB.sql" >nul 2>&1
-if %errorlevel% equ 0 goto VERIFY_SUCCESS
-
-sqlcmd -S .\SQLEXPRESS -E -i "%~dp0CREATE_USER_AND_DB.sql" >nul 2>&1
-if %errorlevel% equ 0 goto VERIFY_SUCCESS
-
+:: ─── حذف علامة الإعداد السابق (لإجبار إعادة الإعداد) ────────────────────
+echo [2/3] إعادة تعيين إعدادات قاعدة البيانات للجهاز الجديد...
+node -e "const fs=require('fs'),p='.env'; if(fs.existsSync(p)){let c=fs.readFileSync(p,'utf8'); c=c.replace(/^SETUP_DONE=.*$/m,'SETUP_DONE=false'); fs.writeFileSync(p,c);}" >nul 2>&1
+echo       OK تم إعادة التعيين.
 echo.
-echo ⚠️  تعذر الاتصال عبر Windows Auth المباشر.
-echo    إذا كان لديك مستخدم sa في SQL Server على جهاز العميل:
-set /p SAPASS="👉 اكتب كلمة مرور sa (أو اضغط Enter لتخطي): "
-if not "%SAPASS%"=="" (
-    sqlcmd -S . -U sa -P "%SAPASS%" -i "%~dp0CREATE_USER_AND_DB.sql" >nul 2>&1
-    if %errorlevel% equ 0 goto VERIFY_SUCCESS
-    sqlcmd -S .\SQLEXPRESS -U sa -P "%SAPASS%" -i "%~dp0CREATE_USER_AND_DB.sql" >nul 2>&1
-    if %errorlevel% equ 0 goto VERIFY_SUCCESS
-)
 
+:: ─── تشغيل إعداد قاعدة البيانات الذكي ──────────────────────────────────
+echo [3/3] جاري تشغيل برنامج الإعداد الآلي لقاعدة البيانات...
 echo.
-echo ===================================================================
-echo 💡 البديل السهل جداً:
-echo    1. افتح برنامج SQL Server Management Studio (SSMS) على جهاز العميل.
-echo    2. افتح الملف: [%~dp0CREATE_USER_AND_DB.sql]
-echo    3. اضغط زر [Execute] أو مفتاح F5 من الكيبورد.
-echo ===================================================================
-echo.
-pause
-exit /b
+node "%~dp0first_run_setup.js"
 
-:VERIFY_SUCCESS
-echo.
-echo [3/3] فحص الاتصال النهائي بحساب المستخدم الجديد...
-sqlcmd -S 127.0.0.1 -U freedom_user -P Gs654321 -d freedomBarcodeDB -Q "SELECT 1" >nul 2>&1
 if %errorlevel% equ 0 (
     echo.
     echo ===================================================================
-    echo 🎉 تم تهيئة قاعدة البيانات وإنشاء المستخدم freedom_user بنجاح 100%!
-    echo 🚀 يمكنك الآن تشغيل النظام مباشرة بالضغط على [start_system.bat].
+    echo.
+    echo  يمكنك الآن تشغيل النظام مباشرة بالضغط على [start_system.bat]
+    echo.
     echo ===================================================================
 ) else (
     echo.
-    echo ✅ تم تنفيذ السكربت. يرجى إعادة تشغيل خدمة SQL Server ثم تجربة [start_system.bat].
+    echo ===================================================================
+    echo  تعذر الإعداد التلقائي. يرجى اتباع الخطوات التالية:
+    echo  1. افتح SSMS على هذا الجهاز.
+    echo  2. افتح الملف: CREATE_USER_AND_DB.sql
+    echo  3. اضغط F5 لتنفيذه.
+    echo  4. ثم شغّل start_system.bat مباشرة.
+    echo ===================================================================
 )
+
 echo.
 pause

@@ -267,14 +267,14 @@ app.get('/deck', (req, res) => {
     res.sendFile(path.join(__dirname, 'Public', 'presentation.html'));
 });
 
-const dbName = process.env.DB_NAME || 'freedomBarcodeDB';
+const dbName = process.env.DB_NAME || 'HMS_Factory_DB';
 
 // ===== إعدادات قاعدة البيانات المحسّنة (تدعم IP المباشر أو الـ Named Instances تلقائياً) =====
 function buildTargetDbConfig(customDatabase = null) {
     const rawServer = (process.env.DB_SERVER || '127.0.0.1').trim();
     const config = {
-        user: process.env.DB_USER || 'freedom_user',
-        password: process.env.DB_PASSWORD || 'Gs654321',
+        user: process.env.DB_USER || 'hms_user',
+        password: process.env.DB_PASSWORD || '',
         database: customDatabase || dbName,
         options: {
             encrypt: process.env.DB_ENCRYPT === 'true',

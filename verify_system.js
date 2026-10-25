@@ -4,14 +4,19 @@
  */
 const sql = require('./node_modules/mssql');
 const http = require('http');
+const fs = require('fs');
+
+// قراءة إعدادات الاتصال من ملف .env
+const path = require('path');
+try { require('dotenv').config({ path: path.join(__dirname, '.env') }); } catch (e) {}
 
 const BASE_URL = 'http://localhost:3000';
 const DB_CFG = {
-    user: 'freedom_user',
-    password: 'Gs654321',
-    server: '127.0.0.1',
-    port: 1433,
-    database: 'freedomBarcodeDB',
+    user:     process.env.DB_USER     || 'hms_user',
+    password: process.env.DB_PASSWORD || '',
+    server:   process.env.DB_SERVER   || '127.0.0.1',
+    port:     parseInt(process.env.DB_PORT || '1433', 10),
+    database: process.env.DB_NAME     || 'HMS_Factory_DB',
     options: { encrypt: false, trustServerCertificate: true }
 };
 
@@ -45,11 +50,11 @@ async function runReadinessCheck() {
     let pool;
     try {
         pool = await new sql.ConnectionPool(DB_CFG).connect();
-        recordCheck('Database', 'SQL Server Connection', true, 'Connected to freedomBarcodeDB');
+        recordCheck('Database', 'SQL Server Connection', true, `Connected to ${DB_CFG.database}`);
 
         const dbProps = await pool.request().query(`
             SELECT recovery_model_desc, is_read_committed_snapshot_on, is_auto_update_stats_async_on
-            FROM sys.databases WHERE name = 'freedomBarcodeDB'
+            FROM sys.databases WHERE name = '${DB_CFG.database}'
         `);
         const r = dbProps.recordset[0];
         recordCheck('Database', 'Recovery Model', r.recovery_model_desc === 'SIMPLE', r.recovery_model_desc);
@@ -70,7 +75,7 @@ async function runReadinessCheck() {
         // Check index fragmentation on OrderBarcodes
         const fragRes = await pool.request().query(`
             SELECT AVG(avg_fragmentation_in_percent) AS avg_frag
-            FROM sys.dm_db_index_physical_stats(DB_ID('freedomBarcodeDB'), OBJECT_ID('OrderBarcodes'), NULL, NULL, 'LIMITED')
+            FROM sys.dm_db_index_physical_stats(DB_ID('${DB_CFG.database}'), OBJECT_ID('OrderBarcodes'), NULL, NULL, 'LIMITED')
             WHERE page_count > 10
         `);
         const avgFrag = fragRes.recordset[0]?.avg_frag || 0;
