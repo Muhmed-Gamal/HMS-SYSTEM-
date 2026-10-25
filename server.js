@@ -3134,9 +3134,9 @@ cachedLicenseStatus = verifyLicenseFile();
 app.get('/api/system/info', (req, res) => {
     cachedLicenseStatus = verifyLicenseFile();
     const isMaster = Boolean(cachedLicenseStatus && cachedLicenseStatus.is_master_general);
-    const companyName = (cachedLicenseStatus && cachedLicenseStatus.valid && cachedLicenseStatus.client)
+    const companyName = (cachedLicenseStatus && cachedLicenseStatus.valid && cachedLicenseStatus.client && cachedLicenseStatus.client !== 'نسخة غير مرخصة')
         ? cachedLicenseStatus.client
-        : 'نظام الباركود وتتبع الإنتاج الصناعي';
+        : (process.env.COMPANY_NAME_AR || 'نظام الباركود وتتبع الإنتاج الصناعي');
 
     const companyEn = cachedLicenseStatus?.client_en || 'INDUSTRIAL BARCODE SYSTEM';
     const now = new Date();

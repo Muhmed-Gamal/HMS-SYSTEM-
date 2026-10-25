@@ -55,6 +55,8 @@ export default function AdminUsersPage() {
     const [licDurationDays, setLicDurationDays] = useState(365);
     const [licKillSwitch, setLicKillSwitch] = useState('');
     const [licGenerating, setLicGenerating] = useState(false);
+    const [importKey, setImportKey] = useState('');
+    const [importingLic, setImportingLic] = useState(false);
 
     // Pipeline / Production Stages Management (SuperAdmin only)
     const [stagesConfig, setStagesConfig] = useState([]);
@@ -347,6 +349,38 @@ export default function AdminUsersPage() {
         } else {
             showAlert('فشل التوليد', data.message || 'حدث خطأ أثناء توليد الترخيص', 'error');
         }
+    };
+
+    const handleActivateLicenseDirect = async (e) => {
+        if (e) e.preventDefault();
+        if (!importKey.trim()) {
+            toast('يرجى لصق كود الترخيص المطلوب تفعيله', 'warning');
+            return;
+        }
+        setImportingLic(true);
+        const { ok, data } = await api.activateLicense({ license_key: importKey.trim() });
+        setImportingLic(false);
+        if (ok && data.success) {
+            showAlert('تم بنجاح ✅', `تم تفعيل وتطبيق الترخيص بنجاح!\n\n🏭 المصنع: ${data.client}\n⏳ المتبقي: ${data.days_remaining} يوم\n📅 تاريخ الانتهاء: ${data.expires_at ? new Date(data.expires_at).toLocaleDateString('ar-EG-u-nu-latn') : '—'}`, 'success');
+            setImportKey('');
+            loadLicenseStatus();
+        } else {
+            showAlert('فشل التفعيل', data.message || 'كود الترخيص غير صالح!', 'error');
+        }
+    };
+
+    const handleImportFileUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result;
+            if (content && typeof content === 'string') {
+                setImportKey(content.trim());
+                toast('تم قراءة ملف الترخيص بنجاح! اضغط الآن على زر التفعيل.', 'info');
+            }
+        };
+        reader.readAsText(file);
     };
 
     const handleCreateUser = async (e) => {
@@ -652,6 +686,65 @@ export default function AdminUsersPage() {
                                                 <i className="fas fa-file-download text-sm"></i>
                                                 <span>توليد الترخيص وتحميل الملف الآن</span>
                                             </span>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* بطاقة استيراد وتفعيل ترخيص فوري */}
+                        <div className="slate-card p-6 border-emerald-500/40 bg-gradient-to-br from-[#064e3b]/30 via-[#0f172a] to-[#0f172a] shadow-lg">
+                            <div className="flex items-center gap-3 pb-3 mb-4 border-b border-emerald-500/20">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 text-lg">
+                                    <i className="fas fa-file-import"></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-white">استيراد وتفعيل ترخيص جاهز</h3>
+                                    <p className="text-xs text-slate-400">إذا كان لديك كود ترخيص أو ملف (.lic) جاهز، قم بلصقه أو رفعه لتفعيله على هذا السيرفر فوراً.</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleActivateLicenseDirect} className="space-y-3.5">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                        كود الترخيص (License Key)
+                                    </label>
+                                    <textarea
+                                        rows={3}
+                                        value={importKey}
+                                        onChange={(e) => setImportKey(e.target.value)}
+                                        placeholder="الصق كود الترخيص المشفر هنا..."
+                                        className="w-full rounded-xl bg-slate-900/90 border border-slate-700/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 font-mono resize-none focus:border-emerald-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                                    <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer hover:text-emerald-300 transition-colors bg-slate-900/60 px-3 py-2 rounded-xl border border-slate-800">
+                                        <i className="fas fa-upload text-emerald-400"></i>
+                                        <span>أو اضغط هنا لرفع ملف ترخيص (.lic)</span>
+                                        <input
+                                            type="file"
+                                            accept=".lic"
+                                            onChange={handleImportFileUpload}
+                                            className="hidden"
+                                        />
+                                    </label>
+
+                                    <button
+                                        type="submit"
+                                        disabled={importingLic}
+                                        className="btn-slate w-full sm:w-auto px-5 py-2 text-xs font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 border border-emerald-400/50 text-white shadow-md shadow-emerald-900/30 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {importingLic ? (
+                                            <>
+                                                <i className="fas fa-circle-notch fa-spin text-xs"></i>
+                                                <span>جاري التفعيل...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="fas fa-check text-xs"></i>
+                                                <span>تفعيل وتطبيق الترخيص</span>
+                                            </>
                                         )}
                                     </button>
                                 </div>

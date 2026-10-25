@@ -98,6 +98,7 @@ export const api = {
     // Super Admin Licensing
     getLicenseStatus: () => request('/license/status', { method: 'GET' }),
     generateLicense: (payload) => request('/license/generate', { method: 'POST', body: JSON.stringify(payload) }),
+    activateLicense: (payload) => request('/license/activate', { method: 'POST', body: JSON.stringify(payload) }),
 
     // System Branding & Info
     getSystemInfo: () => request('/system/info', { method: 'GET' }),

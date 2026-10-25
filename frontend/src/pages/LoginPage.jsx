@@ -10,8 +10,11 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [welcomeUser, setWelcomeUser] = useState(null);
+    const [showActivationModal, setShowActivationModal] = useState(false);
+    const [activationKey, setActivationKey] = useState('');
+    const [activating, setActivating] = useState(false);
 
-    const { user, login, companyName } = useAuth();
+    const { user, login, companyName, licenseInfo, reloadSystemInfo } = useAuth();
     const { toast, showAlert } = useToast();
     const navigate = useNavigate();
 
@@ -65,6 +68,51 @@ export default function LoginPage() {
         }
     };
 
+    // معالجة تفعيل كود الترخيص
+    const handleActivateLicense = async (e) => {
+        if (e) e.preventDefault();
+        const key = activationKey.trim();
+        if (!key) {
+            toast('يرجى لصق كود الترخيص أو اختيار ملف .lic', 'warning');
+            return;
+        }
+
+        setActivating(true);
+        const { ok, data } = await api.activateLicense({ license_key: key });
+        setActivating(false);
+
+        if (ok && data.success) {
+            showAlert(
+                'تم التفعيل بنجاح ✅',
+                `تم اعتماد وتفعيل ترخيص المصنع بنجاح!\n\n` +
+                `🏭 المصنع: ${data.client}\n` +
+                `⏳ المدة: ${data.days_remaining} يوم متبقي\n` +
+                `📅 تاريخ الانتهاء: ${data.expires_at ? new Date(data.expires_at).toLocaleDateString('ar-EG-u-nu-latn') : '—'}`,
+                'success'
+            );
+            setShowActivationModal(false);
+            setActivationKey('');
+            if (reloadSystemInfo) reloadSystemInfo();
+        } else {
+            showAlert('فشل التفعيل', data.message || 'كود الترخيص غير صالح!', 'error');
+        }
+    };
+
+    // قراءة ملف الترخيص المرفوع
+    const handleFileUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result;
+            if (content && typeof content === 'string') {
+                setActivationKey(content.trim());
+                toast('تم تحميل ملف الترخيص! اضغط على زر تفعيل الآن.', 'info');
+            }
+        };
+        reader.readAsText(file);
+    };
+
     // مسمى الدور الترحيبي
     const getRoleTitle = (u) => {
         if (!u) return '';
@@ -113,6 +161,23 @@ export default function LoginPage() {
                         بوابة تسجيل الدخول الآمنة للعمليات
                     </p>
                 </div>
+
+                {/* شريط تنبيه إذا كان النظام غير مرخص */}
+                {licenseInfo && !licenseInfo.license_valid && (
+                    <div className="mb-5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between gap-2 shadow-sm animate-pulse">
+                        <span className="flex items-center gap-2 font-medium">
+                            <i className="fas fa-exclamation-triangle text-amber-400 text-sm"></i>
+                            <span>الترخيص غير مفعل أو منتهي</span>
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setShowActivationModal(true)}
+                            className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-bold text-[11px] border border-amber-500/40 transition-colors cursor-pointer"
+                        >
+                            تفعيل الآن
+                        </button>
+                    </div>
+                )}
 
                 {/* نموذج الدخول */}
                 <form onSubmit={handleSubmit} className="space-y-4.5">
@@ -202,12 +267,110 @@ export default function LoginPage() {
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.7)]"></span>
                         <span>الاتصال آمن</span>
                     </span>
-                    <span className="flex items-center gap-1.5 text-slate-500">
-                        <i className="fas fa-shield-alt text-sky-400/80 text-xs"></i>
-                        <span>PBKDF2 Secured</span>
-                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setShowActivationModal(true)}
+                        className="flex items-center gap-1.5 text-slate-400 hover:text-sky-300 transition-colors cursor-pointer"
+                        title="تفعيل أو تمديد ترخيص النظام"
+                    >
+                        <i className="fas fa-key text-xs text-sky-400"></i>
+                        <span>تفعيل الترخيص</span>
+                    </button>
                 </div>
             </div>
+
+            {/* ===================================================================
+                نافذة تفعيل واستيراد الترخيص (License Activation Modal)
+               =================================================================== */}
+            {showActivationModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#050914]/85 backdrop-blur-md">
+                    <div className="relative w-full max-w-[460px] rounded-2xl bg-[#0c1427] border border-sky-500/30 p-6 text-right shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] overflow-hidden">
+                        
+                        {/* خط إضاءة علوي */}
+                        <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-sky-400 via-emerald-400 to-indigo-500" />
+
+                        {/* هيدر المودال */}
+                        <div className="flex items-center justify-between mb-5 border-b border-slate-800 pb-3">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                                    <i className="fas fa-certificate text-base"></i>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-white">تفعيل ترخيص النظام</h3>
+                                    <p className="text-[11px] text-slate-400">قم بلصق مفتاح الترخيص أو رفع ملف (.lic)</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowActivationModal(false)}
+                                className="text-slate-400 hover:text-white transition-colors p-1"
+                            >
+                                <i className="fas fa-times text-base"></i>
+                            </button>
+                        </div>
+
+                        {/* نموذج التفعيل */}
+                        <form onSubmit={handleActivateLicense} className="space-y-4">
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
+                                    مفتاح الترخيص (License Key)
+                                </label>
+                                <textarea
+                                    rows={4}
+                                    value={activationKey}
+                                    onChange={(e) => setActivationKey(e.target.value)}
+                                    placeholder="الصق كود الترخيص هنا (Base64.Signature)..."
+                                    className="login-input text-xs font-mono resize-none leading-relaxed"
+                                    required
+                                />
+                            </div>
+
+                            {/* رفع ملف بديل */}
+                            <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                                <span>أو اختر ملف الترخيص (.lic):</span>
+                                <label className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 font-bold text-[11px] border border-slate-700 cursor-pointer transition-colors">
+                                    <i className="fas fa-folder-open ml-1"></i>
+                                    <span>اختيار ملف</span>
+                                    <input
+                                        type="file"
+                                        accept=".lic"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+
+                            {/* أزرار الإجراء */}
+                            <div className="flex items-center justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowActivationModal(false)}
+                                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+                                >
+                                    إلغاء
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={activating}
+                                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-400 hover:to-emerald-400 text-white text-xs font-bold transition-all shadow-md shadow-sky-500/20 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {activating ? (
+                                        <>
+                                            <i className="fas fa-circle-notch fa-spin text-xs"></i>
+                                            <span>جاري التفعيل...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-check text-xs"></i>
+                                            <span>تفعيل الترخيص فوراً</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* ===================================================================
                 شاشة الترحيب السريعة بالاسم (Welcome Pop-up Modal)

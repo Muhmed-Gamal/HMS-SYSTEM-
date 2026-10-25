@@ -14,22 +14,27 @@ export function AuthProvider({ children }) {
 
     const [companyName, setCompanyName] = useState('نظام الباركود وتتبع الإنتاج الصناعي HMS');
     const [isMasterGeneral, setIsMasterGeneral] = useState(false);
+    const [licenseInfo, setLicenseInfo] = useState(null);
+
+    const reloadSystemInfo = async () => {
+        try {
+            const res = await fetch('/api/system/info');
+            const data = await res.json();
+            if (data && data.company_name) {
+                setCompanyName(data.company_name);
+                setIsMasterGeneral(Boolean(data.is_master));
+                setLicenseInfo(data);
+                try {
+                    localStorage.setItem('hms_system_info', JSON.stringify(data));
+                } catch (e) {}
+                document.title = data.system_title || `${data.company_name} | نظام الباركود الصناعي HMS`;
+            }
+        } catch (e) {}
+    };
 
     // جلب اسم الشركة من ترخيص النظام فورياً عند تحميل التطبيق
     useEffect(() => {
-        fetch('/api/system/info')
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.company_name) {
-                    setCompanyName(data.company_name);
-                    setIsMasterGeneral(Boolean(data.is_master));
-                    try {
-                        localStorage.setItem('hms_system_info', JSON.stringify(data));
-                    } catch (e) {}
-                    document.title = data.system_title || `${data.company_name} | نظام الباركود الصناعي HMS`;
-                }
-            })
-            .catch(() => {});
+        reloadSystemInfo();
     }, []);
 
     const login = (userData, token) => {
@@ -73,7 +78,7 @@ export function AuthProvider({ children }) {
             isAdmin, isSuperAdmin, isMasterOwner,
             isProduction, isAdminView, isExternalOperator, isExternalAdmin, 
             canCreateOrders, canManageUsers, canPrintReports, canViewOrders,
-            companyName, setCompanyName 
+            companyName, setCompanyName, licenseInfo, isMasterGeneral, reloadSystemInfo 
         }}>
             {children}
         </AuthContext.Provider>
