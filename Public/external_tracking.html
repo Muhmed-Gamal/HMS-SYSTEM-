@@ -1171,12 +1171,12 @@
                     </div>
 
                     ${scanList.length > 0 ? `
-                    <div class="section-title">سجل عينة القطع والشفرات الممسوحة (أحدث ${Math.min(100, scanList.length)} حركة مسجلة)</div>
+                    <div class="section-title">سجل حركات وتدقيق المسح بأمر التشغيل (أحدث ${Math.min(100, scanList.length)} حركة مسجلة)</div>
                     <table class="details-table">
                         <thead>
                             <tr>
                                 <th style="width:35px;text-align:center;">م</th>
-                                <th>كود الباركود المسجل</th>
+                                <th>رقم أمر التشغيل</th>
                                 <th>المشغل / السكانر</th>
                                 <th style="text-align:center;">وقت وتاريخ المسح الدقيق</th>
                             </tr>
@@ -1185,7 +1185,7 @@
                             ${scanList.slice(0, 100).map((s, idx) => `
                                 <tr>
                                     <td style="text-align:center;font-family:monospace;font-size:9.5px;">${idx + 1}</td>
-                                    <td style="font-family:monospace;font-weight:800;color:#0f172a;">${s.barcode}</td>
+                                    <td style="font-family:monospace;font-weight:800;color:#0f172a;">${order.order_number}</td>
                                     <td>${s.scanned_by || 'مشغل خارجي'}</td>
                                     <td style="text-align:center;font-family:monospace;font-size:9.5px;">${s.created_at ? new Date(s.created_at).toLocaleDateString('ar-EG-u-nu-latn') + ' ' + new Date(s.created_at).toLocaleTimeString('ar-EG-u-nu-latn') : '-'}</td>
                                 </tr>
