@@ -1,39 +1,50 @@
 @echo off
 chcp 65001 >nul
-title HMS Industrial System - Database Sanitizer
+title HMS Industrial System - Clean Database for Client
 color 0E
 
 echo ===================================================================
-echo   HMS Industrial Barcode System - Clean Database for Client
+echo   HMS Industrial Barcode System - تنظيف وتهيئة قاعدة البيانات للعميل
 echo ===================================================================
 echo.
 
 cd /d "%~dp0"
 
-echo  WARNING: This operation will DELETE all production orders, scans,
-echo  and movements while KEEPING master admin accounts (Gamal and Auf)
-echo  and all production stage configurations.
+echo  [تحذير أمني هام]:
+echo  هذا الإجراء سيقوم بحذف كافة أوامر التشغيل والمسحات والباركودات
+echo  وحسابات المشغلين والعملاء التجريبيين، وتصفير العدادات التلقائية
+echo  لتسليم نسخة خام ونقية للعميل 100%%.
 echo.
-set /p CONFIRM="Are you sure you want to continue? (type y to confirm): "
+echo  [الحسابات المستثناة والمحمية]:
+echo   • المالك: Gamal (Superadmin)
+echo   • المالك: Auf (Superadmin)
+echo   • مدير النظام: admin (Admin)
+echo.
+echo  [مراحل الإنتاج]: سيتم الحفاظ عليها بالكامل وبنفس الترتيب.
+echo.
+echo ===================================================================
+set /p CONFIRM="هل أنت متأكد من رغبتك في تنظيف قاعدة البيانات؟ (اكتب y للموافقة): "
 if /i not "%CONFIRM%"=="y" (
     echo.
-    echo  Operation cancelled.
+    echo  تم إلغاء العملية بأمان.
     pause
     exit /b 0
 )
 
 echo.
-echo  Running database cleanup...
+echo  جاري تنظيف وتهيئة قاعدة البيانات...
+echo.
 node reset_database_clean.js
 
 if %errorlevel% equ 0 (
     echo.
     echo ===================================================================
-    echo  [SUCCESS] Database cleaned and ready for client delivery!
+    echo  [SUCCESS] تم تنظيف وتصفير قاعدة البيانات بنجاح 100%%!
+    echo  النظام الآن جاهز تماماً للتسليم إلى العميل.
     echo ===================================================================
 ) else (
     echo.
-    echo  [ERROR] Cleanup failed. Check the messages above.
+    echo  [ERROR] حدث خطأ أثناء تنظيف قاعدة البيانات! راجع الرسائل أعلاه.
 )
 
 echo.
