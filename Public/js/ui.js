@@ -383,7 +383,11 @@ window.FreedomUI = FreedomUI;
 
 function authHeaders() {
     const user = getCurrentUser();
+    const token = localStorage.getItem('hms_token') || localStorage.getItem('freedom_token');
     const h = { 'Content-Type': 'application/json' };
+    if (token) {
+        h['Authorization'] = `Bearer ${token}`;
+    }
     if (user && user.id) {
         h['x-user-id'] = String(user.id);
     }
@@ -444,7 +448,12 @@ window.formatDate = formatDate;
 function logoutSystem() {
     FreedomUI.confirm('تسجيل الخروج', 'هل أنت متأكد من إنهاء جلسة العمل الحالية؟').then(ok => {
         if (ok) {
+            localStorage.removeItem('hms_user');
             localStorage.removeItem('freedom_user');
+            localStorage.removeItem('hms_token');
+            localStorage.removeItem('freedom_token');
+            localStorage.removeItem('hms_system_info');
+            localStorage.removeItem('freedom_system_info');
             window.location.href = '/login';
         }
     });
@@ -483,7 +492,7 @@ if (document.readyState === 'loading') {
 
 // ===== تهيئة الهيدر وشريط التنقل الموحد لجميع صفحات النظام =====
 window.initUnifiedNavbar = function({ activePage = '' } = {}) {
-    const savedUser = localStorage.getItem('freedom_user');
+    const savedUser = localStorage.getItem('hms_user') || localStorage.getItem('freedom_user');
     if (!savedUser) {
         if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
@@ -495,6 +504,7 @@ window.initUnifiedNavbar = function({ activePage = '' } = {}) {
     try {
         user = JSON.parse(savedUser);
     } catch (e) {
+        localStorage.removeItem('hms_user');
         localStorage.removeItem('freedom_user');
         window.location.href = '/login';
         return null;

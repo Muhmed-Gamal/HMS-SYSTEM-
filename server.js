@@ -2966,10 +2966,7 @@ app.get('/api/stats', async (req, res) => {
 // ============================================================================
 
 // توجيهات صفحات التشغيل الخارجي
-app.get('/external', (req, res) => {
-    res.sendFile(path.join(__dirname, 'Public', 'external_tracking.html'));
-});
-app.get('/external_tracking', (req, res) => {
+app.get(['/external', '/external_tracking', '/external_tracking.html'], (req, res) => {
     res.sendFile(path.join(__dirname, 'Public', 'external_tracking.html'));
 });
 

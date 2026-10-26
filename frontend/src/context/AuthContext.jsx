@@ -39,8 +39,10 @@ export function AuthProvider({ children }) {
 
     const login = (userData, token) => {
         localStorage.setItem('hms_user', JSON.stringify(userData));
+        localStorage.setItem('freedom_user', JSON.stringify(userData));
         if (token) {
             localStorage.setItem('hms_token', token);
+            localStorage.setItem('freedom_token', token);
         }
         setUser(userData);
     };
@@ -49,6 +51,7 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('hms_user');
         localStorage.removeItem('freedom_user');
         localStorage.removeItem('hms_token');
+        localStorage.removeItem('freedom_token');
         localStorage.removeItem('hms_system_info');
         localStorage.removeItem('freedom_system_info');
         setUser(null);
