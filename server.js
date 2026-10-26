@@ -925,17 +925,19 @@ async function initializeDatabase() {
             `);
         }
 
-        // 3. إنشاء أدمن افتراضي
-        const adminCheck = await globalPool.request().query(`SELECT id FROM Users WHERE username = 'admin'`);
-        if (adminCheck.recordset.length === 0) {
-            const passHash = hashPasswordSecure('admin123');
-            await globalPool.request()
-                .input('hash', sql.NVarChar, passHash)
-                .query(`
-                    INSERT INTO Users (username, password, full_name, role, can_view_orders, can_create_orders, can_print_reports, can_manage_users)
-                    VALUES ('admin', @hash, N'مدير النظام', 'admin', 1, 1, 1, 1)
-                `);
-            console.log('👤 Default admin created: username "admin", password "admin123"');
+        // 3. إنشاء أدمن تجريبي افتراضي فقط في بيئة المطور أو في حال تفعيل SEED_DEFAULT_ADMIN
+        if (process.env.SEED_DEFAULT_ADMIN === 'true' || process.env.GENERAL_EDITION === 'true') {
+            const adminCheck = await globalPool.request().query(`SELECT id FROM Users WHERE username = 'admin'`);
+            if (adminCheck.recordset.length === 0) {
+                const passHash = hashPasswordSecure('admin123');
+                await globalPool.request()
+                    .input('hash', sql.NVarChar, passHash)
+                    .query(`
+                        INSERT INTO Users (username, password, full_name, role, can_view_orders, can_create_orders, can_print_reports, can_manage_users)
+                        VALUES ('admin', @hash, N'مدير النظام', 'admin', 1, 1, 1, 1)
+                    `);
+                console.log('👤 Default admin created: username "admin", password "admin123"');
+            }
         }
 
         // التأكد من مسح حسابات الماستر التلقائية القديمة

@@ -36,8 +36,19 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo جاري رفع الملفات إلى فرع main على GitHub...
-echo (إذا طُلب منك تسجيل الدخول، سجّل عبر المتصفح لتأكيد الحساب)...
+echo [1/3] جاري تجهيز وإضافة جميع الملفات المعدلة...
+"%GIT_CMD%" add .
+
+set COMMIT_MSG=
+set /p COMMIT_MSG="👉 اكتب وصف التعديل (أو اضغط Enter للوصف التلقائي): "
+if "%COMMIT_MSG%"=="" set COMMIT_MSG=update: system improvements and optimizations
+
+echo.
+echo [2/3] حفظ التعديلات محلياً (Commit)...
+"%GIT_CMD%" commit -m "%COMMIT_MSG%"
+
+echo.
+echo [3/3] رفع التعديلات إلى فرع main على GitHub...
 echo.
 
 "%GIT_CMD%" push -u origin main

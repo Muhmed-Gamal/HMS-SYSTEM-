@@ -11,6 +11,8 @@
     "license:gen": "node generate_license.js",
     "license:month": "node generate_license.js --months 1",
     "license:year": "node generate_license.js --years 1",
+    "package:client": "node package_client_release.js",
+    "clean:db": "node reset_database_clean.js",
     "verify": "node verify_system.js",
     "test": "node verify_system.js"
   },
@@ -30,6 +32,7 @@
     "pdfkit": "^0.20.2"
   },
   "devDependencies": {
+    "javascript-obfuscator": "^5.9.0",
     "nodemon": "^1.14.10"
   }
 }
