@@ -94,6 +94,7 @@ export const api = {
     createUser: (userData) => request('/users', { method: 'POST', body: JSON.stringify(userData) }),
     updateUser: (id, userData) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(userData) }),
     deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+    unlockUser: (id) => request(`/users/${id}/unlock`, { method: 'POST' }),
 
     // Super Admin Licensing
     getLicenseStatus: () => request('/license/status', { method: 'GET' }),

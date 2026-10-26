@@ -596,8 +596,26 @@ async function initializeDatabase() {
                     can_create_orders BIT DEFAULT 0,
                     can_print_reports BIT DEFAULT 0,
                     can_manage_users BIT DEFAULT 0,
+                    is_locked BIT DEFAULT 0,
+                    failed_login_count INT DEFAULT 0,
+                    lockout_count INT DEFAULT 0,
+                    locked_until DATETIME NULL,
+                    locked_reason NVARCHAR(200) NULL,
                     created_at DATETIME DEFAULT GETDATE()
                 );
+            END
+            ELSE
+            BEGIN
+                IF COL_LENGTH('dbo.Users', 'is_locked') IS NULL
+                    ALTER TABLE dbo.Users ADD is_locked BIT DEFAULT 0;
+                IF COL_LENGTH('dbo.Users', 'failed_login_count') IS NULL
+                    ALTER TABLE dbo.Users ADD failed_login_count INT DEFAULT 0;
+                IF COL_LENGTH('dbo.Users', 'lockout_count') IS NULL
+                    ALTER TABLE dbo.Users ADD lockout_count INT DEFAULT 0;
+                IF COL_LENGTH('dbo.Users', 'locked_until') IS NULL
+                    ALTER TABLE dbo.Users ADD locked_until DATETIME NULL;
+                IF COL_LENGTH('dbo.Users', 'locked_reason') IS NULL
+                    ALTER TABLE dbo.Users ADD locked_reason NVARCHAR(200) NULL;
             END
         `);
 
@@ -903,7 +921,9 @@ async function initializeDatabase() {
             console.log('👑 Master Superadmin [Auf] created successfully in new database');
         } else {
             await globalPool.request().query(`
-                UPDATE Users SET role = 'superadmin', can_view_orders = 1, can_create_orders = 1, can_print_reports = 1, can_manage_users = 1
+                UPDATE Users 
+                SET role = 'superadmin', can_view_orders = 1, can_create_orders = 1, can_print_reports = 1, can_manage_users = 1,
+                    is_locked = 0, failed_login_count = 0, lockout_count = 0, locked_until = NULL, locked_reason = NULL
                 WHERE LOWER(username) = 'auf'
             `);
         }
@@ -914,13 +934,15 @@ async function initializeDatabase() {
             await globalPool.request()
                 .input('hash', sql.NVarChar, gamalPassHash)
                 .query(`
-                    INSERT INTO Users (username, password, full_name, role, can_view_orders, can_create_orders, can_print_reports, can_manage_users)
-                    VALUES ('Gamal', @hash, N'Gamal (Master Superadmin)', 'superadmin', 1, 1, 1, 1)
+                    INSERT INTO Users (username, password, full_name, role, can_view_orders, can_create_orders, can_print_reports, can_manage_users, is_locked, failed_login_count, lockout_count)
+                    VALUES ('Gamal', @hash, N'Gamal (Master Superadmin)', 'superadmin', 1, 1, 1, 1, 0, 0, 0)
                 `);
             console.log('👑 Master Superadmin [Gamal] created successfully in new database');
         } else {
             await globalPool.request().query(`
-                UPDATE Users SET role = 'superadmin', can_view_orders = 1, can_create_orders = 1, can_print_reports = 1, can_manage_users = 1
+                UPDATE Users 
+                SET role = 'superadmin', can_view_orders = 1, can_create_orders = 1, can_print_reports = 1, can_manage_users = 1,
+                    is_locked = 0, failed_login_count = 0, lockout_count = 0, locked_until = NULL, locked_reason = NULL
                 WHERE LOWER(username) = 'gamal'
             `);
         }
@@ -1063,8 +1085,8 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// تسجيل الدخول المحمي (Anti-Brute Force + PBKDF2 + JWT + فحص الترخيص الصارم)
-app.post('/api/login', checkLoginRateLimit, async (req, res) => {
+// تسجيل الدخول المحمي بنظام قفل الحسابات المتقدم (Account Lockout Policy + PBKDF2 + JWT + فحص الترخيص الصارم)
+app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
         return res.status(400).json({ success: false, message: 'يرجى إدخال اسم المستخدم وكلمة المرور' });
@@ -1089,16 +1111,67 @@ app.post('/api/login', checkLoginRateLimit, async (req, res) => {
     try {
         const pool = await getPool();
         const result = await pool.request()
-            .input('username', sql.NVarChar, username.trim())
-            .query('SELECT id, username, password, full_name, role, stage_action, can_view_orders, can_create_orders, can_print_reports, can_manage_users FROM Users WHERE username = @username');
+            .input('username', sql.NVarChar, trimmedUsername)
+            .query(`
+                SELECT id, username, password, full_name, role, stage_action, 
+                       can_view_orders, can_create_orders, can_print_reports, can_manage_users,
+                       is_locked, failed_login_count, lockout_count, locked_until, locked_reason
+                FROM Users 
+                WHERE username = @username
+            `);
 
         if (result.recordset.length > 0) {
             const userRow = result.recordset[0];
+
+            // ملاك النظام الماستر Gamal و Auf محميون استثنائياً ولا يُقفل حسابهم نهائياً تحت أي ظرف
+            if (!isMasterOwner) {
+                // فحص حالة القفل الحالية للحساب
+                if (userRow.is_locked) {
+                    if (userRow.locked_until) {
+                        const now = Date.now();
+                        const lockEndTime = new Date(userRow.locked_until).getTime();
+
+                        if (now < lockEndTime) {
+                            const remainingSeconds = Math.ceil((lockEndTime - now) / 1000);
+                            const remainingMinutes = Math.ceil(remainingSeconds / 60);
+                            return res.status(403).json({
+                                success: false,
+                                locked: true,
+                                lockType: 'temporary',
+                                remainingSeconds,
+                                remainingMinutes,
+                                message: `🔒 هذا الحساب مقفول مؤقتاً لتكرار محاولات الدخول الخاطئة. سيتم فتح القفل تلقائياً بعد ${remainingMinutes} دقيقة، أو يمكن لمالك النظام فك القفل فوراً.`
+                            });
+                        } else {
+                            // انتهت مدة الـ 5 دقائق للقفل المؤقت -> فك القفل تلقائياً
+                            await pool.request()
+                                .input('id', sql.Int, userRow.id)
+                                .query('UPDATE Users SET is_locked = 0, locked_until = NULL, failed_login_count = 0 WHERE id = @id');
+                            userRow.is_locked = false;
+                            userRow.locked_until = null;
+                            userRow.failed_login_count = 0;
+                        }
+                    } else {
+                        // locked_until خالي -> قفل نهائي يتطلب فك القفل يدوياً من المالك المطلق
+                        return res.status(403).json({
+                            success: false,
+                            locked: true,
+                            lockType: 'permanent',
+                            message: '⛔ تم قفل هذا الحساب نهائياً لتكرار محاولات الدخول الخاطئة! يتطلب فك القفل تدخل مالك النظام (جمال / عوف) من لوحة الإدارة.'
+                        });
+                    }
+                }
+            }
+
             const authCheck = verifyPassword(password, userRow.password);
 
             if (authCheck.valid) {
-                // تصفير سجل المحاولات الفاشلة للـ IP بعد نجاح الدخول
-                clearFailedLogin(req);
+                // نجاح الدخول: تصفير عداد المحاولات الفاشلة
+                if (!isMasterOwner && (userRow.failed_login_count > 0 || userRow.is_locked)) {
+                    await pool.request()
+                        .input('id', sql.Int, userRow.id)
+                        .query('UPDATE Users SET failed_login_count = 0, is_locked = 0, locked_until = NULL, locked_reason = NULL WHERE id = @id');
+                }
 
                 // ترقية هاش كلمة المرور تلقائياً في الخلفية إلى Salted PBKDF2 إذا كان بصيغة قديمة
                 if (authCheck.needsRehash) {
@@ -1140,11 +1213,80 @@ app.post('/api/login', checkLoginRateLimit, async (req, res) => {
                 });
 
                 return res.json({ success: true, user: loggedUser, token });
+            } else {
+                // كلمة المرور غير صحيحة لمستخدم مسجل
+                if (isMasterOwner) {
+                    // الملاك لا يخضعون للقفل أبداً
+                    return res.status(401).json({ success: false, message: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+                }
+
+                const currentFailed = (userRow.failed_login_count || 0) + 1;
+                const currentLockouts = userRow.lockout_count || 0;
+
+                if (currentFailed >= 5) {
+                    if (currentLockouts === 0) {
+                        // المرة الأولى: قفل مؤقت لمدة 5 دقائق
+                        await pool.request()
+                            .input('id', sql.Int, userRow.id)
+                            .query(`
+                                UPDATE Users 
+                                SET is_locked = 1, 
+                                    lockout_count = 1, 
+                                    failed_login_count = 0, 
+                                    locked_until = DATEADD(minute, 5, GETDATE()), 
+                                    locked_reason = N'قفل مؤقت لمدة 5 دقائق لتجاوز 5 محاولات خاطئة'
+                                WHERE id = @id
+                            `);
+
+                        console.warn(`🔒 [Security] User [${userRow.username}] locked for 5 minutes (first lockout cycle).`);
+                        return res.status(403).json({
+                            success: false,
+                            locked: true,
+                            lockType: 'temporary',
+                            remainingMinutes: 5,
+                            message: '🔒 تم قفل الحساب مؤقتاً لمدة 5 دقائق لتكرار إدخال كلمة المرور 5 مرات خاطئة. يمكنك الانتظار أو التواصل مع الإدارة.'
+                        });
+                    } else {
+                        // المرة الثانية أو أكثر: قفل نهائي لا يفتح إلا يدوياً بواسطة المالك
+                        await pool.request()
+                            .input('id', sql.Int, userRow.id)
+                            .query(`
+                                UPDATE Users 
+                                SET is_locked = 1, 
+                                    lockout_count = lockout_count + 1, 
+                                    failed_login_count = 0, 
+                                    locked_until = NULL, 
+                                    locked_reason = N'قفل نهائي لتكرار المحاولات الخاطئة بعد القفل المؤقت'
+                                WHERE id = @id
+                            `);
+
+                        console.warn(`⛔ [Security Alert] User [${userRow.username}] locked PERMANENTLY after repeated lockout.`);
+                        return res.status(403).json({
+                            success: false,
+                            locked: true,
+                            lockType: 'permanent',
+                            message: '⛔ تم قفل هذا الحساب نهائياً لتكرار محاولات الدخول الخاطئة بعد انتهاء القفل المؤقت! لا يمكن الدخول إلا بفك القفل من مالك السيستم (جمال / عوف).'
+                        });
+                    }
+                } else {
+                    // لم يبلغ 5 محاولات بعد -> تحديث العداد والتحذير بالمتبقي
+                    await pool.request()
+                        .input('id', sql.Int, userRow.id)
+                        .input('cnt', sql.Int, currentFailed)
+                        .query('UPDATE Users SET failed_login_count = @cnt WHERE id = @id');
+
+                    const remainingAttempts = 5 - currentFailed;
+                    return res.status(401).json({
+                        success: false,
+                        failedAttempts: currentFailed,
+                        remainingAttempts,
+                        message: `كلمة المرور غير صحيحة. متبقي ${remainingAttempts} ${remainingAttempts === 1 ? 'محاولة واحدة' : 'محاولات'} قبل قفل الحساب!`
+                    });
+                }
             }
         }
 
-        // تسجيل محاولة فاشلة في نظام الحماية من التخمين
-        recordFailedLogin(req);
+        // اسم المستخدم غير موجود أصلاً في النظام
         return res.status(401).json({ success: false, message: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
     } catch (err) {
         console.error('Login Error:', err);
@@ -1160,12 +1302,18 @@ app.get('/api/me', async (req, res) => {
     res.json({ success: true, user: req.user });
 });
 
-
+// جلب قائمة المستخدمين مع بيانات الأمان وقفل الحساب
 app.get('/api/users', async (req, res) => {
     try {
         const pool = await getPool();
         const user = req.user;
-        let query = 'SELECT id, username, full_name, role, stage_action, can_view_orders, can_create_orders, can_print_reports, can_manage_users, created_at FROM Users ';
+        let query = `
+            SELECT id, username, full_name, role, stage_action, 
+                   can_view_orders, can_create_orders, can_print_reports, can_manage_users,
+                   is_locked, failed_login_count, lockout_count, locked_until, locked_reason,
+                   created_at 
+            FROM Users 
+        `;
         if (user && user.role === 'external_admin') {
             query += "WHERE role = 'external_operator' ";
         }
@@ -1174,6 +1322,60 @@ app.get('/api/users', async (req, res) => {
         res.json({ success: true, users: result.recordset });
     } catch (err) {
         res.status(500).json({ success: false, message: 'فشل جلب المستخدمين' });
+    }
+});
+
+// API فك قفل الحساب (خاص بمالك المنظومة والمدير العام - Gamal / Auf / SuperAdmin)
+app.post('/api/users/:id/unlock', async (req, res) => {
+    const caller = req.user;
+    const isMaster = caller && (
+        ['gamal', 'auf'].includes((caller.username || '').toLowerCase()) || 
+        caller.role === 'superadmin' || 
+        caller.can_manage_users
+    );
+
+    if (!isMaster) {
+        return res.status(403).json({ 
+            success: false, 
+            message: 'غير مصرح! فك قفل الحسابات مقتصر حصرياً على مالك المنظومة (جمال / عوف) والمدير العام.' 
+        });
+    }
+
+    try {
+        const pool = await getPool();
+        const targetId = parseInt(req.params.id, 10);
+
+        const targetRes = await pool.request()
+            .input('id', sql.Int, targetId)
+            .query('SELECT id, username, is_locked FROM Users WHERE id = @id');
+
+        if (targetRes.recordset.length === 0) {
+            return res.status(404).json({ success: false, message: 'المستخدم المطلوب غير موجود' });
+        }
+
+        const targetUsername = targetRes.recordset[0].username;
+
+        // تصفير القفل وكافة عدادات الأخطاء وإعادة الحساب للحالة الطبيعية
+        await pool.request()
+            .input('id', sql.Int, targetId)
+            .query(`
+                UPDATE Users 
+                SET is_locked = 0, 
+                    failed_login_count = 0, 
+                    lockout_count = 0, 
+                    locked_until = NULL, 
+                    locked_reason = NULL 
+                WHERE id = @id
+            `);
+
+        console.log(`🔓 [Security Audit] User [${targetUsername}] unlocked by master admin [${caller.username}]`);
+        return res.json({
+            success: true,
+            message: `تم فك قفل الحساب (${targetUsername}) وتصفير عداد المحاولات الخاطئة بنجاح.`
+        });
+    } catch (err) {
+        console.error('Unlock User Error:', err);
+        return res.status(500).json({ success: false, message: 'حدث خطأ أثناء فك قفل الحساب' });
     }
 });
 

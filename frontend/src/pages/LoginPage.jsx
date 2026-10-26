@@ -13,6 +13,7 @@ export default function LoginPage() {
     const [showActivationModal, setShowActivationModal] = useState(false);
     const [activationKey, setActivationKey] = useState('');
     const [activating, setActivating] = useState(false);
+    const [lockoutInfo, setLockoutInfo] = useState(null);
 
     const { user, login, companyName, licenseInfo, reloadSystemInfo } = useAuth();
     const { toast, showAlert } = useToast();
@@ -53,6 +54,7 @@ export default function LoginPage() {
         setLoading(false);
 
         if (ok && data.success) {
+            setLockoutInfo(null);
             // حفظ بيانات الدخول
             login(data.user, data.token);
 
@@ -64,6 +66,11 @@ export default function LoginPage() {
                 redirectByRole(data.user.role);
             }, 1300);
         } else {
+            if (data && data.locked) {
+                setLockoutInfo(data);
+            } else {
+                setLockoutInfo(null);
+            }
             showAlert('تعذر الدخول', data.message || 'بيانات الدخول غير صحيحة', 'error');
         }
     };
@@ -181,6 +188,23 @@ export default function LoginPage() {
 
                 {/* نموذج الدخول */}
                 <form onSubmit={handleSubmit} className="space-y-4.5">
+
+                    {/* تنبيه قفل الحساب الأمني */}
+                    {lockoutInfo && (
+                        <div className={`p-3.5 rounded-xl border text-xs flex items-start gap-2.5 transition-all ${
+                            lockoutInfo.lockType === 'permanent' 
+                                ? 'bg-rose-500/10 border-rose-500/30 text-rose-300' 
+                                : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                        }`}>
+                            <i className={`fas ${lockoutInfo.lockType === 'permanent' ? 'fa-lock' : 'fa-hourglass-half'} text-sm mt-0.5 flex-shrink-0`}></i>
+                            <div className="leading-relaxed">
+                                <div className="font-bold mb-0.5">
+                                    {lockoutInfo.lockType === 'permanent' ? '🔒 الحساب مقفول نهائياً' : '⏳ الحساب مقفول مؤقتاً'}
+                                </div>
+                                <div className="text-[11px] opacity-90">{lockoutInfo.message}</div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* حقل اسم المستخدم */}
                     <div>

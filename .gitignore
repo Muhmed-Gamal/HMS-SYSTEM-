@@ -17,9 +17,8 @@ frontend/.vite/
 dist/
 
 # Storage & Temporary Files (الملفات المؤقتة لتقارير الـ PDF)
-storage/temp/
-storage/reports/*.pdf
-!storage/reports/.gitkeep
+storage/
+!storage/.gitkeep
 
 # Operating System Files
 .DS_Store

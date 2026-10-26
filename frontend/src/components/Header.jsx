@@ -140,12 +140,11 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
 
                     {canViewStandardOrders && (
                         <Link to="/orders"
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 font-semibold ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 ${
                                 activePage === 'orders'
-                                    ? 'text-white font-bold shadow-sm'
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                            }`}
-                            style={activePage === 'orders' ? { background: 'linear-gradient(135deg,#1e40af,#2563eb)', boxShadow: '0 2px 8px rgba(37,99,235,0.3)', border: '1px solid rgba(96,165,250,0.3)' } : {}}>
+                                    ? 'bg-sky-500/15 text-sky-400 font-bold border border-sky-500/30 shadow-sm shadow-sky-500/10'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 font-medium border border-transparent'
+                            }`}>
                             <i className="fas fa-layer-group text-xs"></i>
                             <span>الأوردرات</span>
                         </Link>
@@ -153,12 +152,11 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
 
                     {canViewExternal && (
                         <a href="/external_tracking.html"
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 font-semibold ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 ${
                                 activePage === 'external'
-                                    ? 'text-white font-bold'
-                                    : 'text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/10'
-                            }`}
-                            style={activePage === 'external' ? { background: 'linear-gradient(135deg,#0e7490,#0891b2)', boxShadow: '0 2px 8px rgba(6,182,212,0.3)', border: '1px solid rgba(34,211,238,0.3)' } : {}}>
+                                    ? 'bg-sky-500/15 text-sky-400 font-bold border border-sky-500/30 shadow-sm shadow-sky-500/10'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 font-medium border border-transparent'
+                            }`}>
                             <i className="fas fa-truck-loading text-xs"></i>
                             <span>التشغيل الخارجي</span>
                         </a>
@@ -166,12 +164,11 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
 
                     {canViewScanner && (
                         <Link to="/"
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 font-semibold ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 ${
                                 activePage === 'scanner'
-                                    ? 'text-white font-bold'
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                            }`}
-                            style={activePage === 'scanner' ? { background: 'linear-gradient(135deg,#3730a3,#4f46e5)', boxShadow: '0 2px 8px rgba(79,70,229,0.3)', border: '1px solid rgba(129,140,248,0.3)' } : {}}>
+                                    ? 'bg-sky-500/15 text-sky-400 font-bold border border-sky-500/30 shadow-sm shadow-sky-500/10'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 font-medium border border-transparent'
+                            }`}>
                             <i className="fas fa-barcode text-xs"></i>
                             <span>السكانر</span>
                         </Link>
@@ -179,12 +176,11 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
 
                     {canViewAdmin && (
                         <Link to="/admin"
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 font-semibold ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 ${
                                 activePage === 'admin'
-                                    ? 'text-white font-bold'
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                            }`}
-                            style={activePage === 'admin' ? { background: 'linear-gradient(135deg,#6b21a8,#7c3aed)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)', border: '1px solid rgba(167,139,250,0.3)' } : {}}>
+                                    ? 'bg-sky-500/15 text-sky-400 font-bold border border-sky-500/30 shadow-sm shadow-sky-500/10'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 font-medium border border-transparent'
+                            }`}>
                             <i className="fas fa-users-cog text-xs"></i>
                             <span>المستخدمين</span>
                         </Link>

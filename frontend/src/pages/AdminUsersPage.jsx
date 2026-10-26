@@ -431,6 +431,19 @@ export default function AdminUsersPage() {
         }
     };
 
+    const handleUnlockUser = async (userId, username) => {
+        const ok = await confirm('فك قفل الحساب', `هل أنت متأكد من فك قفل الحساب (${username}) وتصفير عداد المحاولات الخاطئة؟`);
+        if (!ok) return;
+
+        const { ok: resOk, data } = await api.unlockUser(userId);
+        if (resOk && data.success) {
+            toast(`تم فك قفل الحساب (${username}) بنجاح وتصفير العداد`, 'success');
+            loadUsers();
+        } else {
+            showAlert('فشل فك القفل', data.message || 'تعذر فك قفل الحساب', 'error');
+        }
+    };
+
     // ===== Edit User Functions =====
     const openEditModal = (u) => {
         setEditUser(u);
@@ -1298,20 +1311,21 @@ export default function AdminUsersPage() {
                                     <th className="p-3 font-bold">الاسم الكامل</th>
                                     <th className="p-3 font-bold">نوع الصلاحية</th>
                                     <th className="p-3 font-bold">المرحلة المقيدة</th>
+                                    <th className="p-3 text-center font-bold">حالة الأمان والقفل</th>
                                     <th className="p-3 text-center font-bold">الإجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="6" className="text-center py-8 text-slate-400 text-xs">
+                                        <td colSpan="7" className="text-center py-8 text-slate-400 text-xs">
                                             <i className="fas fa-circle-notch fa-spin text-base mb-2 block text-blue-400"></i>
                                             جاري تحميل المستخدمين...
                                         </td>
                                     </tr>
                                 ) : users.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="py-12">
+                                        <td colSpan="7" className="py-12">
                                             <div className="empty-state">
                                                 <div className="empty-state-icon">
                                                     <i className="fas fa-users-slash"></i>
@@ -1364,6 +1378,8 @@ export default function AdminUsersPage() {
                                             );
                                         }
 
+                                        const isMaster = (u.username?.toLowerCase() === 'gamal' || u.username?.toLowerCase() === 'auf');
+
                                         return (
                                             <tr key={u.id} className="hover:bg-slate-800/40 transition">
                                                 <td className="p-3 text-slate-500 font-mono text-xs text-center">{i + 1}</td>
@@ -1378,7 +1394,42 @@ export default function AdminUsersPage() {
                                                     )}
                                                 </td>
                                                 <td className="p-3 text-center">
+                                                    {isMaster ? (
+                                                        <span className="badge-clean text-[10px]" style={{background:'rgba(245,158,11,0.15)',color:'#fbbf24',border:'1px solid rgba(245,158,11,0.35)'}}>
+                                                            <i className="fas fa-shield-alt ml-1"></i> محصن ضد القفل
+                                                        </span>
+                                                    ) : u.is_locked ? (
+                                                        u.locked_until ? (
+                                                            <span className="badge-clean text-[10px]" style={{background:'rgba(245,158,11,0.18)',color:'#f59e0b',border:'1px solid rgba(245,158,11,0.4)'}} title={`مقفول مؤقتاً`}>
+                                                                <i className="fas fa-clock ml-1"></i> مقفول مؤقتاً (5 د)
+                                                            </span>
+                                                        ) : (
+                                                            <span className="badge-clean text-[10px]" style={{background:'rgba(239,68,68,0.18)',color:'#ef4444',border:'1px solid rgba(239,68,68,0.4)'}} title="مقفول نهائياً بواسطة نظام الحماية">
+                                                                <i className="fas fa-lock ml-1"></i> مقفول نهائياً
+                                                            </span>
+                                                        )
+                                                    ) : (u.failed_login_count > 0) ? (
+                                                        <span className="badge-clean text-[10px]" style={{background:'rgba(245,158,11,0.12)',color:'#fbbf24',border:'1px solid rgba(245,158,11,0.25)'}} title={`${u.failed_login_count} محاولات خاطئة`}>
+                                                            <i className="fas fa-exclamation-triangle ml-1"></i> {u.failed_login_count}/5 محاولات
+                                                        </span>
+                                                    ) : (
+                                                        <span className="badge-clean badge-green text-[10px]">
+                                                            <i className="fas fa-check-circle ml-1"></i> نشط
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="p-3 text-center">
                                                     <div className="flex items-center justify-center gap-1.5">
+                                                        {/* Unlock Button for locked users */}
+                                                        {u.is_locked && (isSuperAdmin || isAdmin || ['gamal','auf'].includes(user?.username?.toLowerCase())) && (
+                                                            <button
+                                                                onClick={() => handleUnlockUser(u.id, u.username)}
+                                                                className="btn-slate text-[11px] py-1 px-2.5 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/15 hover:border-emerald-400 transition flex items-center gap-1 font-semibold"
+                                                                title="فك قفل الحساب فوراً وتصفير محاولات تسجيل الدخول"
+                                                            >
+                                                                <i className="fas fa-unlock text-[10px]"></i> فك القفل
+                                                            </button>
+                                                        )}
                                                         {/* Edit Button */}
                                                         {canEditUser(u) && (
                                                             <button

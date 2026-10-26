@@ -616,16 +616,16 @@ export default function OrdersTrackingPage() {
                 </div>
 
                 {/* Quick Action & Info Strip */}
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-[#0d1b33] via-[#0f2444] to-[#0a1526] border border-sky-500/30 shadow-lg">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 shadow-sm">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/40 flex items-center justify-center text-lg shadow-md shadow-sky-500/20 flex-shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center text-base flex-shrink-0">
                             <i className="fas fa-layer-group"></i>
                         </div>
                         <div>
-                            <h2 className="text-sm font-bold text-white flex items-center gap-2 flex-wrap">
-                                <span>لوحة متابعة وتدقيق خطوط الإنتاج</span>
-                                <span className="text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full font-mono border border-sky-500/30">LIVE TRACKING</span>
-                            </h2>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h2 className="text-sm font-bold text-white">لوحة متابعة وتدقيق خطوط الإنتاج</h2>
+                                <span className="text-[10px] bg-sky-500/10 text-sky-400 px-2 py-0.5 rounded-md font-mono border border-sky-500/20">LIVE TRACKING</span>
+                            </div>
                             <p className="text-xs text-slate-400 mt-0.5">
                                 متابعة حركة الشفرات والمسحات الحية ونسب الإنجاز لكل أوردر عبر كافة المحطات
                             </p>
@@ -636,18 +636,18 @@ export default function OrdersTrackingPage() {
                         {canCreateOrders && (
                             <Link
                                 to="/create-order"
-                                className="btn-slate text-xs py-2 px-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 border border-sky-400/40"
+                                className="btn-slate btn-slate-primary text-xs py-2 px-3.5 flex items-center justify-center gap-2"
                             >
                                 <i className="fas fa-plus-circle text-xs"></i>
-                                <span>+ أوردر جديد</span>
+                                <span>أوردر جديد</span>
                             </Link>
                         )}
                         <button
                             onClick={handleOpenComprehensiveReport}
-                            className="btn-slate bg-indigo-950/40 hover:bg-indigo-900/40 text-indigo-300 border border-indigo-500/30 text-xs py-2 px-3 flex items-center justify-center gap-1.5"
+                            className="btn-slate btn-slate-secondary text-xs py-2 px-3 flex items-center justify-center gap-1.5"
                             title="عرض وطباعة التقرير الشامل لجميع الأوردرات"
                         >
-                            <i className="fas fa-file-alt text-indigo-400"></i>
+                            <i className="fas fa-file-alt text-slate-400"></i>
                             <span>التقرير الشامل</span>
                         </button>
                         <button
