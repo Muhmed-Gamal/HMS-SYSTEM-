@@ -55,6 +55,7 @@ export default function ScannerPage() {
     const [barcodeInput, setBarcodeInput] = useState('');
     const [scanning, setScanning] = useState(false);
     const [scanAnimation, setScanAnimation] = useState(''); // 'scan-flash-success' | 'scan-shake-error'
+    const [lastScanResult, setLastScanResult] = useState(null); // { barcode, status: 'success' | 'error', time: string, message?: string }
     const barcodeInputRef = useRef(null);
 
     // External mode scan history (kept locally — server is source of truth)
@@ -312,6 +313,13 @@ export default function ScannerPage() {
                 if (res.ok && data.success) {
                     playBeepSuccess();
                     setScanAnimation('scan-flash-success');
+                    setLastScanResult({
+                        barcode,
+                        status: 'success',
+                        time: new Date().toLocaleTimeString('ar-EG-u-nu-latn'),
+                        scanned_quantity: data.total_scanned,
+                        target_quantity: data.target_quantity
+                    });
                     setTimeout(() => setScanAnimation(''), 450);
                     // Update local counter
                     setCurrentOrder(prev => ({
@@ -336,6 +344,12 @@ export default function ScannerPage() {
                 } else {
                     playBeepError();
                     setScanAnimation('scan-shake-error');
+                    setLastScanResult({
+                        barcode,
+                        status: 'error',
+                        time: new Date().toLocaleTimeString('ar-EG-u-nu-latn'),
+                        message: data.message || 'الكود مكرر أو غير صالح'
+                    });
                     setTimeout(() => setScanAnimation(''), 450);
                     toast(data.message || 'الكود مكرر أو حدث خطأ', 'error', 3500);
                 }
@@ -343,6 +357,12 @@ export default function ScannerPage() {
                 setScanning(false);
                 setBarcodeInput('');
                 playBeepError();
+                setLastScanResult({
+                    barcode,
+                    status: 'error',
+                    time: new Date().toLocaleTimeString('ar-EG-u-nu-latn'),
+                    message: 'خطأ في الاتصال بالسيرفر'
+                });
                 toast('خطأ في الاتصال بالخادم', 'error');
             }
             setTimeout(() => barcodeInputRef.current?.focus(), 100);
@@ -364,6 +384,13 @@ export default function ScannerPage() {
         if (ok && data.success) {
             playBeepSuccess();
             setScanAnimation('scan-flash-success');
+            setLastScanResult({
+                barcode,
+                status: 'success',
+                time: new Date().toLocaleTimeString('ar-EG-u-nu-latn'),
+                scanned_quantity: data.scanned_quantity,
+                target_quantity: data.target_quantity
+            });
             setTimeout(() => setScanAnimation(''), 450);
 
             await loadOrderDetails(currentOrder.id);
@@ -382,6 +409,12 @@ export default function ScannerPage() {
         } else {
             playBeepError();
             setScanAnimation('scan-shake-error');
+            setLastScanResult({
+                barcode,
+                status: 'error',
+                time: new Date().toLocaleTimeString('ar-EG-u-nu-latn'),
+                message: data.message || 'الكود غير مطابق أو ممسوح مسبقاً'
+            });
             setTimeout(() => setScanAnimation(''), 450);
             toast(data.message || 'الكود غير مطابق أو ممسوح مسبقاً', 'error', 3500);
         }
@@ -697,34 +730,42 @@ export default function ScannerPage() {
 
                 {/* Barcode Scanner Precision HUD Input */}
                 <div className={`relative overflow-hidden transition-all duration-300 rounded-2xl ${
-                    currentOrder ? '' : ''
+                    currentOrder ? 'scanner-hud-glow' : ''
                 }`}
                     style={{
-                        background: currentOrder ? 'linear-gradient(145deg, #080f22, #060c1a)' : 'linear-gradient(145deg, #0a1120, #070c18)',
-                        border: currentOrder ? '1px solid rgba(56,189,248,0.3)' : '1px solid rgba(148,163,184,0.08)',
-                        boxShadow: currentOrder ? '0 0 30px rgba(56,189,248,0.08), inset 0 1px 0 rgba(255,255,255,0.03)' : 'inset 0 1px 0 rgba(255,255,255,0.02)',
-                        padding: '20px',
+                        background: currentOrder ? 'linear-gradient(145deg, #091226, #060b18)' : 'linear-gradient(145deg, #0a1120, #070c18)',
+                        border: currentOrder ? '1px solid rgba(56,189,248,0.4)' : '1px solid rgba(148,163,184,0.1)',
+                        boxShadow: currentOrder ? '0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 0 25px -5px rgba(56, 189, 248, 0.25)' : 'inset 0 1px 0 rgba(255,255,255,0.02)',
+                        padding: '22px',
                     }}>
 
                     {/* Animated top accent when active */}
                     {currentOrder && (
-                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500 via-blue-400 to-indigo-500" />
+                        <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-sky-500 via-cyan-400 to-indigo-500" />
                     )}
 
+                    {/* Subtle scanning laser sweep across the card */}
+                    {currentOrder && <div className="scanner-laser-line" />}
+
                     <form onSubmit={handleBarcodeSubmit}>
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-3.5">
                             <label className="text-xs font-bold text-slate-200 flex items-center gap-2.5">
-                                <span className={`w-2 h-2 rounded-full ${currentOrder ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.6)]' : 'bg-slate-700'}`}></span>
-                                <span className="text-[12.5px]">{isExternal
-                                    ? 'مسح أي باركود خارجي'
-                                    : 'مسح أو كتابة كود القطعة'}
+                                <span className={`w-2.5 h-2.5 rounded-full ${currentOrder ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-slate-700'}`}></span>
+                                <span className="text-[13px]">{isExternal
+                                    ? 'مسح الباركود الخارجي (قارئ ليزر أو يدوي)'
+                                    : 'مسح أو كتابة كود القطعة (قارئ ليزر أو يدوي)'}
                                 </span>
-                                <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">Laser Barcode Scanner Input</span>
+                                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline border border-slate-700/60 bg-slate-900/60 px-2 py-0.5 rounded">High-Speed Laser Input</span>
                             </label>
-                            {currentOrder && (
-                                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    READY
+                            {currentOrder ? (
+                                <span className="text-[10.5px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                    ONLINE & READY
+                                </span>
+                            ) : (
+                                <span className="text-[10.5px] font-mono font-medium text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 flex items-center gap-1.5">
+                                    <i className="fas fa-lock text-[9px]"></i>
+                                    STANDBY
                                 </span>
                             )}
                         </div>
@@ -739,29 +780,29 @@ export default function ScannerPage() {
                                     disabled={!currentOrder || scanning}
                                     placeholder={
                                         currentOrder
-                                            ? 'مرر جهاز قراءة الباركود أو اكتب الكود واضغط Enter...'
+                                            ? 'مرر جهاز قارئ الباركود أو اكتب الكود واضغط Enter...'
                                             : 'يرجى فتح الأوردر أولاً لتفعيل محطة مسح الباركود...'
                                     }
                                     className={`w-full font-mono font-bold tracking-wider focus:outline-none transition-all duration-200 ${scanAnimation}`}
                                     style={{
-                                        background: currentOrder ? 'rgba(4,9,20,0.9)' : 'rgba(7,12,24,0.6)',
-                                        border: currentOrder ? '1.5px solid rgba(56,189,248,0.35)' : '1px solid rgba(148,163,184,0.08)',
-                                        borderRadius: '12px',
-                                        padding: '13px 44px 13px 40px',
-                                        color: '#f1f5f9',
-                                        fontSize: '14px',
-                                        boxShadow: currentOrder ? 'inset 0 2px 6px rgba(0,0,0,0.5), 0 0 0 3px rgba(56,189,248,0.04)' : 'inset 0 2px 4px rgba(0,0,0,0.4)',
+                                        background: currentOrder ? 'rgba(3,7,18,0.95)' : 'rgba(7,12,24,0.6)',
+                                        border: currentOrder ? '1.5px solid rgba(56,189,248,0.5)' : '1px solid rgba(148,163,184,0.1)',
+                                        borderRadius: '14px',
+                                        padding: '14px 46px 14px 42px',
+                                        color: '#f8fafc',
+                                        fontSize: '15px',
+                                        boxShadow: currentOrder ? 'inset 0 2px 8px rgba(0,0,0,0.6), 0 0 0 3px rgba(56,189,248,0.08)' : 'inset 0 2px 4px rgba(0,0,0,0.4)',
                                     }}
                                     autoComplete="off"
                                 />
-                                <i className={`fas fa-barcode absolute right-3.5 top-1/2 -translate-y-1/2 text-base ${
-                                    currentOrder ? 'text-sky-400' : 'text-slate-600'
+                                <i className={`fas fa-barcode absolute right-4 top-1/2 -translate-y-1/2 text-lg transition-colors ${
+                                    currentOrder ? 'text-sky-400 animate-pulse' : 'text-slate-600'
                                 }`}></i>
                                 {barcodeInput && (
                                     <button
                                         type="button"
                                         onClick={() => setBarcodeInput('')}
-                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1 transition-colors"
+                                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1.5 transition-colors"
                                     >
                                         ✕
                                     </button>
@@ -771,12 +812,12 @@ export default function ScannerPage() {
                             <button
                                 type="submit"
                                 disabled={!currentOrder || scanning}
-                                className="px-5 py-3 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                                className="px-6 py-3.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                                 style={currentOrder ? {
-                                    background: 'linear-gradient(135deg, #0ea5e9, #2563eb)',
+                                    background: 'linear-gradient(135deg, #0284c7, #2563eb)',
                                     color: '#fff',
-                                    boxShadow: '0 4px 16px rgba(14,165,233,0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
-                                    border: '1px solid rgba(56,189,248,0.4)',
+                                    boxShadow: '0 4px 18px rgba(2,132,199,0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
+                                    border: '1px solid rgba(56,189,248,0.5)',
                                 } : {
                                     background: 'rgba(148,163,184,0.06)',
                                     color: '#475569',
@@ -784,10 +825,42 @@ export default function ScannerPage() {
                                 }}
                             >
                                 <i className="fas fa-arrow-down text-xs"></i>
-                                <span>تسجيل</span>
+                                <span>تسجيل المسح</span>
                             </button>
                         </div>
                     </form>
+
+                    {/* HUD Live Feedback Bar: Last scanned item */}
+                    {lastScanResult && currentOrder && (
+                        <div className={`mt-3.5 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs transition-all duration-200 ${
+                            lastScanResult.status === 'success' ? 'text-emerald-300' : 'text-rose-300'
+                        }`}>
+                            <div className="flex items-center gap-2">
+                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                                    lastScanResult.status === 'success'
+                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                }`}>
+                                    <i className={`fas ${lastScanResult.status === 'success' ? 'fa-check' : 'fa-times'}`}></i>
+                                </span>
+                                <span className="text-slate-400 font-medium">آخر باركود مسجل:</span>
+                                <span className="font-mono font-bold tracking-wider text-white bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700/60">
+                                    {lastScanResult.barcode}
+                                </span>
+                                {lastScanResult.message && (
+                                    <span className="text-[11px] text-rose-400 font-sans">({lastScanResult.message})</span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400">
+                                <span><i className="far fa-clock ml-1 text-slate-500"></i>{lastScanResult.time}</span>
+                                {lastScanResult.scanned_quantity !== undefined && (
+                                    <span className="text-sky-300 font-bold bg-sky-950/60 px-2 py-0.5 rounded border border-sky-500/30">
+                                        الحصيلة: {lastScanResult.scanned_quantity}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Scanned Movements Table */}
@@ -826,26 +899,49 @@ export default function ScannerPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    recentMovements.map((m, idx) => (
-                                        <tr key={m.id || idx} className="hover:bg-slate-800/40 transition">
-                                            <td className="p-3 text-slate-500 font-mono text-xs text-center">{idx + 1}</td>
-                                            <td className="p-3 font-mono font-semibold text-xs sm:text-sm"
-                                                style={{color: isExternal ? '#22d3ee' : '#34d399'}}>
-                                                {m.barcode}
-                                            </td>
-                                            {!isExternal && <td className="p-3 text-center font-bold text-slate-200 text-xs">1</td>}
-                                            {!isExternal && <td className="p-3 text-slate-300 text-xs">{currentOrder?.customer_name || 'عميل'}</td>}
-                                            {!isExternal && <td className="p-3 text-slate-400 text-xs font-mono">{currentOrder?.order_number || '--'}</td>}
-                                            <td className="p-3 text-blue-300 text-xs font-medium font-mono">
-                                                {m.scanned_by || '--'}
-                                            </td>
-                                            {isExternal && (
-                                                <td className="p-3 text-slate-400 text-xs font-mono">
-                                                    {m.created_at ? new Date(m.created_at).toLocaleTimeString('ar-EG-u-nu-latn') : '--'}
+                                    recentMovements.map((m, idx) => {
+                                        const isLastScanned = lastScanResult?.barcode === m.barcode && idx === 0;
+                                        return (
+                                            <tr key={m.id || idx} className={`transition-all duration-200 ${
+                                                isLastScanned
+                                                    ? 'bg-sky-500/10 border-l-2 border-sky-400'
+                                                    : 'hover:bg-slate-800/40'
+                                            }`}>
+                                                <td className="p-3 text-slate-500 font-mono text-xs text-center">
+                                                    {isLastScanned ? (
+                                                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                                    ) : (
+                                                        idx + 1
+                                                    )}
                                                 </td>
-                                            )}
-                                        </tr>
-                                    ))
+                                                <td className="p-3 font-mono font-bold text-xs sm:text-sm tracking-wide"
+                                                    style={{color: isExternal ? '#22d3ee' : '#34d399'}}>
+                                                    <span className="flex items-center gap-1.5">
+                                                        <span>{m.barcode}</span>
+                                                        {isLastScanned && (
+                                                            <span className="text-[9px] font-sans font-bold bg-sky-500/20 text-sky-300 px-1.5 py-0.2 rounded border border-sky-500/30">
+                                                                الآن
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </td>
+                                                {!isExternal && <td className="p-3 text-center font-bold text-slate-200 text-xs font-mono">1</td>}
+                                                {!isExternal && <td className="p-3 text-slate-300 text-xs font-medium">{currentOrder?.customer_name || 'عميل'}</td>}
+                                                {!isExternal && <td className="p-3 text-slate-400 text-xs font-mono">{currentOrder?.order_number || '--'}</td>}
+                                                <td className="p-3 text-blue-300 text-xs font-medium font-mono">
+                                                    <span className="flex items-center gap-1">
+                                                        <i className="fas fa-user-circle text-[10px] text-blue-400/70"></i>
+                                                        <span>{m.scanned_by || '--'}</span>
+                                                    </span>
+                                                </td>
+                                                {isExternal && (
+                                                    <td className="p-3 text-slate-400 text-xs font-mono">
+                                                        {m.created_at ? new Date(m.created_at).toLocaleTimeString('ar-EG-u-nu-latn') : '--'}
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>

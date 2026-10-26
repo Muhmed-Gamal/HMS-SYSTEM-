@@ -376,14 +376,14 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Animations for Scanners */
 @keyframes flashGreen {
-    0% { background-color: rgba(16, 185, 129, 0.3); border-color: #10b981; }
-    100% { background-color: var(--bg-input); border-color: var(--border-light); }
+    0% { background-color: rgba(16, 185, 129, 0.35); border-color: #10b981; box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
+    100% { background-color: var(--bg-input); border-color: var(--border-light); box-shadow: none; }
 }
 
 @keyframes shakeRed {
     0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-5px); }
-    40%, 80% { transform: translateX(5px); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
 }
 
 .scan-flash-success {
@@ -393,6 +393,36 @@ h1, h2, h3, h4, h5, h6 {
 .scan-shake-error {
     animation: shakeRed 0.35s ease-in-out;
     border-color: #ef4444 !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.35) !important;
+}
+
+/* Scanner HUD Laser Line Animation */
+@keyframes scanLaser {
+    0% { top: 0%; opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
+
+.scanner-laser-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #38bdf8, #22d3ee, transparent);
+    box-shadow: 0 0 12px #38bdf8, 0 0 20px #22d3ee;
+    pointer-events: none;
+    animation: scanLaser 2.4s ease-in-out infinite;
+}
+
+/* Scanner Live Pulse Glow */
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+    50% { box-shadow: 0 0 28px rgba(56, 189, 248, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+}
+
+.scanner-hud-glow {
+    animation: pulseGlow 3s ease-in-out infinite;
 }
 
 /* Custom Scrollbars */
