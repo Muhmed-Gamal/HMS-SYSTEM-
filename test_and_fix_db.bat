@@ -4,10 +4,13 @@ title HMS Industrial System - Database Connection Diagnostic
 color 0B
 
 echo ===================================================================
-echo   HMS Industrial System - الفحص والتشخيص الآلي لقاعدة البيانات
+echo   HMS Industrial System - Database Connection Diagnostic
 echo ===================================================================
 echo.
 
+cd /d "%~dp0"
+
 node "%~dp0test_db_connection.js"
 
+echo.
 pause

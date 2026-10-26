@@ -4,21 +4,37 @@ title HMS Industrial System - Database Sanitizer
 color 0E
 
 echo ===================================================================
-echo   HMS Industrial Barcode System - تنظيف وتهيئة قاعدة البيانات للعميل
+echo   HMS Industrial Barcode System - Clean Database for Client
 echo ===================================================================
 echo.
-echo تحذير: هذا الإجراء سيقوم بحذف جميع أوامر التشغيل والمسحات وحركات المخزن
-echo والإبقاء فقط على حسابات الماستر الرئيسية (Gamal و Auf) ومراحل خط الإنتاج.
+
+cd /d "%~dp0"
+
+echo  WARNING: This operation will DELETE all production orders, scans,
+echo  and movements while KEEPING master admin accounts (Gamal and Auf)
+echo  and all production stage configurations.
 echo.
-set /p CONFIRM="هل أنت متأكد من المتابعة؟ (اكتب y للموافقة): "
-if not "%CONFIRM%"=="y" if not "%CONFIRM%"=="Y" (
-    echo تم إلغاء العملية.
+set /p CONFIRM="Are you sure you want to continue? (type y to confirm): "
+if /i not "%CONFIRM%"=="y" (
+    echo.
+    echo  Operation cancelled.
     pause
     exit /b 0
 )
 
 echo.
-cd /d "%~dp0"
+echo  Running database cleanup...
 node reset_database_clean.js
 
+if %errorlevel% equ 0 (
+    echo.
+    echo ===================================================================
+    echo  [SUCCESS] Database cleaned and ready for client delivery!
+    echo ===================================================================
+) else (
+    echo.
+    echo  [ERROR] Cleanup failed. Check the messages above.
+)
+
+echo.
 pause
