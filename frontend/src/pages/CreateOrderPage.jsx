@@ -9,19 +9,19 @@ import { printBarcodesWindow } from '../services/print';
 
 // تصنيفات المراحل وأيقوناتها وألوانها
 const CATEGORY_META = {
-    cutting: { label: 'القص والتجهيز', icon: 'fa-cut', color: 'text-purple-400', border: 'border-purple-500/30', bg: 'bg-purple-950/20' },
-    embroidery: { label: 'التطريز', icon: 'fa-feather-alt', color: 'text-pink-400', border: 'border-pink-500/30', bg: 'bg-pink-950/20' },
-    printing: { label: 'الطباعة', icon: 'fa-palette', color: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-950/20' },
-    production: { label: 'الإنتاج والخياطة', icon: 'fa-industry', color: 'text-blue-400', border: 'border-blue-500/30', bg: 'bg-blue-950/20' },
-    laser: { label: 'المعالجة بالليزر', icon: 'fa-bolt', color: 'text-yellow-400', border: 'border-yellow-500/30', bg: 'bg-yellow-950/20' },
-    sanding: { label: 'السنفرة والمعالجة السطحية', icon: 'fa-gem', color: 'text-orange-400', border: 'border-orange-500/30', bg: 'bg-orange-950/20' },
-    crushing: { label: 'الكرمشة والتكسير', icon: 'fa-wave-square', color: 'text-indigo-400', border: 'border-indigo-500/30', bg: 'bg-indigo-950/20' },
-    wash: { label: 'المغسلة والإنهاء الرطب', icon: 'fa-tint', color: 'text-cyan-400', border: 'border-cyan-500/30', bg: 'bg-cyan-950/20' },
-    dyeing: { label: 'الصباغة', icon: 'fa-flask', color: 'text-teal-400', border: 'border-teal-500/30', bg: 'bg-teal-950/20' },
-    qc: { label: 'فحص الجودة والمطابقة', icon: 'fa-check-double', color: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-950/20' },
-    ironing: { label: 'الكي والتجهيز النهائي', icon: 'fa-fire', color: 'text-rose-400', border: 'border-rose-500/30', bg: 'bg-rose-950/20' },
-    packing: { label: 'التعبئة والتغليف', icon: 'fa-box-open', color: 'text-sky-400', border: 'border-sky-500/30', bg: 'bg-sky-950/20' },
-    warehouse: { label: 'المخزن النهائي والشحن', icon: 'fa-warehouse', color: 'text-slate-400', border: 'border-slate-500/30', bg: 'bg-slate-900/40' },
+    cutting: { label: 'القص والتجهيز', enLabel: 'Cutting & Preparation', icon: 'fa-cut', color: 'text-purple-400', border: 'border-purple-500/30', bg: 'bg-purple-950/20' },
+    embroidery: { label: 'التطريز', enLabel: 'Embroidery', icon: 'fa-feather-alt', color: 'text-pink-400', border: 'border-pink-500/30', bg: 'bg-pink-950/20' },
+    printing: { label: 'الطباعة', enLabel: 'Printing', icon: 'fa-palette', color: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-950/20' },
+    production: { label: 'الإنتاج والخياطة', enLabel: 'Production & Sewing', icon: 'fa-industry', color: 'text-blue-400', border: 'border-blue-500/30', bg: 'bg-blue-950/20' },
+    laser: { label: 'المعالجة بالليزر', enLabel: 'Laser Treatment', icon: 'fa-bolt', color: 'text-yellow-400', border: 'border-yellow-500/30', bg: 'bg-yellow-950/20' },
+    sanding: { label: 'السنفرة والمعالجة السطحية', enLabel: 'Sanding & Dry Process', icon: 'fa-gem', color: 'text-orange-400', border: 'border-orange-500/30', bg: 'bg-orange-950/20' },
+    crushing: { label: 'الكرمشة والتكسير', enLabel: '3D Crushing', icon: 'fa-wave-square', color: 'text-indigo-400', border: 'border-indigo-500/30', bg: 'bg-indigo-950/20' },
+    wash: { label: 'المغسلة والإنهاء الرطب', enLabel: 'Washing & Wet Process', icon: 'fa-tint', color: 'text-cyan-400', border: 'border-cyan-500/30', bg: 'bg-cyan-950/20' },
+    dyeing: { label: 'الصباغة', enLabel: 'Dyeing', icon: 'fa-flask', color: 'text-teal-400', border: 'border-teal-500/30', bg: 'bg-teal-950/20' },
+    qc: { label: 'فحص الجودة والمطابقة', enLabel: 'QC & Quality Audit', icon: 'fa-check-double', color: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-950/20' },
+    ironing: { label: 'الكي والتجهيز النهائي', enLabel: 'Ironing & Finishing', icon: 'fa-fire', color: 'text-rose-400', border: 'border-rose-500/30', bg: 'bg-rose-950/20' },
+    packing: { label: 'التعبئة والتغليف', enLabel: 'Packing & Boxing', icon: 'fa-box-open', color: 'text-sky-400', border: 'border-sky-500/30', bg: 'bg-sky-950/20' },
+    warehouse: { label: 'المخزن النهائي والشحن', enLabel: 'Final Warehouse & Shipping', icon: 'fa-warehouse', color: 'text-slate-400', border: 'border-slate-500/30', bg: 'bg-slate-900/40' },
 };
 
 const STANDARD_6_STAGES = [
@@ -36,7 +36,7 @@ const STANDARD_6_STAGES = [
 export default function CreateOrderPage() {
     const { user, canCreateOrders } = useAuth();
     const { toast, showAlert, showProgress, updateProgress, closeProgress } = useToast();
-    const { t, isRTL } = useLanguage();
+    const { t, translateStage, isRTL, language } = useLanguage();
     const navigate = useNavigate();
 
     // Form inputs
@@ -338,15 +338,15 @@ export default function CreateOrderPage() {
                 <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
                     <div>
                         <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-                            <Link to="/orders" className="hover:text-sky-400 transition">الأوردرات والمتابعة</Link>
+                            <Link to="/orders" className="hover:text-sky-400 transition">{t('create_order.nav_orders')}</Link>
                             <span>/</span>
-                            <span className="text-white font-medium">فتح أوردر جديد</span>
+                            <span className="text-white font-medium">{t('create_order.nav_new')}</span>
                         </div>
                         <h1 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5">
                             <span className="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center border border-sky-500/30 text-sm">
                                 <i className="fas fa-plus"></i>
                             </span>
-                            فتح أوردر جديد وتحديد مراحل التشغيل
+                            {t('create_order.title')}
                         </h1>
                     </div>
 
@@ -356,7 +356,7 @@ export default function CreateOrderPage() {
                             className="btn-slate btn-slate-secondary text-xs py-2 px-3.5 flex items-center gap-2 shadow-sm"
                         >
                             <i className="fas fa-layer-group text-slate-400"></i>
-                            <span>الانتقال لمتابعة الأوردرات</span>
+                            <span>{t('create_order.nav_orders')}</span>
                         </Link>
                     </div>
                 </div>
@@ -374,7 +374,7 @@ export default function CreateOrderPage() {
                             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
                                 <div className="flex items-center gap-2">
                                     <i className="fas fa-file-invoice text-sky-400 text-sm"></i>
-                                    <h2 className="text-sm font-bold text-white">بيانات أمر التشغيل</h2>
+                                    <h2 className="text-sm font-bold text-white">{t('create_order.sec_basic_info')}</h2>
                                 </div>
                                 <span className="text-[10px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded font-mono border border-sky-500/20">STEP 1</span>
                             </div>
@@ -382,7 +382,7 @@ export default function CreateOrderPage() {
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                                        رقم أمر الشغل / الأوردر <span className="text-rose-400">*</span>
+                                        {t('create_order.field_order_no')} <span className="text-rose-400">*</span>
                                     </label>
                                     <div className="relative">
                                         <input
@@ -390,32 +390,31 @@ export default function CreateOrderPage() {
                                             required
                                             value={orderNumber}
                                             onChange={(e) => setOrderNumber(e.target.value)}
-                                            placeholder="مثال: ORD-2026-001"
+                                            placeholder={t('create_order.field_order_placeholder')}
                                             className="slate-input font-mono text-xs font-bold tracking-wider pl-8"
                                             dir="ltr"
                                         />
                                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-mono">#</span>
                                     </div>
-                                    <span className="text-[10px] text-slate-500 mt-1 block">رقم فريد غير مكرر للأوردر لتعريفه في المحطات</span>
                                 </div>
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                                        اسم العميل / المصنع <span className="text-rose-400">*</span>
+                                        {t('create_order.field_client')} <span className="text-rose-400">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         required
                                         value={customerName}
                                         onChange={(e) => setCustomerName(e.target.value)}
-                                        placeholder="اسم العميل أو الجهة الطالبة..."
+                                        placeholder={t('create_order.field_client_placeholder')}
                                         className="slate-input text-xs"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                                        الكمية المستهدفة (عدد القطع) <span className="text-rose-400">*</span>
+                                        {t('create_order.field_quantity')} <span className="text-rose-400">*</span>
                                     </label>
                                     <div className="relative">
                                         <input
@@ -425,26 +424,24 @@ export default function CreateOrderPage() {
                                             max="200000"
                                             value={targetQuantity}
                                             onChange={(e) => setTargetQuantity(e.target.value)}
-                                            placeholder="مثال: 5000"
+                                            placeholder={t('create_order.field_quantity_placeholder')}
                                             className="slate-input font-mono text-sm text-amber-400 font-extrabold"
                                         />
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold">قطعة</span>
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold">{t('common.pieces')}</span>
                                     </div>
-                                    <span className="text-[10px] text-slate-500 mt-1 block">الحد الأقصى المتاح للتوليد: 200,000 قطعة</span>
                                 </div>
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                                        مقاس استيكر مكن الباركود
+                                        {t('create_order.field_format')}
                                     </label>
                                     <select
                                         value={stickerFormat}
                                         onChange={(e) => setStickerFormat(e.target.value)}
                                         className="slate-input text-xs font-semibold bg-[#0f172a]"
                                     >
-                                        <option value="roll_35x80">🏷️ رول حراري (3.5 × 8 سم) - الأكثر شيوعاً</option>
-                                        <option value="roll_40x60">🏷️ رول حراري صغير (4 × 6 سم)</option>
-                                        <option value="a4_24">📄 ورق A4 مقسم (24 استيكر بالصفحة)</option>
+                                        <option value="roll_35x80">🏷️ {t('create_order.format_roll')}</option>
+                                        <option value="a4_24">📄 {t('create_order.format_a4')}</option>
                                     </select>
                                 </div>
                             </div>
@@ -477,20 +474,15 @@ export default function CreateOrderPage() {
                                     {submitting ? (
                                         <>
                                             <i className="fas fa-spinner fa-spin"></i>
-                                            <span>جاري التوليد وحفظ الأوردر...</span>
+                                            <span>{t('create_order.btn_submitting')}</span>
                                         </>
                                     ) : (
                                         <>
                                             <i className="fas fa-magic text-amber-300"></i>
-                                            <span>توليد الأوردر والباركود بالمراحل المحددة</span>
+                                            <span>{t('create_order.btn_submit')}</span>
                                         </>
                                     )}
                                 </button>
-                                {selectedStages.length === 0 && (
-                                    <p className="text-[11px] text-rose-400 text-center mt-2 font-medium">
-                                        ⚠️ يرجى اختيار مرحلة واحدة على الأقل من القائمة لتفعيل الزر
-                                    </p>
-                                )}
                             </div>
                         </div>
 
@@ -501,17 +493,17 @@ export default function CreateOrderPage() {
                                     <span className="w-5 h-5 rounded-md bg-sky-500/15 text-sky-400 flex items-center justify-center text-[11px] border border-sky-500/25">
                                         <i className="fas fa-route"></i>
                                     </span>
-                                    <span>تسلسل خط الإنتاج وتحديد البداية</span>
+                                    <span>{t('create_order.sec_stages')}</span>
                                 </span>
                                 <span className="text-[11px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded font-mono font-bold border border-sky-500/20">
-                                    {selectedStages.length} محطة
+                                    {selectedStages.length} {t('common.stage')}
                                 </span>
                             </div>
 
                             {selectedStages.length === 0 ? (
                                 <div className="text-center py-6 px-4 rounded-xl bg-[#070c18] border border-dashed border-slate-800 text-slate-500 text-xs">
                                     <i className="fas fa-sliders-h text-slate-600 text-base mb-1.5 block"></i>
-                                    لم يتم اختيار أي محطة إنتاج بعد. يرجى اختيار المراحل من القائمة المقابلة.
+                                    {t('common.clean_state')}
                                 </div>
                             ) : (
                                 <div className="space-y-3">
@@ -519,10 +511,7 @@ export default function CreateOrderPage() {
                                     <div className="p-2.5 rounded-lg bg-amber-950/20 border border-amber-500/30 flex items-start gap-2 text-xs">
                                         <i className="fas fa-crown text-amber-400 mt-0.5 text-xs flex-shrink-0"></i>
                                         <div className="text-[11px] text-amber-200">
-                                            <strong>مرحلة البداية الإلزامية: [{selectedStages[0]}]</strong>
-                                            <p className="text-slate-400 mt-0.5 leading-relaxed">
-                                                لا يُسمح لأي قطعة بتخطي هذه المرحلة؛ يجب تسجيل القطعة أولاً هنا ليتم قبولها في المحطات التالية.
-                                            </p>
+                                            <strong>{t('create_order.primary_stage_note')}: [{translateStage(selectedStages[0])}]</strong>
                                         </div>
                                     </div>
 
@@ -547,12 +536,7 @@ export default function CreateOrderPage() {
                                                         }`}>
                                                             {idx + 1}
                                                         </span>
-                                                        <span className="font-bold text-xs">{stgName}</span>
-                                                        {isPrimary && (
-                                                            <span className="text-[9.5px] px-1.5 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                                                البداية الإلزامية 👑
-                                                            </span>
-                                                        )}
+                                                        <span className="font-bold text-xs">{translateStage(stgName)}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-1">
@@ -613,10 +597,10 @@ export default function CreateOrderPage() {
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <i className="fas fa-sliders-h text-emerald-400 text-sm"></i>
-                                        <h2 className="text-sm font-bold text-white">تحديد مراحل تشغيل هذا الأوردر</h2>
+                                        <h2 className="text-sm font-bold text-white">{t('create_order.sec_stages')}</h2>
                                     </div>
                                     <p className="text-[11px] text-slate-400 mt-0.5">
-                                        حدد المراحل التي سيخضع لها هذا الأوردر بالتحديد في صالة الإنتاج (مثل سنفرة، ليزر، تطريز، مغسلة...)
+                                        {t('create_order.sec_stages_sub')}
                                     </p>
                                 </div>
                                 <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded font-mono border border-emerald-500/20">STEP 2</span>
@@ -627,10 +611,10 @@ export default function CreateOrderPage() {
                                 <div className="flex items-center justify-between text-xs font-bold text-slate-300">
                                     <span className="flex items-center gap-1.5">
                                         <i className="fas fa-bolt text-amber-400"></i>
-                                        نماذج مسارات جاهزة وسريعة:
+                                        {language === 'ar' ? 'نماذج مسارات جاهزة وسريعة:' : 'Quick Pipeline Presets:'}
                                     </span>
                                     <span className="text-[11px] text-emerald-400 font-mono font-bold">
-                                        مفعل {selectedStages.length} من {systemStages.length}
+                                        {language === 'ar' ? `مفعل ${selectedStages.length} من ${systemStages.length}` : `${selectedStages.length} of ${systemStages.length} selected`}
                                     </span>
                                 </div>
 
@@ -639,39 +623,39 @@ export default function CreateOrderPage() {
                                         type="button"
                                         onClick={applyStandardPreset}
                                         className="btn-slate text-xs py-1.5 px-3 bg-blue-900/30 hover:bg-blue-800/40 text-blue-300 border border-blue-500/30"
-                                        title="تطبيق المراحل الأساسية الستة (دخول/خروج إنتاج، مغسلة، تعبئة)"
+                                        title={language === 'ar' ? 'تطبيق المراحل الأساسية الستة (دخول/خروج إنتاج، مغسلة، تعبئة)' : 'Apply standard 6 stages (in/out production, wash, pack)'}
                                     >
-                                        ⚡ المراحل الأساسية (6 مراحل)
+                                        ⚡ {t('create_order.preset_standard')}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={applySpecialWorkflowPreset}
                                         className="btn-slate text-xs py-1.5 px-3 bg-amber-900/30 hover:bg-amber-800/40 text-amber-300 border border-amber-500/30"
-                                        title="تطبيق خط متقدم يحتوي على ليزر وسنفرة وتطريز ومغسلة"
+                                        title={language === 'ar' ? 'تطبيق خط متقدم يحتوي على ليزر وسنفرة وتطريز ومغسلة' : 'Apply special workflow with laser, sanding, embroidery, wash'}
                                     >
-                                        ✨ مسار خاص (ليزر + سنفرة + تطريز)
+                                        ✨ {t('create_order.preset_special')}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={applyActivePreset}
                                         className="btn-slate text-xs py-1.5 px-3 bg-emerald-900/30 hover:bg-emerald-800/40 text-emerald-300 border border-emerald-500/30"
-                                        title="تطبيق المراحل النشطة المعتمدة في إعدادات النظام"
+                                        title={language === 'ar' ? 'تطبيق المراحل النشطة المعتمدة في إعدادات النظام' : 'Apply all approved active pipeline stages'}
                                     >
-                                        🏭 المعتمدة بالنظام
+                                        🏭 {t('create_order.preset_active')}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={selectAllStages}
                                         className="btn-slate text-xs py-1.5 px-2.5 text-slate-300"
                                     >
-                                        تحديد الكل
+                                        {t('create_order.btn_select_all')}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={clearAllStages}
                                         className="btn-slate text-xs py-1.5 px-2.5 text-rose-400 hover:bg-rose-950/30"
                                     >
-                                        إلغاء الكل
+                                        {t('create_order.btn_clear_all')}
                                     </button>
                                 </div>
                             </div>
@@ -680,17 +664,18 @@ export default function CreateOrderPage() {
                             {loadingStages ? (
                                 <div className="text-center py-12 text-slate-400 text-xs flex items-center justify-center gap-2">
                                     <div style={{ width: '18px', height: '18px', border: '2px solid #334155', borderTopColor: '#38bdf8', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-                                    <span>جاري تحميل مراحل النظام...</span>
+                                    <span>{t('common.loading')}</span>
                                 </div>
                             ) : Object.keys(groupedStages).length === 0 ? (
                                 <div className="text-center py-8 text-slate-500 text-xs">
-                                    لا توجد مراحل مسجلة بالنظام. يرجى مراجعة إعدادات مراحل خط الإنتاج في لوحة الإدارة.
+                                    {language === 'ar' ? 'لا توجد مراحل مسجلة بالنظام. يرجى مراجعة إعدادات مراحل خط الإنتاج في لوحة الإدارة.' : 'No stages registered. Please review production pipeline settings in admin panel.'}
                                 </div>
                             ) : (
                                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
                                     {Object.entries(groupedStages).map(([catKey, stages]) => {
                                         const meta = CATEGORY_META[catKey] || {
                                             label: catKey,
+                                            enLabel: catKey,
                                             icon: 'fa-layer-group',
                                             color: 'text-slate-400',
                                             border: 'border-slate-700',
@@ -708,7 +693,7 @@ export default function CreateOrderPage() {
                                                 <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-slate-800/80">
                                                     <div className="flex items-center gap-2">
                                                         <i className={`fas ${meta.icon} ${meta.color} text-xs`}></i>
-                                                        <span className="text-xs font-bold text-white">{meta.label}</span>
+                                                        <span className="text-xs font-bold text-white">{language === 'ar' ? meta.label : (meta.enLabel || meta.label)}</span>
                                                         <span className={`text-[9.5px] font-mono px-2 py-0.5 rounded-full font-bold ${
                                                             selectedInCat > 0 
                                                                 ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' 
@@ -723,7 +708,7 @@ export default function CreateOrderPage() {
                                                         onClick={() => toggleCategory(catKey, !isAllSelected)}
                                                         className="text-[11px] font-semibold text-slate-400 hover:text-white transition"
                                                     >
-                                                        {isAllSelected ? 'إلغاء القسم' : 'تحديد القسم بالكامل'}
+                                                        {isAllSelected ? (language === 'ar' ? 'إلغاء القسم' : 'Deselect Category') : (language === 'ar' ? 'تحديد القسم بالكامل' : 'Select All in Category')}
                                                     </button>
                                                 </div>
 
@@ -751,7 +736,7 @@ export default function CreateOrderPage() {
                                                                     </div>
                                                                     <div>
                                                                         <span className="text-xs font-bold block leading-snug">
-                                                                            {stg.stage_name}
+                                                                            {translateStage(stg.stage_name)}
                                                                         </span>
                                                                         {stg.stage_code && (
                                                                             <span className="text-[9.5px] font-mono text-slate-500 block">
@@ -799,32 +784,32 @@ export default function CreateOrderPage() {
                                 <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto mb-3 text-2xl shadow-lg shadow-emerald-500/20">
                                     <i className="fas fa-check"></i>
                                 </div>
-                                <h3 className="text-lg font-black text-white">تم فتح الأوردر وتوليد الباركود بنجاح!</h3>
+                                <h3 className="text-lg font-black text-white">{language === 'ar' ? 'تم فتح الأوردر وتوليد الباركود بنجاح!' : 'Order Created & Barcodes Generated Successfully!'}</h3>
                                 <p className="text-xs text-slate-400 mt-1">
-                                    تم تسجيل أمر التشغيل وتخصيص خط الإنتاج وتوليد الأكواد المطلوبة بدقة
+                                    {language === 'ar' ? 'تم تسجيل أمر التشغيل وتخصيص خط الإنتاج وتوليد الأكواد المطلوبة بدقة' : 'Production order registered with pipeline configured and barcodes generated'}
                                 </p>
                             </div>
 
                             {/* Summary Details */}
                             <div className="bg-[#080e1a] rounded-xl p-4 border border-slate-800 space-y-2.5 mb-5 text-xs">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-slate-400">رقم أمر التشغيل:</span>
+                                    <span className="text-slate-400">{t('common.order_no')}:</span>
                                     <strong className="text-sky-400 font-mono text-sm">{createdOrderResult.order_number}</strong>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-slate-400">اسم العميل:</span>
+                                    <span className="text-slate-400">{t('common.client_name')}:</span>
                                     <strong className="text-white">{createdOrderResult.customer_name}</strong>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-slate-400">الكمية المطلوبة:</span>
+                                    <span className="text-slate-400">{t('common.target_quantity')}:</span>
                                     <strong className="text-amber-400 font-mono font-bold text-sm">
-                                        {createdOrderResult.target_quantity.toLocaleString('en-US')} قطعة
+                                        {`${createdOrderResult.target_quantity.toLocaleString('en-US')} ${t('common.piece')}`}
                                     </strong>
                                 </div>
                                 <div className="flex justify-between items-center pt-2 border-t border-slate-800">
-                                    <span className="text-slate-400">عدد المراحل المحددة:</span>
+                                    <span className="text-slate-400">{language === 'ar' ? 'عدد المراحل المحددة:' : 'Stages Selected:'}</span>
                                     <strong className="text-emerald-400 font-mono font-bold">
-                                        {createdOrderResult.stages.length} مراحل
+                                        {`${createdOrderResult.stages.length} ${language === 'ar' ? 'مراحل' : 'stages'}`}
                                     </strong>
                                 </div>
                             </div>
@@ -836,7 +821,7 @@ export default function CreateOrderPage() {
                                     className="w-full btn-slate btn-slate-primary text-xs py-2.5 px-4 font-bold flex items-center justify-center gap-2 shadow-lg shadow-sky-600/25"
                                 >
                                     <i className="fas fa-print"></i>
-                                    <span>طباعة استيكرات الباركود فوراً (رول حراري)</span>
+                                    <span>{language === 'ar' ? 'طباعة استيكرات الباركود فوراً (رول حراري)' : 'Print Barcode Stickers (Thermal Roll)'}</span>
                                 </button>
 
                                 <button
@@ -844,7 +829,7 @@ export default function CreateOrderPage() {
                                     className="w-full btn-slate bg-sky-700 hover:bg-sky-600 text-white text-xs py-2.5 px-4 font-bold flex items-center justify-center gap-2 border border-sky-400/30"
                                 >
                                     <i className="fas fa-file-pdf"></i>
-                                    <span>تحميل ملف PDF للاستيكرات</span>
+                                    <span>{language === 'ar' ? 'تحميل ملف PDF للاستيكرات' : 'Download PDF Sticker Sheet'}</span>
                                 </button>
 
                                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
@@ -853,14 +838,14 @@ export default function CreateOrderPage() {
                                         className="btn-slate bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 px-3 font-bold flex items-center justify-center gap-1.5"
                                     >
                                         <i className="fas fa-layer-group"></i>
-                                        <span>الانتقال لمتابعة الأوردر</span>
+                                        <span>{language === 'ar' ? 'الانتقال لمتابعة الأوردر' : 'Go to Orders Tracking'}</span>
                                     </button>
 
                                     <button
                                         onClick={handleResetForm}
                                         className="btn-slate btn-slate-secondary text-xs py-2 px-3 font-semibold"
                                     >
-                                        <span>+ فتح أوردر جديد آخر</span>
+                                        <span>+ {language === 'ar' ? 'فتح أوردر جديد آخر' : 'Create Another Order'}</span>
                                     </button>
                                 </div>
                             </div>

@@ -21,7 +21,7 @@ const PRODUCTION_STAGES = [
 export default function ScannerPage() {
     const { user, companyName, isAdmin, isExternalOperator } = useAuth();
     const { toast } = useToast();
-    const { t, isRTL } = useLanguage();
+    const { t, translateStage, isRTL, language } = useLanguage();
     const navigate = useNavigate();
 
     // Guard: Require login
@@ -453,11 +453,11 @@ export default function ScannerPage() {
                         <div className="flex items-center gap-2">
                             <i className={`fas ${isExternal ? 'fa-boxes text-cyan-400' : 'fa-sliders-h text-blue-400'} text-xs`}></i>
                             <h2 className="text-xs sm:text-sm font-bold text-white">
-                                {isExternal ? 'جلسة التشغيل الخارجي' : 'جلسة المسح الحالية'}
+                                {isExternal ? t('scanner.session_title_ext') : t('scanner.session_title')}
                             </h2>
                             {isExternal && (
                                 <span className="badge-clean text-[10px] font-bold" style={{background:'rgba(6,182,212,0.15)',color:'#22d3ee',border:'1px solid rgba(6,182,212,0.3)'}}>
-                                    مسح مفتوح — بدون قيود باركود
+                                    {t('scanner.open_scan_badge')}
                                 </span>
                             )}
                         </div>
@@ -469,13 +469,13 @@ export default function ScannerPage() {
                         {!isExternal && (
                             <div>
                                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                                    المرحلة الإنتاجية {isStageLocked ? 'المقيدة' : 'الحالية'}
+                                    {isStageLocked ? t('scanner.stage_locked_label') : t('scanner.stage_label')}
                                 </label>
                                 {isStageLocked ? (
                                     <input
                                         type="text"
                                         readOnly
-                                        value={selectedStage}
+                                        value={translateStage(selectedStage)}
                                         className="slate-input font-mono font-bold text-blue-300 bg-[#0a1120] cursor-not-allowed"
                                     />
                                 ) : (
@@ -497,7 +497,7 @@ export default function ScannerPage() {
                                             : PRODUCTION_STAGES
                                         ).map((stg) => (
                                             <option key={stg} value={stg}>
-                                                {stg}
+                                                {translateStage(stg)}
                                             </option>
                                         ))}
                                     </select>
@@ -508,7 +508,7 @@ export default function ScannerPage() {
                         {/* External mode: direction badge + target quantity input */}
                         {isExternal && (
                             <div className="space-y-2">
-                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">وضع التشغيل والاتجاه</label>
+                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">{t('scanner.direction_label')}</label>
                                 <div className="slate-input font-mono font-bold flex items-center gap-2"
                                      style={{color:'#22d3ee', background:'rgba(6,182,212,0.08)', border:'1px solid rgba(6,182,212,0.3)'}}>
                                     <i className="fas fa-satellite-dish text-xs"></i>
@@ -521,18 +521,18 @@ export default function ScannerPage() {
                         {isExternal && !currentOrder && (
                             <div>
                                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                                    اسم العميل / جهة التوريد الخارجية
+                                    {t('scanner.client_name_label')}
                                 </label>
                                 <input
                                     type="text"
                                     value={customerNameInput}
                                     onChange={e => setCustomerNameInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && !currentOrder && handleOpenOrder()}
-                                    placeholder="اسم العميل أو المصنع المورد (مثال: مصنع النور)..."
+                                    placeholder={t('scanner.client_name_placeholder')}
                                     className="slate-input text-white"
                                     style={{borderColor: 'rgba(6,182,212,0.4)'}}
                                 />
-                                <p className="text-[10.5px] text-slate-400 mt-1">يُسجل ويثبت في تقارير وتتبع أمر التشغيل الخارجي</p>
+                                <p className="text-[10.5px] text-slate-400 mt-1">{language === 'ar' ? 'يُسجل ويثبت في تقارير وتتبع أمر التشغيل الخارجي' : 'Recorded in external order tracking reports'}</p>
                             </div>
                         )}
 
@@ -540,7 +540,7 @@ export default function ScannerPage() {
                         {isExternal && !currentOrder && (
                             <div>
                                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                                    الكمية الكلية المستلمة من الخارج
+                                    {t('scanner.target_qty_label')}
                                 </label>
                                 <input
                                     type="number"
@@ -548,18 +548,18 @@ export default function ScannerPage() {
                                     value={targetQuantityInput}
                                     onChange={e => setTargetQuantityInput(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && !currentOrder && handleOpenOrder()}
-                                    placeholder="أدخل الكمية المستهدفة للتتميم... (اختياري)"
+                                    placeholder={t('scanner.target_qty_placeholder')}
                                     className="slate-input font-mono"
                                     style={{borderColor: 'rgba(6,182,212,0.4)'}}
                                 />
-                                <p className="text-[10.5px] text-slate-400 mt-1">بعد اكتمال الكمية سيظهر تنبيه التتميم التلقائي</p>
+                                <p className="text-[10.5px] text-slate-400 mt-1">{language === 'ar' ? 'بعد اكتمال الكمية سيظهر تنبيه التتميم التلقائي' : 'An auto-completion alert will appear when target quantity is reached'}</p>
                             </div>
                         )}
 
                         {/* Order Number Input */}
                         <div>
                             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                                {isExternal ? 'رقم أمر التشغيل الخارجي *' : 'رقم أمر الشغل / الأوردر *'}
+                                {isExternal ? `${t('scanner.order_no_label')} (EXT) *` : `${t('scanner.order_no_label')} *`}
                             </label>
                             <div className="flex gap-2">
                                 <input
@@ -568,7 +568,7 @@ export default function ScannerPage() {
                                     onChange={(e) => setOrderNumberInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && !currentOrder && handleOpenOrder()}
                                     disabled={Boolean(currentOrder) || loadingOrder}
-                                    placeholder={isExternal ? 'اكتب رقم أمر التشغيل الخارجي (مثال: EXT-101)...' : 'اكتب رقم الأوردر للفتح...'}
+                                    placeholder={t('scanner.order_no_placeholder')}
                                     className="slate-input font-mono text-white"
                                 />
                                 {!currentOrder ? (
@@ -583,7 +583,7 @@ export default function ScannerPage() {
                                         ) : (
                                             <span className="flex items-center gap-1.5">
                                                 <i className={`fas ${isExternal ? 'fa-boxes' : 'fa-unlock-alt'} text-xs`}></i>
-                                                <span>فتح</span>
+                                                <span>{t('scanner.btn_open_order')}</span>
                                             </span>
                                         )}
                                     </button>
@@ -594,7 +594,7 @@ export default function ScannerPage() {
                                     >
                                         <span className="flex items-center gap-1.5">
                                             <i className="fas fa-times-circle text-xs"></i>
-                                            <span>إنهاء</span>
+                                            <span>{t('scanner.btn_end_order')}</span>
                                         </span>
                                     </button>
                                 )}
@@ -609,40 +609,40 @@ export default function ScannerPage() {
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 p-3.5 rounded-xl border text-xs"
                                      style={{background:'rgba(6,182,212,0.06)', borderColor:'rgba(6,182,212,0.25)'}}>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">نوع الأمر والاتجاه</span>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{t('scanner.direction_label')}</span>
                                         <strong className="font-bold flex items-center gap-1.5" style={{color:'#22d3ee'}}>
                                             <i className="fas fa-satellite-dish text-[10px]"></i>
-                                            <span>{currentOrder.stage_direction || operatorDirection || 'تشغيل خارجي'}</span>
+                                            <span>{currentOrder.stage_direction || operatorDirection || (language === 'ar' ? 'تشغيل خارجي' : 'External Processing')}</span>
                                         </strong>
                                     </div>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">العميل / جهة التوريد</span>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{t('common.client')}</span>
                                         <strong className="font-bold text-cyan-300 truncate block">
-                                            {currentOrder.customer_name || 'غير محدد'}
+                                            {currentOrder.customer_name || (language === 'ar' ? 'غير محدد' : 'Unspecified')}
                                         </strong>
                                     </div>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">الكمية المستهدفة (المطلوبة)</span>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{t('common.target_quantity')}</span>
                                         <strong className="font-mono font-bold" style={{color: targetQty > 0 ? '#fbbf24' : '#94a3b8'}}>
-                                            {targetQty > 0 ? `${targetQty.toLocaleString('en-US')} قطعة` : '∞ مفتوح (بدون حد)'}
+                                            {targetQty > 0 ? `${targetQty.toLocaleString('en-US')} ${t('common.piece')}` : (language === 'ar' ? '∞ مفتوح (بدون حد)' : '∞ Open (No Limit)')}
                                         </strong>
                                     </div>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">إجمالي الممسوح</span>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{language === 'ar' ? 'إجمالي الممسوح' : 'Total Scanned'}</span>
                                         <strong className="font-mono font-bold text-emerald-400">
-                                            {`${scannedQty.toLocaleString('en-US')} قطعة`}
+                                            {`${scannedQty.toLocaleString('en-US')} ${t('common.piece')}`}
                                         </strong>
                                     </div>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">المتبقي للتتميم</span>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{language === 'ar' ? 'المتبقي للتتميم' : 'Remaining'}</span>
                                         <strong className="font-mono font-bold" style={{color: targetQty > 0 && remainingQty === 0 ? '#10b981' : '#f43f5e'}}>
-                                            {targetQty > 0 ? `${remainingQty.toLocaleString('en-US')} قطعة` : '—'}
+                                            {targetQty > 0 ? `${remainingQty.toLocaleString('en-US')} ${t('common.piece')}` : '—'}
                                         </strong>
                                     </div>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">حالة التتميم</span>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{language === 'ar' ? 'حالة التتميم' : 'Status'}</span>
                                         <span className="font-semibold" style={{color: targetQty > 0 && scannedQty >= targetQty ? '#10b981' : (currentOrder.status === 'closed' ? '#10b981' : '#22d3ee')}}>
-                                            {targetQty > 0 && scannedQty >= targetQty ? '✅ مكتمل التتميم' : (currentOrder.status === 'closed' ? 'مكتمل ومغلق' : 'قيد المسح')}
+                                            {targetQty > 0 && scannedQty >= targetQty ? (language === 'ar' ? '✅ مكتمل التتميم' : '✅ Completed') : (currentOrder.status === 'closed' ? (language === 'ar' ? 'مكتمل ومغلق' : 'Closed') : (language === 'ar' ? 'قيد المسح' : 'Scanning'))}
                                         </span>
                                     </div>
                                 </div>
@@ -650,23 +650,23 @@ export default function ScannerPage() {
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl border text-xs"
                                      style={{background:'#0a1120', borderColor:'rgba(148,163,184,0.1)'}}>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">العميل</span>
-                                        <strong className="font-bold text-white">{currentOrder.customer_name || 'عميل'}</strong>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{t('common.client')}</span>
+                                        <strong className="font-bold text-white">{currentOrder.customer_name || t('common.client')}</strong>
                                     </div>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">الكمية المستهدفة</span>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{t('common.target_quantity')}</span>
                                         <strong className="font-mono font-bold text-amber-400">
-                                            {`${(currentOrder.target_quantity || 0).toLocaleString('en-US')} قطعة`}
+                                            {`${(currentOrder.target_quantity || 0).toLocaleString('en-US')} ${t('common.piece')}`}
                                         </strong>
                                     </div>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">أنشئ بواسطة</span>
-                                        <strong className="text-slate-300 font-mono text-xs">{currentOrder.created_by || 'النظام'}</strong>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{language === 'ar' ? 'أنشئ بواسطة' : 'Created By'}</span>
+                                        <strong className="text-slate-300 font-mono text-xs">{currentOrder.created_by || (language === 'ar' ? 'النظام' : 'System')}</strong>
                                     </div>
                                     <div>
-                                        <span className="text-slate-400 block text-[11px] mb-0.5">حالة الأمر</span>
+                                        <span className="text-slate-400 block text-[11px] mb-0.5">{language === 'ar' ? 'حالة الأمر' : 'Order Status'}</span>
                                         <span className="font-semibold" style={{color: currentOrder.status === 'closed' ? '#10b981' : '#fbbf24'}}>
-                                            {currentOrder.status === 'closed' ? 'مكتمل ومغلق' : 'قيد التشغيل'}
+                                            {currentOrder.status === 'closed' ? (language === 'ar' ? 'مكتمل ومغلق' : 'Completed & Closed') : (language === 'ar' ? 'قيد التشغيل' : 'In-Progress')}
                                         </span>
                                     </div>
                                 </div>
@@ -678,25 +678,25 @@ export default function ScannerPage() {
                 {/* Counters & Progress */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <StatCard
-                        label={isExternal ? 'الكمية المستهدفة' : 'المستهدف بالأوردر'}
-                        value={targetQty > 0 ? targetQty.toLocaleString('en-US') : (isExternal ? '∞ مفتوح' : '0')}
+                        label={isExternal ? t('common.target_quantity') : (language === 'ar' ? 'المستهدف بالأوردر' : 'Order Target')}
+                        value={targetQty > 0 ? targetQty.toLocaleString('en-US') : (isExternal ? (language === 'ar' ? '∞ مفتوح' : '∞ Open') : '0')}
                         colorClass={isExternal ? 'text-cyan-400' : 'text-amber-400'}
                         icon="fas fa-bullseye"
                     />
                     <StatCard
-                        label={isExternal ? 'إجمالي الممسوح' : 'الممسوح بالمرحلة'}
+                        label={isExternal ? (language === 'ar' ? 'إجمالي الممسوح' : 'Total Scanned') : (language === 'ar' ? 'الممسوح بالمرحلة' : 'Stage Scanned')}
                         value={scannedQty ? scannedQty.toLocaleString('en-US') : '0'}
                         colorClass="text-emerald-400"
                         icon="fas fa-check-double"
                     />
                     <StatCard
-                        label={isExternal ? 'المتبقي للتتميم' : 'المتبقي للإنجاز'}
+                        label={isExternal ? (language === 'ar' ? 'المتبقي للتتميم' : 'Remaining') : (language === 'ar' ? 'المتبقي للإنجاز' : 'Stage Remaining')}
                         value={(isExternal && targetQty === 0) ? '—' : (remainingQty ? remainingQty.toLocaleString('en-US') : '0')}
                         colorClass="text-rose-400"
                         icon="fas fa-hourglass-half"
                     />
                     <StatCard
-                        label="قطع ممسوحة فريدة"
+                        label={language === 'ar' ? 'قطع ممسوحة فريدة' : 'Unique Pieces Scanned'}
                         value={uniquePieces ? uniquePieces.toLocaleString('en-US') : '0'}
                         colorClass={isExternal ? 'text-cyan-400' : 'text-blue-400'}
                         icon="fas fa-barcode"
@@ -708,12 +708,12 @@ export default function ScannerPage() {
                     <div className="flex justify-between items-center text-xs mb-2">
                         <span className="text-slate-300 font-medium">
                             {isExternal
-                                ? (targetQty > 0 ? `نسبة إنجاز التشغيل الخارجي (${scannedQty} من ${targetQty})` : 'عداد التشغيل الخارجي (مفتوح بلا حد)')
-                                : `نسبة إنجاز المرحلة الحالية (${selectedStage})`}
+                                ? (targetQty > 0 ? (language === 'ar' ? `نسبة إنجاز التشغيل الخارجي (${scannedQty} من ${targetQty})` : `External Progress (${scannedQty} of ${targetQty})`) : (language === 'ar' ? 'عداد التشغيل الخارجي (مفتوح بلا حد)' : 'External Counter (Open - No Limit)'))
+                                : (language === 'ar' ? `نسبة إنجاز المرحلة الحالية (${selectedStage})` : `Current Stage Progress (${translateStage(selectedStage)})`)}
                         </span>
                         <span className="font-mono font-bold" style={{color: isExternal ? '#22d3ee' : '#fbbf24'}}>
                             {isExternal
-                                ? (targetQty > 0 ? `${progressPct}%` : `${scannedQty} قطعة`)
+                                ? (targetQty > 0 ? `${progressPct}%` : `${scannedQty} ${t('common.piece')}`)
                                 : `${progressPct}%`}
                         </span>
                     </div>
@@ -754,20 +754,20 @@ export default function ScannerPage() {
                             <label className="text-xs font-bold text-slate-200 flex items-center gap-2.5">
                                 <span className={`w-2.5 h-2.5 rounded-full ${currentOrder ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-slate-700'}`}></span>
                                 <span className="text-[13px]">{isExternal
-                                    ? 'مسح الباركود الخارجي (قارئ ليزر أو يدوي)'
-                                    : 'مسح أو كتابة كود القطعة (قارئ ليزر أو يدوي)'}
+                                    ? t('scanner.input_label_ext')
+                                    : t('scanner.input_label')}
                                 </span>
-                                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline border border-slate-700/60 bg-slate-900/60 px-2 py-0.5 rounded">High-Speed Laser Input</span>
+                                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline border border-slate-700/60 bg-slate-900/60 px-2 py-0.5 rounded">{t('scanner.laser_badge')}</span>
                             </label>
                             {currentOrder ? (
                                 <span className="text-[10.5px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                                    ONLINE & READY
+                                    {t('scanner.status_ready')}
                                 </span>
                             ) : (
                                 <span className="text-[10.5px] font-mono font-medium text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 flex items-center gap-1.5">
                                     <i className="fas fa-lock text-[9px]"></i>
-                                    STANDBY
+                                    {t('scanner.status_standby')}
                                 </span>
                             )}
                         </div>
@@ -782,8 +782,8 @@ export default function ScannerPage() {
                                     disabled={!currentOrder || scanning}
                                     placeholder={
                                         currentOrder
-                                            ? 'مرر جهاز قارئ الباركود أو اكتب الكود واضغط Enter...'
-                                            : 'يرجى فتح الأوردر أولاً لتفعيل محطة مسح الباركود...'
+                                            ? t('scanner.input_placeholder_active')
+                                            : t('scanner.input_placeholder_inactive')
                                     }
                                     className={`w-full font-mono font-bold tracking-wider focus:outline-none transition-all duration-200 ${scanAnimation}`}
                                     style={{
@@ -797,14 +797,14 @@ export default function ScannerPage() {
                                     }}
                                     autoComplete="off"
                                 />
-                                <i className={`fas fa-barcode absolute right-4 top-1/2 -translate-y-1/2 text-lg transition-colors ${
+                                <i className={`fas fa-barcode absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-lg transition-colors ${
                                     currentOrder ? 'text-sky-400 animate-pulse' : 'text-slate-600'
                                 }`}></i>
                                 {barcodeInput && (
                                     <button
                                         type="button"
                                         onClick={() => setBarcodeInput('')}
-                                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1.5 transition-colors"
+                                        className={`absolute ${isRTL ? 'left-3.5' : 'right-3.5'} top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs p-1.5 transition-colors`}
                                     >
                                         ✕
                                     </button>
@@ -827,7 +827,7 @@ export default function ScannerPage() {
                                 }}
                             >
                                 <i className="fas fa-arrow-down text-xs"></i>
-                                <span>تسجيل المسح</span>
+                                <span>{t('scanner.btn_submit_scan')}</span>
                             </button>
                         </div>
                     </form>
@@ -845,7 +845,7 @@ export default function ScannerPage() {
                                 }`}>
                                     <i className={`fas ${lastScanResult.status === 'success' ? 'fa-check' : 'fa-times'}`}></i>
                                 </span>
-                                <span className="text-slate-400 font-medium">آخر باركود مسجل:</span>
+                                <span className="text-slate-400 font-medium">{t('scanner.last_scan_label')}</span>
                                 <span className="font-mono font-bold tracking-wider text-white bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700/60">
                                     {lastScanResult.barcode}
                                 </span>
@@ -857,7 +857,7 @@ export default function ScannerPage() {
                                 <span><i className="far fa-clock ml-1 text-slate-500"></i>{lastScanResult.time}</span>
                                 {lastScanResult.scanned_quantity !== undefined && (
                                     <span className="text-sky-300 font-bold bg-sky-950/60 px-2 py-0.5 rounded border border-sky-500/30">
-                                        الحصيلة: {lastScanResult.scanned_quantity}
+                                        {t('common.scanned_quantity')}: {lastScanResult.scanned_quantity}
                                     </span>
                                 )}
                             </div>
@@ -871,11 +871,11 @@ export default function ScannerPage() {
                         <div className="flex items-center gap-2">
                             <i className="fas fa-history text-blue-400 text-xs"></i>
                             <h2 className="text-xs sm:text-sm font-bold text-white">
-                                {isExternal ? 'سجل الباركودات الممسوحة خلال هذه الجلسة' : 'سجل القطع الممسوحة مؤخراً'}
+                                {isExternal ? t('scanner.audit_title') : t('scanner.audit_title')}
                             </h2>
                         </div>
                         <span className="text-[11px] text-slate-400 font-mono">
-                            {recentMovements.length} {isExternal ? 'باركود' : 'حركة'} مسجلة
+                            {recentMovements.length} {t('common.total')}
                         </span>
                     </div>
 
@@ -884,12 +884,12 @@ export default function ScannerPage() {
                             <thead>
                                 <tr>
                                     <th className="p-3 text-center w-12 font-bold">#</th>
-                                    <th className="p-3 font-bold">كود الباركود</th>
-                                    {!isExternal && <th className="p-3 text-center font-bold">الكمية</th>}
-                                    {!isExternal && <th className="p-3 font-bold">العميل</th>}
-                                    {!isExternal && <th className="p-3 font-bold">رقم الأوردر</th>}
-                                    <th className="p-3 font-bold">المشغل</th>
-                                    {isExternal && <th className="p-3 font-bold">وقت المسح</th>}
+                                    <th className="p-3 font-bold">{t('scanner.col_barcode')}</th>
+                                    {!isExternal && <th className="p-3 text-center font-bold">{t('common.quantity')}</th>}
+                                    {!isExternal && <th className="p-3 font-bold">{t('common.client')}</th>}
+                                    {!isExternal && <th className="p-3 font-bold">{t('scanner.col_order')}</th>}
+                                    <th className="p-3 font-bold">{t('scanner.col_operator')}</th>
+                                    {isExternal && <th className="p-3 font-bold">{t('scanner.col_time')}</th>}
                                 </tr>
                             </thead>
                             <tbody>
@@ -897,7 +897,7 @@ export default function ScannerPage() {
                                     <tr>
                                         <td colSpan={isExternal ? 4 : 6} className="text-center py-8 text-slate-500 text-xs">
                                             <i className="fas fa-barcode text-xl mb-1.5 block text-slate-700"></i>
-                                            {isExternal ? 'لا توجد باركودات ممسوحة في هذه الجلسة بعد' : 'لا توجد قطع ممسوحة في هذه المرحلة بعد'}
+                                            {t('scanner.no_scans_yet')}
                                         </td>
                                     </tr>
                                 ) : (

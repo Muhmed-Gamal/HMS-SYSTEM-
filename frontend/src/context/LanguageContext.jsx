@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { translations } from '../i18n/translations';
+import { translations, STAGE_TRANSLATIONS } from '../i18n/translations';
 import { api } from '../services/api';
 import { useToast } from './ToastContext';
 
@@ -85,6 +85,15 @@ export function LanguageProvider({ children }) {
         return result;
     }, [language]);
 
+    // دالة ترجمة مراحل خط الإنتاج تلقائياً
+    const translateStage = useCallback((stageName) => {
+        if (!stageName) return '';
+        if (STAGE_TRANSLATIONS[stageName]) {
+            return STAGE_TRANSLATIONS[stageName][language] || STAGE_TRANSLATIONS[stageName]['ar'] || stageName;
+        }
+        return stageName;
+    }, [language]);
+
     // تغيير لغة النظام - مخصص لمدير النظام (Admin)
     const changeLanguage = async (newLang) => {
         if (!['ar', 'en'].includes(newLang)) return;
@@ -114,6 +123,7 @@ export function LanguageProvider({ children }) {
         dir,
         isRTL,
         t,
+        translateStage,
         changeLanguage,
         syncWithServer,
     };

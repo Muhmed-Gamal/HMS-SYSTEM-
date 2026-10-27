@@ -523,7 +523,7 @@ export default function AdminUsersPage() {
     return (
         <div className="navy-slate-bg min-h-screen flex flex-col">
             <Header
-                title="إدارة المشغلين وصلاحيات النظام"
+                title={t('admin.title')}
                 subtitle={`${companyName} | User Access`}
                 badgeText="USERS CONTROL"
                 activePage="admin"
@@ -532,12 +532,12 @@ export default function AdminUsersPage() {
             <main className="flex-1 p-3 sm:p-5 max-w-6xl w-full mx-auto space-y-4">
                 {/* Stats Cards */}
                 <div className={`grid gap-3 ${isSuperAdmin ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'}`}>
-                    <StatCard label="إجمالي الحسابات" value={stats.total} colorClass="text-white" icon="fas fa-users" />
-                    <StatCard label="مشغلو خطوط الإنتاج" value={stats.production} colorClass="text-emerald-400" icon="fas fa-industry" />
-                    <StatCard label="متابعون إداريون" value={stats.adminView} colorClass="text-blue-400" icon="fas fa-eye" />
-                    <StatCard label="مديرو النظام (أدمن)" value={stats.admins} colorClass="text-amber-400" icon="fas fa-user-shield" />
+                    <StatCard label={t('admin.stat_total_users')} value={stats.total} colorClass="text-white" icon="fas fa-users" />
+                    <StatCard label={t('admin.stat_production_users')} value={stats.production} colorClass="text-emerald-400" icon="fas fa-industry" />
+                    <StatCard label={t('admin.stat_admin_view_users')} value={stats.adminView} colorClass="text-blue-400" icon="fas fa-eye" />
+                    <StatCard label={t('admin.stat_admins')} value={stats.admins} colorClass="text-amber-400" icon="fas fa-user-shield" />
                     {isSuperAdmin && (
-                        <StatCard label="ملاك السيستم" value={stats.superadmins} colorClass="text-yellow-300" icon="fas fa-crown" />
+                        <StatCard label={t('admin.stat_superadmins')} value={stats.superadmins} colorClass="text-yellow-300" icon="fas fa-crown" />
                     )}
                 </div>
 
@@ -601,7 +601,7 @@ export default function AdminUsersPage() {
                             className={`tab-nav-item ${activeTab === 'users' ? 'active' : ''}`}
                         >
                             <i className="fas fa-users-cog text-xs"></i>
-                            <span>إدارة حسابات المشغلين والمستخدمين</span>
+                            <span>{t('admin.tab_users')}</span>
                             <span className="count-badge">
                                 {users.length}
                             </span>
@@ -613,7 +613,7 @@ export default function AdminUsersPage() {
                             className={`tab-nav-item ${activeTab === 'license' ? 'active' : ''}`}
                         >
                             <i className="fas fa-crown text-amber-300 text-xs"></i>
-                            <span>بارتشن توليد وتمديد التراخيص (الملاك)</span>
+                            <span>{t('admin.tab_license')}</span>
                             <span className="badge-clean badge-amber text-[9px] font-mono px-1.5 py-0.5 rounded">
                                 LICENSE
                             </span>
@@ -625,7 +625,7 @@ export default function AdminUsersPage() {
                             className={`tab-nav-item ${activeTab === 'pipeline' ? 'active' : ''}`}
                         >
                             <i className="fas fa-sitemap text-cyan-300 text-xs"></i>
-                            <span>تهيئة مسار ومراحل خط الإنتاج</span>
+                            <span>{t('admin.tab_pipeline')}</span>
                             <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{background:'rgba(6,182,212,0.2)',color:'#22d3ee',border:'1px solid rgba(6,182,212,0.3)'}}>
                                 PIPELINE
                             </span>
@@ -1225,7 +1225,7 @@ export default function AdminUsersPage() {
                     <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
                         <div className="flex items-center gap-2">
                             <i className="fas fa-user-plus text-blue-400 text-xs"></i>
-                            <h2 className="text-xs sm:text-sm font-bold text-white">إضافة مستخدم جديد وتحديد الصلاحية</h2>
+                            <h2 className="text-xs sm:text-sm font-bold text-white">{t('admin.sec_add_user')}</h2>
                         </div>
                         <span className="text-[11px] text-slate-400 font-mono">NEW USER</span>
                     </div>
@@ -1234,37 +1234,37 @@ export default function AdminUsersPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end mb-3">
                             <div>
                                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                                    اسم الدخول (Username) *
+                                    {t('admin.field_username')} *
                                 </label>
                                 <input
                                     type="text"
                                     required
                                     value={newUsername}
                                     onChange={(e) => setNewUsername(e.target.value)}
-                                    placeholder="مثال: ahmed.hassan"
+                                    placeholder={t('admin.field_username_placeholder')}
                                     className="slate-input font-mono text-xs"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">كلمة المرور *</label>
+                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">{t('admin.field_password')} *</label>
                                 <input
                                     type="text"
                                     required
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
-                                    placeholder="كلمة المرور..."
+                                    placeholder={t('admin.field_password_placeholder')}
                                     className="slate-input font-mono text-xs"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">الاسم الكامل (اختياري)</label>
+                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">{t('admin.field_fullname')} ({language === 'ar' ? 'اختياري' : 'optional'})</label>
                                 <input
                                     type="text"
                                     value={newFullName}
                                     onChange={(e) => setNewFullName(e.target.value)}
-                                    placeholder="مثال: أحمد حسن محمود"
+                                    placeholder={t('admin.field_fullname_placeholder')}
                                     className="slate-input text-xs"
                                 />
                             </div>
@@ -1272,19 +1272,19 @@ export default function AdminUsersPage() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">نوع الصلاحية</label>
+                                <label className="block text-xs font-semibold text-slate-300 mb-1.5">{t('admin.field_role')}</label>
                                 <select
                                     value={newRole}
                                     onChange={(e) => setNewRole(e.target.value)}
                                     className="slate-input text-xs cursor-pointer"
                                 >
-                                    <option value="production">يوزر إنتاج (مسح مراحل محددة)</option>
-                                    <option value="external_operator">تشغيل خارجي (مسح أي باركود)</option>
-                                    <option value="external_admin">مشرف تشغيل خارجي (متابعة الأوردرات الخارجية فقط)</option>
-                                    <option value="admin_view">متابع إداري (اطلاع فقط)</option>
-                                    <option value="admin">مدير مصنع (أدمن عادي)</option>
+                                    <option value="production">{language === 'ar' ? 'يوزر إنتاج (مسح مراحل محددة)' : 'Production Operator (specific stages)'}</option>
+                                    <option value="external_operator">{language === 'ar' ? 'تشغيل خارجي (مسح أي باركود)' : 'External Operator (any barcode)'}</option>
+                                    <option value="external_admin">{language === 'ar' ? 'مشرف تشغيل خارجي (متابعة الأوردرات الخارجية فقط)' : 'External Admin (external orders only)'}</option>
+                                    <option value="admin_view">{language === 'ar' ? 'متابع إداري (اطلاع فقط)' : 'Admin Viewer (read-only)'}</option>
+                                    <option value="admin">{language === 'ar' ? 'مدير مصنع (أدمن عادي)' : 'Factory Manager (Admin)'}</option>
                                     {isSuperAdmin && (
-                                        <option value="superadmin">👑 مالك السيستم (Super Admin - صلاحية شاملة)</option>
+                                        <option value="superadmin">👑 {language === 'ar' ? 'مالك السيستم (Super Admin - صلاحية شاملة)' : 'System Owner (Super Admin - Full Access)'}</option>
                                     )}
                                 </select>
                             </div>
@@ -1292,7 +1292,7 @@ export default function AdminUsersPage() {
                             {newRole === 'production' ? (
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                                        المرحلة الإنتاجية المقيدة
+                                        {t('admin.field_stage_permission')}
                                     </label>
                                     <select
                                         value={newStage}
@@ -1304,19 +1304,19 @@ export default function AdminUsersPage() {
                                                 {s.stage_name}
                                             </option>
                                         )) : (
-                                            <option value="">جاري تحميل المراحل...</option>
+                                            <option value="">{t('common.loading')}</option>
                                         )}
                                     </select>
                                 </div>
                             ) : (
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                                        المرحلة الإنتاجية
+                                        {t('common.stage')}
                                     </label>
                                     <input
                                         type="text"
                                         disabled
-                                        value="غير مقيد بمرحلة"
+                                        value={language === 'ar' ? 'غير مقيد بمرحلة' : 'Not stage-restricted'}
                                         className="slate-input text-xs bg-[#0a1120] text-slate-500 cursor-not-allowed"
                                     />
                                 </div>
@@ -1331,12 +1331,12 @@ export default function AdminUsersPage() {
                                     {submitting ? (
                                         <span className="flex items-center justify-center gap-1.5">
                                             <i className="fas fa-circle-notch fa-spin"></i>
-                                            <span>جاري الإضافة...</span>
+                                            <span>{t('admin.btn_creating_user')}</span>
                                         </span>
                                     ) : (
                                         <span className="flex items-center justify-center gap-1.5">
                                             <i className="fas fa-plus text-xs"></i>
-                                            <span>إضافة الحساب</span>
+                                            <span>{t('admin.btn_create_user')}</span>
                                         </span>
                                     )}
                                 </button>
@@ -1350,9 +1350,9 @@ export default function AdminUsersPage() {
                     <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
                         <div className="flex items-center gap-2">
                             <i className="fas fa-users-cog text-blue-400 text-xs"></i>
-                            <h2 className="text-xs sm:text-sm font-bold text-white">المستخدمون المسجلون بالنظام</h2>
+                            <h2 className="text-xs sm:text-sm font-bold text-white">{t('admin.users_list_title')}</h2>
                         </div>
-                        <span className="text-[11px] text-slate-400 font-mono">{users.length} حساب</span>
+                        <span className="text-[11px] text-slate-400 font-mono">{users.length} {language === 'ar' ? 'حساب' : 'accounts'}</span>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -1360,12 +1360,12 @@ export default function AdminUsersPage() {
                             <thead>
                                 <tr>
                                     <th className="p-3 text-center w-12 font-bold">#</th>
-                                    <th className="p-3 font-bold">اسم الدخول</th>
-                                    <th className="p-3 font-bold">الاسم الكامل</th>
-                                    <th className="p-3 font-bold">نوع الصلاحية</th>
-                                    <th className="p-3 font-bold">المرحلة المقيدة</th>
-                                    <th className="p-3 text-center font-bold">حالة الأمان والقفل</th>
-                                    <th className="p-3 text-center font-bold">الإجراءات</th>
+                                    <th className="p-3 font-bold">{t('admin.col_username')}</th>
+                                    <th className="p-3 font-bold">{t('admin.col_fullname')}</th>
+                                    <th className="p-3 font-bold">{t('admin.col_role')}</th>
+                                    <th className="p-3 font-bold">{t('admin.col_stage')}</th>
+                                    <th className="p-3 text-center font-bold">{t('admin.col_status')}</th>
+                                    <th className="p-3 text-center font-bold">{t('admin.col_actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1373,7 +1373,7 @@ export default function AdminUsersPage() {
                                     <tr>
                                         <td colSpan="7" className="text-center py-8 text-slate-400 text-xs">
                                             <i className="fas fa-circle-notch fa-spin text-base mb-2 block text-blue-400"></i>
-                                            جاري تحميل المستخدمين...
+                                            {language === 'ar' ? 'جاري تحميل المستخدمين...' : 'Loading users...'}
                                         </td>
                                     </tr>
                                 ) : users.length === 0 ? (
@@ -1383,9 +1383,9 @@ export default function AdminUsersPage() {
                                                 <div className="empty-state-icon">
                                                     <i className="fas fa-users-slash"></i>
                                                 </div>
-                                                <div className="empty-state-title">لا يوجد مستخدمون مسجلون بعد</div>
+                                                <div className="empty-state-title">{language === 'ar' ? 'لا يوجد مستخدمون مسجلون بعد' : 'No users registered yet'}</div>
                                                 <div className="empty-state-desc">
-                                                    استخدم نموذج الإضافة أعلاه لإنشاء حسابات المشغلين والمشرفين
+                                                    {language === 'ar' ? 'استخدم نموذج الإضافة أعلاه لإنشاء حسابات المشغلين والمشرفين' : 'Use the form above to create operator and supervisor accounts'}
                                                 </div>
                                             </div>
                                         </td>
@@ -1396,37 +1396,37 @@ export default function AdminUsersPage() {
                                         if (u.role === 'superadmin') {
                                             roleBadge = (
                                                 <span className="badge-clean text-[10px]" style={{background:'linear-gradient(135deg,#78350f,#92400e)',color:'#fef3c7',border:'1px solid #b45309'}}>
-                                                    <i className="fas fa-crown ml-1"></i> مالك السيستم
+                                                    <i className="fas fa-crown ml-1"></i> {language === 'ar' ? 'مالك السيستم' : 'System Owner'}
                                                 </span>
                                             );
                                         } else if (u.role === 'admin') {
                                             roleBadge = (
                                                 <span className="badge-clean badge-amber text-[10px]">
-                                                    <span className="badge-clean-dot"></span> مدير نظام
+                                                    <span className="badge-clean-dot"></span> {language === 'ar' ? 'مدير نظام' : 'System Admin'}
                                                 </span>
                                             );
                                         } else if (u.role === 'admin_view') {
                                             roleBadge = (
                                                 <span className="badge-clean badge-blue text-[10px]">
-                                                    <span className="badge-clean-dot"></span> متابع إداري
+                                                    <span className="badge-clean-dot"></span> {language === 'ar' ? 'متابع إداري' : 'Admin Viewer'}
                                                 </span>
                                             );
                                         } else if (u.role === 'external_operator') {
                                             roleBadge = (
                                                 <span className="badge-clean text-[10px]" style={{background:'rgba(6,182,212,0.15)',color:'#22d3ee',border:'1px solid rgba(6,182,212,0.3)'}}>
-                                                    <span className="badge-clean-dot" style={{background:'#22d3ee'}}></span> تشغيل خارجي
+                                                    <span className="badge-clean-dot" style={{background:'#22d3ee'}}></span> {language === 'ar' ? 'تشغيل خارجي' : 'External Op.'}
                                                 </span>
                                             );
                                         } else if (u.role === 'external_admin') {
                                             roleBadge = (
                                                 <span className="badge-clean text-[10px]" style={{background:'rgba(6,182,212,0.15)',color:'#22d3ee',border:'1px solid rgba(6,182,212,0.3)'}}>
-                                                    <span className="badge-clean-dot" style={{background:'#22d3ee'}}></span> مشرف خارجي
+                                                    <span className="badge-clean-dot" style={{background:'#22d3ee'}}></span> {language === 'ar' ? 'مشرف خارجي' : 'External Admin'}
                                                 </span>
                                             );
                                         } else {
                                             roleBadge = (
                                                 <span className="badge-clean badge-green text-[10px]">
-                                                    <span className="badge-clean-dot"></span> يوزر إنتاج
+                                                    <span className="badge-clean-dot"></span> {language === 'ar' ? 'يوزر إنتاج' : 'Production Op.'}
                                                 </span>
                                             );
                                         }
@@ -1441,7 +1441,7 @@ export default function AdminUsersPage() {
                                                 <td className="p-3">{roleBadge}</td>
                                                 <td className="p-3 text-slate-300 text-xs font-mono">
                                                     {u.role === 'production' ? (
-                                                        u.stage_action || 'غير محدد'
+                                                        u.stage_action || (language === 'ar' ? 'غير محدد' : 'Unassigned')
                                                     ) : (
                                                         <span className="text-slate-500">—</span>
                                                     )}
@@ -1449,25 +1449,25 @@ export default function AdminUsersPage() {
                                                 <td className="p-3 text-center">
                                                     {isMaster ? (
                                                         <span className="badge-clean text-[10px]" style={{background:'rgba(245,158,11,0.15)',color:'#fbbf24',border:'1px solid rgba(245,158,11,0.35)'}}>
-                                                            <i className="fas fa-shield-alt ml-1"></i> محصن ضد القفل
+                                                            <i className="fas fa-shield-alt ml-1"></i> {language === 'ar' ? 'محصن ضد القفل' : 'Lock Protected'}
                                                         </span>
                                                     ) : u.is_locked ? (
                                                         u.locked_until ? (
                                                             <span className="badge-clean text-[10px]" style={{background:'rgba(245,158,11,0.18)',color:'#f59e0b',border:'1px solid rgba(245,158,11,0.4)'}} title={`مقفول مؤقتاً`}>
-                                                                <i className="fas fa-clock ml-1"></i> مقفول مؤقتاً (5 د)
+                                                                <i className="fas fa-clock ml-1"></i> {language === 'ar' ? 'مقفول مؤقتاً (5 د)' : 'Temp Locked (5m)'}
                                                             </span>
                                                         ) : (
                                                             <span className="badge-clean text-[10px]" style={{background:'rgba(239,68,68,0.18)',color:'#ef4444',border:'1px solid rgba(239,68,68,0.4)'}} title="مقفول نهائياً بواسطة نظام الحماية">
-                                                                <i className="fas fa-lock ml-1"></i> مقفول نهائياً
+                                                                <i className="fas fa-lock ml-1"></i> {language === 'ar' ? 'مقفول نهائياً' : 'Locked'}
                                                             </span>
                                                         )
                                                     ) : (u.failed_login_count > 0) ? (
                                                         <span className="badge-clean text-[10px]" style={{background:'rgba(245,158,11,0.12)',color:'#fbbf24',border:'1px solid rgba(245,158,11,0.25)'}} title={`${u.failed_login_count} محاولات خاطئة`}>
-                                                            <i className="fas fa-exclamation-triangle ml-1"></i> {u.failed_login_count}/5 محاولات
+                                                            <i className="fas fa-exclamation-triangle ml-1"></i> {u.failed_login_count}/5 {language === 'ar' ? 'محاولات' : 'attempts'}
                                                         </span>
                                                     ) : (
                                                         <span className="badge-clean badge-green text-[10px]">
-                                                            <i className="fas fa-check-circle ml-1"></i> نشط
+                                                            <i className="fas fa-check-circle ml-1"></i> {language === 'ar' ? 'نشط' : 'Active'}
                                                         </span>
                                                     )}
                                                 </td>
@@ -1480,7 +1480,7 @@ export default function AdminUsersPage() {
                                                                 className="btn-slate text-[11px] py-1 px-2.5 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/15 hover:border-emerald-400 transition flex items-center gap-1 font-semibold"
                                                                 title="فك قفل الحساب فوراً وتصفير محاولات تسجيل الدخول"
                                                             >
-                                                                <i className="fas fa-unlock text-[10px]"></i> فك القفل
+                                                                <i className="fas fa-unlock text-[10px]"></i> {t('admin.btn_unlock')}
                                                             </button>
                                                         )}
                                                         {/* Edit Button */}
@@ -1490,7 +1490,7 @@ export default function AdminUsersPage() {
                                                                 className="btn-slate text-[11px] py-1 px-2.5 border-blue-500/40 text-blue-400 hover:bg-blue-500/10 hover:border-blue-400/60 transition"
                                                                 title="تعديل الصلاحيات"
                                                             >
-                                                                <i className="fas fa-edit text-[10px]"></i> تعديل
+                                                                <i className="fas fa-edit text-[10px]"></i> {t('admin.btn_edit')}
                                                             </button>
                                                         )}
                                                         {/* Delete Button */}
@@ -1499,18 +1499,18 @@ export default function AdminUsersPage() {
                                                                 onClick={() => handleDeleteUser(u.id, u.username)}
                                                                 className="btn-slate btn-slate-danger text-[11px] py-1 px-2 transition"
                                                             >
-                                                                <i className="fas fa-trash-alt text-[10px]"></i> حذف
+                                                                <i className="fas fa-trash-alt text-[10px]"></i> {t('admin.btn_delete')}
                                                             </button>
                                                         ) : (
                                                             <span className="text-[11px] font-mono" style={{color: (u.username?.toLowerCase() === 'gamal' || u.username?.toLowerCase() === 'auf') ? '#f59e0b' : (u.role === 'superadmin' ? '#d97706' : '#64748b')}}>
                                                                 {(u.username?.toLowerCase() === 'gamal' || u.username?.toLowerCase() === 'auf') ? (
-                                                                    <><i className="fas fa-crown text-[10px] ml-1"></i>مالك محمي نهائياً</>
+                                                                    <><i className="fas fa-crown text-[10px] ml-1"></i>{language === 'ar' ? 'مالك محمي نهائياً' : 'Protected Owner'}</>
                                                                 ) : u.role === 'superadmin' ? (
-                                                                    <><i className="fas fa-shield-alt text-[10px] ml-1"></i>محمي</>
+                                                                    <><i className="fas fa-shield-alt text-[10px] ml-1"></i>{language === 'ar' ? 'محمي' : 'Protected'}</>
                                                                 ) : u.id === user?.id ? (
-                                                                    'حسابك'
+                                                                    (language === 'ar' ? 'حسابك' : 'Your account')
                                                                 ) : (
-                                                                    'أساسي'
+                                                                    (language === 'ar' ? 'أساسي' : 'Core')
                                                                 )}
                                                             </span>
                                                         )}
@@ -1542,7 +1542,7 @@ export default function AdminUsersPage() {
                                     <i className="fas fa-user-edit"></i>
                                 </span>
                                 <div>
-                                    <h3 className="text-sm font-bold text-white">تعديل صلاحيات المستخدم</h3>
+                                    <h3 className="text-sm font-bold text-white">{language === 'ar' ? 'تعديل صلاحيات المستخدم' : 'Edit User Permissions'}</h3>
                                     <p className="text-[11px] text-slate-400 font-mono mt-0.5">
                                         {editUser.username}
                                         {editUser.full_name && editUser.full_name !== editUser.username && (
@@ -1566,13 +1566,13 @@ export default function AdminUsersPage() {
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                                         <i className="fas fa-id-card text-slate-500 ml-1 text-[10px]"></i>
-                                        الاسم الكامل
+                                        {t('admin.field_fullname')}
                                     </label>
                                     <input
                                         type="text"
                                         value={editFullName}
                                         onChange={(e) => setEditFullName(e.target.value)}
-                                        placeholder="الاسم الكامل للمستخدم"
+                                        placeholder={t('admin.field_fullname_placeholder')}
                                         className="slate-input text-xs"
                                     />
                                 </div>
@@ -1581,20 +1581,20 @@ export default function AdminUsersPage() {
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                                         <i className="fas fa-user-tag text-slate-500 ml-1 text-[10px]"></i>
-                                        نوع الصلاحية
+                                        {t('admin.field_role')}
                                     </label>
                                     <select
                                         value={editRole}
                                         onChange={(e) => setEditRole(e.target.value)}
                                         className="slate-input text-xs cursor-pointer"
                                     >
-                                        <option value="production">يوزر إنتاج (مسح مراحل محددة)</option>
-                                        <option value="external_operator">تشغيل خارجي (مسح أي باركود)</option>
-                                        <option value="external_admin">مشرف تشغيل خارجي (متابعة الأوردرات الخارجية فقط)</option>
-                                        <option value="admin_view">متابع إداري (اطلاع فقط)</option>
-                                        <option value="admin">مدير مصنع (أدمن عادي)</option>
+                                        <option value="production">{language === 'ar' ? 'يوزر إنتاج (مسح مراحل محددة)' : 'Production Operator (specific stages)'}</option>
+                                        <option value="external_operator">{language === 'ar' ? 'تشغيل خارجي (مسح أي باركود)' : 'External Operator (any barcode)'}</option>
+                                        <option value="external_admin">{language === 'ar' ? 'مشرف تشغيل خارجي (متابعة الأوردرات الخارجية فقط)' : 'External Admin (external orders only)'}</option>
+                                        <option value="admin_view">{language === 'ar' ? 'متابع إداري (اطلاع فقط)' : 'Admin Viewer (read-only)'}</option>
+                                        <option value="admin">{language === 'ar' ? 'مدير مصنع (أدمن عادي)' : 'Factory Manager (Admin)'}</option>
                                         {isSuperAdmin && (
-                                            <option value="superadmin">👑 مالك السيستم (Super Admin - صلاحية شاملة)</option>
+                                            <option value="superadmin">👑 {language === 'ar' ? 'مالك السيستم (Super Admin - صلاحية شاملة)' : 'System Owner (Super Admin - Full Access)'}</option>
                                         )}
                                     </select>
                                 </div>
@@ -1604,7 +1604,7 @@ export default function AdminUsersPage() {
                                     <div>
                                         <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                                             <i className="fas fa-industry text-slate-500 ml-1 text-[10px]"></i>
-                                            المرحلة الإنتاجية المقيدة
+                                            {t('admin.field_stage_permission')}
                                         </label>
                                         <select
                                             value={editStage}
@@ -1616,7 +1616,7 @@ export default function AdminUsersPage() {
                                                     {s.stage_name}
                                                 </option>
                                             )) : (
-                                                <option value="">جاري تحميل المراحل...</option>
+                                                <option value="">{t('common.loading')}</option>
                                             )}
                                         </select>
                                     </div>
@@ -1626,14 +1626,14 @@ export default function AdminUsersPage() {
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                                         <i className="fas fa-lock text-slate-500 ml-1 text-[10px]"></i>
-                                        كلمة مرور جديدة
-                                        <span className="text-slate-500 font-normal mr-1">(اتركه فارغ لو مش عايز تغيّرها)</span>
+                                        {language === 'ar' ? 'كلمة مرور جديدة' : 'New Password'}
+                                        <span className="text-slate-500 font-normal mr-1">{language === 'ar' ? '(اتركه فارغ لو مش عايز تغيّرها)' : '(leave empty to keep current)'}</span>
                                     </label>
                                     <input
                                         type="text"
                                         value={editPassword}
                                         onChange={(e) => setEditPassword(e.target.value)}
-                                        placeholder="كلمة المرور الجديدة..."
+                                        placeholder={t('admin.field_password_placeholder')}
                                         className="slate-input font-mono text-xs"
                                     />
                                 </div>
@@ -1642,34 +1642,34 @@ export default function AdminUsersPage() {
                                 <div className="rounded-xl p-3 border border-slate-700/50" style={{background:'rgba(30,41,59,0.5)'}}>
                                     <p className="text-[10px] text-slate-400 font-bold mb-2">
                                         <i className="fas fa-info-circle ml-1"></i>
-                                        الصلاحيات المتاحة لهذا الدور:
+                                        {language === 'ar' ? 'الصلاحيات المتاحة لهذا الدور:' : 'Permissions available for this role:'}
                                     </p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {editRole === 'superadmin' && (
                                             <>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">كل الصلاحيات</span>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">إدارة التراخيص</span>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">إنشاء حسابات ملاك</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">{language === 'ar' ? 'كل الصلاحيات' : 'All Permissions'}</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">{language === 'ar' ? 'إدارة التراخيص' : 'License Management'}</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">{language === 'ar' ? 'إنشاء حسابات ملاك' : 'Create Owner Accounts'}</span>
                                             </>
                                         )}
                                         {(editRole === 'admin' || editRole === 'superadmin') && (
                                             <>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">إدارة المستخدمين</span>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">إنشاء أوردرات</span>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">طباعة التقارير</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">{language === 'ar' ? 'إدارة المستخدمين' : 'User Management'}</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">{language === 'ar' ? 'إنشاء أوردرات' : 'Create Orders'}</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">{language === 'ar' ? 'طباعة التقارير' : 'Print Reports'}</span>
                                             </>
                                         )}
                                         {editRole === 'admin_view' && (
                                             <>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">عرض الأوردرات</span>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">إنشاء أوردرات</span>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">طباعة التقارير</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">{language === 'ar' ? 'عرض الأوردرات' : 'View Orders'}</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">{language === 'ar' ? 'إنشاء أوردرات' : 'Create Orders'}</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">{language === 'ar' ? 'طباعة التقارير' : 'Print Reports'}</span>
                                             </>
                                         )}
                                         {editRole === 'production' && (
                                             <>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">مسح الباركود</span>
-                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">مرحلة واحدة فقط</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">{language === 'ar' ? 'مسح الباركود' : 'Scan Barcodes'}</span>
+                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">{language === 'ar' ? 'مرحلة واحدة فقط' : 'Single Stage Only'}</span>
                                             </>
                                         )}
                                     </div>
@@ -1683,7 +1683,7 @@ export default function AdminUsersPage() {
                                     onClick={closeEditModal}
                                     className="btn-slate text-xs py-2 px-5 text-slate-400 hover:text-white transition"
                                 >
-                                    إلغاء
+                                    {t('common.cancel')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1693,12 +1693,12 @@ export default function AdminUsersPage() {
                                     {editSubmitting ? (
                                         <span className="flex items-center gap-1.5">
                                             <i className="fas fa-circle-notch fa-spin"></i>
-                                            جاري الحفظ...
+                                            {language === 'ar' ? 'جاري الحفظ...' : 'Saving...'}
                                         </span>
                                     ) : (
                                         <span className="flex items-center gap-1.5">
                                             <i className="fas fa-save"></i>
-                                            حفظ التعديلات
+                                            {language === 'ar' ? 'حفظ التعديلات' : 'Save Changes'}
                                         </span>
                                     )}
                                 </button>

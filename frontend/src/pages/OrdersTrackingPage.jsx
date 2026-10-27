@@ -28,7 +28,7 @@ const PRODUCTION_STAGES = [
 export default function OrdersTrackingPage() {
     const { user, isAdmin, canCreateOrders, companyName } = useAuth();
     const { toast, confirm, showProgress, updateProgress, closeProgress, showAlert } = useToast();
-    const { t, isRTL } = useLanguage();
+    const { t, isRTL, language, translateStage } = useLanguage();
     const navigate = useNavigate();
 
     // Guard: Redirect if not logged in or unauthorized role
@@ -572,46 +572,46 @@ export default function OrdersTrackingPage() {
                 {/* Metric Tiles */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                     <StatCard 
-                        label="إجمالي الأوامر (المصنع + الخارجي)" 
+                        label={t('orders.stat_total_orders')} 
                         value={unifiedStats.totalOrders} 
                         colorClass="text-white font-mono" 
                         icon="fas fa-layer-group" 
                         subValue={
                             <span>
-                                <strong className="text-blue-400">{unifiedStats.factoryOrders}</strong> مصنع · <strong className="text-cyan-400">{unifiedStats.externalOrders}</strong> تشغيل خارجي
+                                <strong className="text-blue-400">{unifiedStats.factoryOrders}</strong> {t('common.factory')} · <strong className="text-cyan-400">{unifiedStats.externalOrders}</strong> {t('common.external')}
                             </span>
                         }
                     />
                     <StatCard 
-                        label="أوامر قيد التشغيل" 
+                        label={t('orders.stat_active_orders')} 
                         value={unifiedStats.activeOrders} 
                         colorClass="text-amber-400 font-mono" 
                         icon="fas fa-hourglass-half" 
                         subValue={
                             <span>
-                                <strong className="text-amber-300">{unifiedStats.activeFactory}</strong> مصنع · <strong className="text-cyan-300">{unifiedStats.activeExternal}</strong> تشغيل خارجي
+                                <strong className="text-amber-300">{unifiedStats.activeFactory}</strong> {t('common.factory')} · <strong className="text-cyan-300">{unifiedStats.activeExternal}</strong> {t('common.external')}
                             </span>
                         }
                     />
                     <StatCard 
-                        label="أوامر مكتملة ومغلقة" 
+                        label={t('orders.stat_closed_orders')} 
                         value={unifiedStats.closedOrders} 
                         colorClass="text-emerald-400 font-mono" 
                         icon="fas fa-check-circle" 
                         subValue={
                             <span>
-                                <strong className="text-emerald-300">{unifiedStats.closedFactory}</strong> مصنع · <strong className="text-cyan-300">{unifiedStats.closedExternal}</strong> تشغيل خارجي
+                                <strong className="text-emerald-300">{unifiedStats.closedFactory}</strong> {t('common.factory')} · <strong className="text-cyan-300">{unifiedStats.closedExternal}</strong> {t('common.external')}
                             </span>
                         }
                     />
                     <StatCard
-                        label="إجمالي الشفرات والمسحات"
+                        label={t('orders.stat_total_barcodes')}
                         value={unifiedStats.totalAllBarcodes.toLocaleString('en-US')}
                         colorClass="text-blue-400 font-mono"
                         icon="fas fa-barcode"
                         subValue={
                             <span>
-                                <strong className="text-blue-300">{unifiedStats.factoryBarcodes.toLocaleString('en-US')}</strong> شفرات مصنع · <strong className="text-cyan-300">{unifiedStats.externalScans.toLocaleString('en-US')}</strong> مسحات خارجي
+                                <strong className="text-blue-300">{unifiedStats.factoryBarcodes.toLocaleString('en-US')}</strong> {t('common.factory')} · <strong className="text-cyan-300">{unifiedStats.externalScans.toLocaleString('en-US')}</strong> {t('common.external')}
                             </span>
                         }
                     />
@@ -625,11 +625,11 @@ export default function OrdersTrackingPage() {
                         </div>
                         <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h2 className="text-sm font-bold text-white">لوحة متابعة وتدقيق خطوط الإنتاج</h2>
+                                <h2 className="text-sm font-bold text-white">{t('orders.title')}</h2>
                                 <span className="text-[10px] bg-sky-500/10 text-sky-400 px-2 py-0.5 rounded-md font-mono border border-sky-500/20">LIVE TRACKING</span>
                             </div>
                             <p className="text-xs text-slate-400 mt-0.5">
-                                متابعة حركة الشفرات والمسحات الحية ونسب الإنجاز لكل أوردر عبر كافة المحطات
+                                {t('orders.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -641,24 +641,24 @@ export default function OrdersTrackingPage() {
                                 className="btn-slate btn-slate-primary text-xs py-2 px-3.5 flex items-center justify-center gap-2"
                             >
                                 <i className="fas fa-plus-circle text-xs"></i>
-                                <span>أوردر جديد</span>
+                                <span>{t('orders.btn_new_order')}</span>
                             </Link>
                         )}
                         <button
                             onClick={handleOpenComprehensiveReport}
                             className="btn-slate btn-slate-secondary text-xs py-2 px-3 flex items-center justify-center gap-1.5"
-                            title="عرض وطباعة التقرير الشامل لجميع الأوردرات"
+                            title={t('orders.btn_print_report')}
                         >
                             <i className="fas fa-file-alt text-slate-400"></i>
-                            <span>التقرير الشامل</span>
+                            <span>{t('orders.btn_print_report')}</span>
                         </button>
                         <button
                             onClick={loadAll}
                             className="btn-slate btn-slate-secondary text-xs py-2 px-3 flex items-center justify-center gap-1.5 col-span-1 sm:col-span-2 md:col-span-1"
-                            title="تحديث بيانات الأوردرات فورياً"
+                            title={t('common.refresh')}
                         >
                             <i className="fas fa-sync-alt text-slate-400"></i>
-                            <span>تحديث</span>
+                            <span>{t('common.refresh')}</span>
                         </button>
                     </div>
                 </div>
@@ -671,9 +671,9 @@ export default function OrdersTrackingPage() {
                             <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-xs">
                                 <i className="fas fa-clipboard-list"></i>
                             </div>
-                            <h2 className="text-sm font-bold text-white">سجل أوامر الشغل ومتابعة المراحل</h2>
+                            <h2 className="text-sm font-bold text-white">{t('orders.title')}</h2>
                             <span className="badge-clean badge-neutral font-mono text-[10px]">
-                                {filteredOrders.length} من {orders.length}
+                                {filteredOrders.length} / {orders.length}
                             </span>
                         </div>
 
@@ -682,10 +682,10 @@ export default function OrdersTrackingPage() {
                             {/* Status Filter Chips */}
                             <div className="filter-chips">
                                 {[
-                                    { key: 'all', label: 'الكل', count: orders.length, activeClass: 'active' },
-                                    { key: 'active', label: 'قيد التشغيل', count: unifiedStats.activeOrders, activeClass: 'active-amber' },
-                                    { key: 'closed', label: 'مكتملة', count: unifiedStats.closedOrders, activeClass: 'active-green' },
-                                    { key: 'external', label: 'تشغيل خارجي', count: unifiedStats.externalOrders, activeClass: 'active' },
+                                    { key: 'all', label: t('orders.tab_all'), count: orders.length, activeClass: 'active' },
+                                    { key: 'active', label: t('orders.tab_active'), count: unifiedStats.activeOrders, activeClass: 'active-amber' },
+                                    { key: 'closed', label: t('orders.tab_closed'), count: unifiedStats.closedOrders, activeClass: 'active-green' },
+                                    { key: 'external', label: t('orders.tab_external'), count: unifiedStats.externalOrders, activeClass: 'active' },
                                 ].map((tab) => (
                                     <button
                                         key={tab.key}
@@ -707,16 +707,16 @@ export default function OrdersTrackingPage() {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="بحث بالأوردر أو العميل..."
-                                    className="slate-input text-xs pr-8 pl-7 py-1.5 w-full"
+                                    placeholder={t('orders.search_placeholder')}
+                                    className={`slate-input text-xs ${isRTL ? 'pr-8 pl-7' : 'pl-8 pr-7'} py-1.5 w-full`}
                                 />
-                                <i className="fas fa-search absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                                <i className={`fas fa-search absolute ${isRTL ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 text-slate-500 text-xs`}></i>
                                 {searchQuery && (
                                     <button
                                         type="button"
                                         onClick={() => setSearchQuery('')}
-                                        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs"
-                                        title="مسح البحث"
+                                        className={`absolute ${isRTL ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs`}
+                                        title={t('orders.clear_search')}
                                     >
                                         ✕
                                     </button>
@@ -730,12 +730,12 @@ export default function OrdersTrackingPage() {
                             <thead>
                                 <tr>
                                     <th className="p-3 text-center w-12 font-bold">#</th>
-                                    <th className="p-3 font-bold">رقم أمر الشغل</th>
-                                    <th className="p-3 font-bold">العميل</th>
-                                    <th className="p-3 text-center font-bold">الكمية المطلوبة</th>
-                                    <th className="p-3 text-center font-bold min-w-[140px]">نسبة الإنجاز</th>
-                                    <th className="p-3 text-center font-bold">الحالة</th>
-                                    <th className="p-3 text-center font-bold">الإجراءات</th>
+                                    <th className="p-3 font-bold">{t('orders.col_order_no')}</th>
+                                    <th className="p-3 font-bold">{t('orders.col_client')}</th>
+                                    <th className="p-3 text-center font-bold">{t('orders.col_quantity')}</th>
+                                    <th className="p-3 text-center font-bold min-w-[140px]">{t('orders.col_progress')}</th>
+                                    <th className="p-3 text-center font-bold">{t('orders.col_status')}</th>
+                                    <th className="p-3 text-center font-bold">{t('orders.col_actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -743,7 +743,7 @@ export default function OrdersTrackingPage() {
                                     <tr>
                                         <td colSpan="7" className="text-center py-10 text-slate-400 text-xs">
                                             <i className="fas fa-circle-notch fa-spin text-lg mb-2 block text-blue-400"></i>
-                                            جاري تحميل الأوردرات...
+                                            {t('common.loading')}
                                         </td>
                                     </tr>
                                 ) : filteredOrders.length === 0 ? (
@@ -753,9 +753,9 @@ export default function OrdersTrackingPage() {
                                                 <div className="empty-state-icon">
                                                     <i className="fas fa-search"></i>
                                                 </div>
-                                                <div className="empty-state-title">لا توجد أوردرات مطابقة للبحث أو التصفية</div>
+                                                <div className="empty-state-title">{t('orders.empty_title')}</div>
                                                 <div className="empty-state-desc">
-                                                    جرّب تغيير كلمات البحث أو اختيار تبويب تصفية آخر لعرض الأوامر المسجلة
+                                                    {t('orders.empty_desc')}
                                                 </div>
                                             </div>
                                         </td>
@@ -786,11 +786,11 @@ export default function OrdersTrackingPage() {
                                                         </span>
                                                         {o.is_external ? (
                                                             <span className="badge-clean text-[9.5px] font-bold" style={{background:'rgba(6,182,212,0.18)', color:'#22d3ee', border:'1px solid rgba(6,182,212,0.35)'}}>
-                                                                🏭 تشغيل خارجي
+                                                                🏭 {t('common.external')}
                                                             </span>
                                                         ) : (
                                                             <span className="badge-clean text-[9.5px] font-bold" style={{background:'rgba(59,130,246,0.12)', color:'#93c5fd', border:'1px solid rgba(59,130,246,0.25)'}}>
-                                                                🏢 مصنع
+                                                                🏢 {t('common.factory')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -801,7 +801,7 @@ export default function OrdersTrackingPage() {
                                                 <td className="p-3 text-slate-300 text-xs font-medium">
                                                     {o.is_external ? (
                                                         <span className="text-cyan-300 font-medium">
-                                                            {o.customer_name || 'تشغيل خارجي مفتوح'}
+                                                            {o.customer_name || (language === 'ar' ? 'تشغيل خارجي مفتوح' : 'Open External')}
                                                         </span>
                                                     ) : (
                                                         o.customer_name || '-'
@@ -812,7 +812,7 @@ export default function OrdersTrackingPage() {
                                                         {(o.target_quantity || 0).toLocaleString('en-US')}
                                                     </span>
                                                     <span className="text-[10px] text-slate-400 mr-1">
-                                                        {o.is_external ? 'ممسوح' : 'قطعة'}
+                                                        {o.is_external ? (language === 'ar' ? 'ممسوح' : 'scans') : t('common.piece')}
                                                     </span>
                                                 </td>
                                                 <td className="p-3 text-center">
@@ -826,21 +826,21 @@ export default function OrdersTrackingPage() {
                                                         ></div>
                                                     </div>
                                                     <span className="text-[11px] font-mono font-bold" style={{ color: o.is_external ? '#22d3ee' : barColor }}>
-                                                        {o.is_external ? `${(o.total_scanned || 0)} مسحة` : `${pct}%`}
+                                                        {o.is_external ? `${(o.total_scanned || 0)} ${language === 'ar' ? 'مسحة' : 'scans'}` : `${pct}%`}
                                                     </span>
                                                 </td>
                                                 <td className="p-3 text-center">
                                                     {isClosed ? (
                                                         <span className="badge-clean badge-green text-[10px]">
-                                                            <span className="badge-clean-dot"></span> مكتمل
+                                                            <span className="badge-clean-dot"></span> {t('orders.status_closed')}
                                                         </span>
                                                     ) : o.is_external ? (
                                                         <span className="badge-clean text-[10px] font-bold" style={{background:'rgba(6,182,212,0.15)', color:'#22d3ee', border:'1px solid rgba(6,182,212,0.3)'}}>
-                                                            <span className="badge-clean-dot" style={{background:'#22d3ee'}}></span> قيد التشغيل
+                                                            <span className="badge-clean-dot" style={{background:'#22d3ee'}}></span> {t('orders.status_open')}
                                                         </span>
                                                     ) : (
                                                         <span className="badge-clean badge-amber text-[10px]">
-                                                            <span className="badge-clean-dot"></span> جارٍ
+                                                            <span className="badge-clean-dot"></span> {t('orders.status_open')}
                                                         </span>
                                                     )}
                                                 </td>
@@ -849,32 +849,32 @@ export default function OrdersTrackingPage() {
                                                         <button
                                                             onClick={() => handleViewDetails(o.id)}
                                                             className="btn-slate btn-slate-secondary text-[11px] py-1 px-2.5"
-                                                            title="عرض التفاصيل والمسحات"
+                                                            title={t('common.details')}
                                                         >
-                                                            <i className="fas fa-chart-bar text-[10px] text-blue-400"></i> تفاصيل
+                                                            <i className="fas fa-chart-bar text-[10px] text-blue-400"></i> {t('common.details')}
                                                         </button>
                                                         {o.is_external ? (
                                                             <>
                                                                 <button
                                                                     onClick={() => handlePrintExternalOrderReport(o.id, 'print')}
                                                                     className="btn-slate btn-slate-secondary text-[11px] py-1 px-2 text-cyan-300"
-                                                                    title="طباعة كارت متابعة A4 رسمي للتشغيل الخارجي"
+                                                                    title="Print A4"
                                                                 >
-                                                                    <i className="fas fa-print text-[10px]"></i> تقرير A4
+                                                                    <i className="fas fa-print text-[10px]"></i> A4
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handlePrintExternalOrderReport(o.id, 'pdf')}
                                                                     className="btn-slate btn-slate-secondary text-[11px] py-1 px-2 text-rose-400"
-                                                                    title="تحميل كارت متابعة A4 رسمي كملف PDF"
+                                                                    title="PDF Download"
                                                                 >
                                                                     <i className="fas fa-file-pdf text-[10px]"></i> PDF
                                                                 </button>
                                                                 <a
                                                                     href="/external_tracking.html"
                                                                     className="btn-slate btn-slate-secondary text-[11px] py-1 px-2 text-cyan-300"
-                                                                    title="الانتقال إلى لوحة التشغيل الخارجي"
+                                                                    title={t('nav.external_tracking')}
                                                                 >
-                                                                    <i className="fas fa-truck-loading text-[10px]"></i> إدارة الخارجي
+                                                                    <i className="fas fa-truck-loading text-[10px]"></i> {t('common.external')}
                                                                 </a>
                                                             </>
                                                         ) : (
@@ -893,7 +893,7 @@ export default function OrdersTrackingPage() {
                                                                     }
                                                                     className="btn-slate btn-slate-primary text-[11px] py-1 px-2"
                                                                 >
-                                                                    <i className="fas fa-print text-[10px]"></i> طباعة
+                                                                    <i className="fas fa-print text-[10px]"></i> {t('common.print')}
                                                                 </button>
                                                             </>
                                                         )}
@@ -901,9 +901,9 @@ export default function OrdersTrackingPage() {
                                                             <button
                                                                 onClick={() => handleDeleteOrder(o.id, o.order_number)}
                                                                 className="btn-slate btn-slate-danger text-[11px] py-1 px-2"
-                                                                title="حذف الأوردر"
+                                                                title={t('common.delete')}
                                                             >
-                                                                <i className="fas fa-trash-alt text-[10px]"></i> حذف
+                                                                <i className="fas fa-trash-alt text-[10px]"></i> {t('common.delete')}
                                                             </button>
                                                         )}
                                                     </div>
@@ -944,7 +944,7 @@ export default function OrdersTrackingPage() {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <h2 className="text-sm sm:text-base font-bold text-white">
-                                                بطاقة تتبع إنتاج ومسح الأوردر
+                                                {language === 'ar' ? 'بطاقة تتبع إنتاج ومسح الأوردر' : 'Work Order Production Tracking Card'}
                                             </h2>
                                             <span className="badge-clean badge-blue font-mono text-xs">
                                                 {detailsModalData.order?.order_number}
@@ -971,44 +971,44 @@ export default function OrdersTrackingPage() {
                             {/* Meta info cards */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 bg-[#0a1120] p-4 rounded-xl border border-slate-700/60">
                                 <div>
-                                    <span className="text-slate-400 block text-[11px]">رقم الأوردر</span>
+                                    <span className="text-slate-400 block text-[11px]">{t('common.order_no')}</span>
                                     <strong className="text-white font-mono text-xs">{detailsModalData.order?.order_number}</strong>
                                 </div>
                                 <div>
-                                    <span className="text-slate-400 block text-[11px]">العميل</span>
+                                    <span className="text-slate-400 block text-[11px]">{t('common.client')}</span>
                                     <strong className="text-slate-200 text-xs">{detailsModalData.order?.customer_name || '-'}</strong>
                                 </div>
                                 <div>
-                                    <span className="text-slate-400 block text-[11px]">الكمية المستهدفة</span>
+                                    <span className="text-slate-400 block text-[11px]">{t('common.target_quantity')}</span>
                                     <strong className="text-amber-400 font-mono text-xs">
                                         {(detailsModalData.order?.target_quantity || 0).toLocaleString('en-US')}
                                     </strong>
                                 </div>
                                 {isAdmin && (
                                     <div>
-                                        <span className="text-slate-400 block text-[11px]">أنشئ بواسطة</span>
+                                        <span className="text-slate-400 block text-[11px]">{language === 'ar' ? 'أنشئ بواسطة' : 'Created By'}</span>
                                         <strong className="text-blue-400 font-mono text-xs flex items-center gap-1">
                                             <i className="fas fa-user-edit text-[10px]"></i>
-                                            {detailsModalData.order?.created_by || 'إدارة النظام'}
+                                            {detailsModalData.order?.created_by || (language === 'ar' ? 'إدارة النظام' : 'System Admin')}
                                         </strong>
                                     </div>
                                 )}
                                 <div>
-                                    <span className="text-slate-400 block text-[11px]">تاريخ وساعة الفتح</span>
+                                    <span className="text-slate-400 block text-[11px]">{language === 'ar' ? 'تاريخ وساعة الفتح' : 'Open Timestamp'}</span>
                                     <strong className="text-slate-300 font-mono text-[10px] block" title={detailsModalData.order?.created_at}>
                                         {formatDate(detailsModalData.order?.created_at)}
                                     </strong>
                                 </div>
                                 <div>
-                                    <span className="text-slate-400 block text-[11px]">تاريخ وساعة الإغلاق</span>
+                                    <span className="text-slate-400 block text-[11px]">{language === 'ar' ? 'تاريخ وساعة الإغلاق' : 'Close Timestamp'}</span>
                                     <strong className={`font-mono text-[10px] block ${detailsModalData.order?.completed_at ? 'text-emerald-400' : 'text-slate-400'}`}>
-                                        {detailsModalData.order?.completed_at ? formatDate(detailsModalData.order?.completed_at) : (detailsModalData.order?.last_activity_at ? `آخر مسح: ${formatDate(detailsModalData.order?.last_activity_at)}` : 'قيد التشغيل')}
+                                        {detailsModalData.order?.completed_at ? formatDate(detailsModalData.order?.completed_at) : (detailsModalData.order?.last_activity_at ? `${language === 'ar' ? 'آخر مسح:' : 'Last scan:'} ${formatDate(detailsModalData.order?.last_activity_at)}` : (language === 'ar' ? 'قيد التشغيل' : 'In-Progress'))}
                                     </strong>
                                 </div>
                                 <div>
-                                    <span className="text-slate-400 block text-[11px]">الحالة العامة</span>
+                                    <span className="text-slate-400 block text-[11px]">{t('common.status')}</span>
                                     <strong className="text-emerald-400 text-xs block">
-                                        {detailsModalData.order?.status === 'closed' || detailsModalData.order?.is_all_completed ? '✅ مكتمل ومغلق' : '⏳ قيد التشغيل'}
+                                        {detailsModalData.order?.status === 'closed' || detailsModalData.order?.is_all_completed ? (language === 'ar' ? '✅ مكتمل ومغلق' : '✅ Closed') : (language === 'ar' ? '⏳ قيد التشغيل' : '⏳ In-Progress')}
                                     </strong>
                                 </div>
                             </div>
@@ -1018,11 +1018,11 @@ export default function OrdersTrackingPage() {
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                                     <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
                                         <i className="fas fa-layer-group text-blue-400 text-xs"></i>
-                                        <span>سجل تتبع ومراقبة مراحل الإنتاج الست ومسؤولي المسح</span>
+                                        <span>{language === 'ar' ? 'سجل تتبع ومراقبة مراحل الإنتاج ومسؤولي المسح' : 'Production Pipeline Stages Audit & Scanners'}</span>
                                     </h4>
                                     {isAdmin && (
                                         <span className="text-[11px] text-slate-400 font-mono">
-                                            مسؤول الفتح الأصلي: <strong className="text-amber-300">{detailsModalData.order?.created_by || 'النظام'}</strong>
+                                            {language === 'ar' ? 'مسؤول الفتح الأصلي:' : 'Created By:'} <strong className="text-amber-300">{detailsModalData.order?.created_by || (language === 'ar' ? 'النظام' : 'System')}</strong>
                                         </span>
                                     )}
                                 </div>
@@ -1030,17 +1030,17 @@ export default function OrdersTrackingPage() {
                                     <table className="slate-table w-full">
                                         <thead>
                                             <tr>
-                                                <th className="p-2.5 font-bold">المرحلة الصناعية</th>
-                                                <th className="p-2.5 text-center font-bold">الكمية المستهدفة</th>
-                                                <th className="p-2.5 text-center font-bold">الممسوح الفعلي</th>
-                                                <th className="p-2.5 text-center font-bold">المتبقي</th>
-                                                <th className="p-2.5 text-center font-bold min-w-[110px]">نسبة الإنجاز</th>
-                                                <th className="p-2.5 font-bold text-blue-400">مشغلو المسح (الموظفون)</th>
-                                                <th className="p-2.5 text-center font-bold text-slate-300">أول ضربة (بدء المسح)</th>
-                                                <th className="p-2.5 text-center font-bold text-slate-300">آخر ضربة (إغلاق / توقف)</th>
-                                                <th className="p-2.5 text-center font-bold">الحالة</th>
+                                                <th className="p-2.5 font-bold">{t('common.stage')}</th>
+                                                <th className="p-2.5 text-center font-bold">{t('common.target_quantity')}</th>
+                                                <th className="p-2.5 text-center font-bold">{language === 'ar' ? 'الممسوح الفعلي' : 'Actual Scanned'}</th>
+                                                <th className="p-2.5 text-center font-bold">{language === 'ar' ? 'المتبقي' : 'Remaining'}</th>
+                                                <th className="p-2.5 text-center font-bold min-w-[110px]">{t('common.completion_rate')}</th>
+                                                <th className="p-2.5 font-bold text-blue-400">{language === 'ar' ? 'مشغلو المسح (الموظفون)' : 'Scan Operators'}</th>
+                                                <th className="p-2.5 text-center font-bold text-slate-300">{language === 'ar' ? 'أول ضربة (بدء المسح)' : 'First Scan'}</th>
+                                                <th className="p-2.5 text-center font-bold text-slate-300">{language === 'ar' ? 'آخر ضربة (إغلاق / توقف)' : 'Last Scan'}</th>
+                                                <th className="p-2.5 text-center font-bold">{t('common.status')}</th>
                                                 {(canCreateOrders || isAdmin) && !detailsModalData.order?.is_external && (
-                                                    <th className="p-2.5 text-center font-bold text-amber-300">تعديل وإلغاء المرحلة</th>
+                                                    <th className="p-2.5 text-center font-bold text-amber-300">{language === 'ar' ? 'تعديل وإلغاء المرحلة' : 'Edit / Cancel Stage'}</th>
                                                 )}
                                             </tr>
                                         </thead>
@@ -1057,15 +1057,15 @@ export default function OrdersTrackingPage() {
                                                     <tr key={stg.id || stg.stage_name} className="hover:bg-slate-800/40">
                                                         <td className="p-2.5 font-bold text-white text-xs">
                                                             <div className="flex items-center gap-1.5 flex-wrap">
-                                                                <span>{stg.stage_name}</span>
+                                                                <span>{translateStage(stg.stage_name)}</span>
                                                                 {isPrimaryStage && (
                                                                     <span className="badge-clean text-[9.5px] font-bold" style={{background:'rgba(245,158,11,0.15)',color:'#fbbf24',border:'1px solid rgba(245,158,11,0.3)'}} title="المرحلة الإلزامية الأولى بالترتيب - لا تتخطاها أي مرحلة أخرى">
-                                                                        👑 البداية الإلزامية
+                                                                        👑 {language === 'ar' ? 'البداية الإلزامية' : 'Primary Stage'}
                                                                     </span>
                                                                 )}
                                                                 {stg.sessions_count > 1 && (
                                                                     <span className="badge-clean badge-amber text-[9px] font-mono mr-1.5" title="تم استئناف الشغل على هذه المرحلة أكثر من مرة">
-                                                                        {stg.sessions_count} فترات تشغيل
+                                                                        {stg.sessions_count} {language === 'ar' ? 'فترات تشغيل' : 'sessions'}
                                                                     </span>
                                                                 )}
                                                             </div>

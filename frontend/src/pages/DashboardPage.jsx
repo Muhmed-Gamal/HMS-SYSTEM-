@@ -10,7 +10,7 @@ import { api } from '../services/api';
 export default function DashboardPage() {
     const { user, companyName, canCreateOrders, canManageUsers } = useAuth();
     const { toast } = useToast();
-    const { t, isRTL } = useLanguage();
+    const { t, translateStage, isRTL } = useLanguage();
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
@@ -278,10 +278,10 @@ export default function DashboardPage() {
                                                         <span className="w-5 h-5 rounded-md bg-sky-500/10 text-sky-400 font-mono text-[10px] font-bold flex items-center justify-center border border-sky-500/20">
                                                             {i + 1}
                                                         </span>
-                                                        <span className="font-bold text-white">{stg.stage_name}</span>
+                                                        <span className="font-bold text-white">{translateStage(stg.stage_name)}</span>
                                                         {stg.active_orders_count > 0 && (
                                                             <span className="text-[9.5px] text-slate-400 font-mono">
-                                                                ({stg.active_orders_count})
+                                                                ({stg.active_orders_count} {t('common.order')})
                                                             </span>
                                                         )}
                                                     </div>
@@ -309,9 +309,9 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 font-mono">
-                            <span>{t('common.total')}: <strong className="text-amber-400">{Number(summary.total_target_pieces || 0).toLocaleString('en-US')}</strong></span>
+                            <span>{t('dashboard.total_target_pieces')}: <strong className="text-amber-400">{Number(summary.total_target_pieces || 0).toLocaleString('en-US')}</strong></span>
                             <Link to="/orders" className="text-sky-400 hover:text-sky-300 flex items-center gap-1">
-                                <span>{t('orders.title')}</span>
+                                <span>{t('dashboard.view_detailed_reports')}</span>
                                 <i className={`fas fa-chevron-${isRTL ? 'left' : 'right'} text-[9px]`}></i>
                             </Link>
                         </div>
@@ -361,7 +361,7 @@ export default function DashboardPage() {
                                                     <span className="text-xs font-bold text-emerald-400 block">
                                                         {Number(sc.scan_count || 0).toLocaleString('en-US')}
                                                     </span>
-                                                    <span className="text-[9px] text-slate-500">{t('common.barcode')}</span>
+                                                    <span className="text-[9px] text-slate-500">{t('dashboard.kpi_scans_sub')}</span>
                                                 </div>
                                             </div>
                                         );
@@ -372,7 +372,7 @@ export default function DashboardPage() {
 
                         <div className="mt-4 pt-3 border-t border-slate-800/80 text-center">
                             <span className="text-[11px] text-slate-400">
-                                {t('dashboard.leaderboard_subtitle')}
+                                {t('dashboard.rankings_note')}
                             </span>
                         </div>
                     </div>
@@ -417,7 +417,7 @@ export default function DashboardPage() {
 
                                         <div className="flex items-center gap-3 font-mono text-[11px]">
                                             <span className="text-sky-300 bg-sky-950/60 px-2 py-0.5 rounded border border-sky-500/20">
-                                                {act.stage_name}
+                                                {translateStage(act.stage_name)}
                                             </span>
                                             <span className="text-slate-300 font-sans">{act.scanned_by}</span>
                                             <span className="text-slate-500 text-[10px]">
@@ -471,7 +471,7 @@ export default function DashboardPage() {
                                                 {ord.completion_rate}%
                                             </span>
                                             <span className="text-[9.5px] text-slate-400">
-                                                {(ord.target_quantity || 0).toLocaleString('en-US')} {t('common.quantity')}
+                                                {(ord.target_quantity || 0).toLocaleString('en-US')} {t('common.pieces')}
                                             </span>
                                         </div>
                                     </div>
