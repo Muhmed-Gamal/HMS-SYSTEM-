@@ -102,7 +102,9 @@ export const api = {
     generateLicense: (payload) => request('/license/generate', { method: 'POST', body: JSON.stringify(payload) }),
     activateLicense: (payload) => request('/license/activate', { method: 'POST', body: JSON.stringify(payload) }),
 
-    // System Branding & Info
+    // System Branding & Settings
     getSystemInfo: () => request('/system/info', { method: 'GET' }),
     getStages: () => request('/system/stages', { method: 'GET' }),
+    getSystemSettings: () => request('/system/settings', { method: 'GET' }),
+    setSystemLanguage: (language) => request('/system/settings/language', { method: 'POST', body: JSON.stringify({ language }) }),
 };

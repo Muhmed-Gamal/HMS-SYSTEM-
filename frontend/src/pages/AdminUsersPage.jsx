@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import StatCard from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { api, getAuthHeaders } from '../services/api';
 
 const PIPELINE_DEPARTMENTS = [
@@ -25,6 +26,7 @@ const PIPELINE_DEPARTMENTS = [
 export default function AdminUsersPage() {
     const { user, isAdmin, isSuperAdmin, companyName } = useAuth();
     const { toast, confirm, showAlert } = useToast();
+    const { language, changeLanguage, t, isRTL } = useLanguage();
     const navigate = useNavigate();
 
     const [users, setUsers] = useState([]);
@@ -537,6 +539,57 @@ export default function AdminUsersPage() {
                     {isSuperAdmin && (
                         <StatCard label="ملاك السيستم" value={stats.superadmins} colorClass="text-yellow-300" icon="fas fa-crown" />
                     )}
+                </div>
+
+                {/* Central System Language Control Card (Admin Only) */}
+                <div className="slate-card p-4 sm:p-5 bg-gradient-to-r from-[#0b1426] via-[#0e1b38] to-[#0a1224] border border-sky-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 text-lg flex-shrink-0">
+                            <i className="fas fa-globe"></i>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-xs sm:text-sm font-bold text-white">
+                                    {t('admin.lang_setting_card_title')}
+                                </h3>
+                                <span className="badge-clean text-[9.5px] font-mono font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20">
+                                    {language === 'ar' ? 'العربية نشطة' : 'English Active'}
+                                </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                                {t('admin.lang_setting_card_desc')}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <div className="flex items-center bg-[#070d1a] p-1 rounded-xl border border-slate-700/80 shadow-inner">
+                            <button
+                                type="button"
+                                onClick={() => changeLanguage('ar')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                    language === 'ar'
+                                        ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30 font-black'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                                }`}
+                            >
+                                {language === 'ar' && <i className="fas fa-check text-[10px]"></i>}
+                                <span>العربية (AR)</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => changeLanguage('en')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                    language === 'en'
+                                        ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/30 font-black'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                                }`}
+                            >
+                                {language === 'en' && <i className="fas fa-check text-[10px]"></i>}
+                                <span>English (EN)</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Partition Tabs Header (When SuperAdmin has access to both partitions) */}

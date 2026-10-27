@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { api, getAuthHeaders } from '../services/api';
 import { printBarcodesWindow } from '../services/print';
 
@@ -35,6 +36,7 @@ const STANDARD_6_STAGES = [
 export default function CreateOrderPage() {
     const { user, canCreateOrders } = useAuth();
     const { toast, showAlert, showProgress, updateProgress, closeProgress } = useToast();
+    const { t, isRTL } = useLanguage();
     const navigate = useNavigate();
 
     // Form inputs
@@ -324,8 +326,8 @@ export default function CreateOrderPage() {
     return (
         <div className="navy-slate-bg min-h-screen flex flex-col font-sans">
             <Header
-                title="فتح أوردر وتخصيص المراحل"
-                subtitle="إنشاء أمر تشغيل جديد وتحديد مراحل خط الإنتاج المطلوبة بناءً على رغبة العميل"
+                title={t('create_order.title')}
+                subtitle={t('create_order.subtitle')}
                 activePage="create-order"
                 badgeText="ORDER CREATION & PIPELINE"
             />

@@ -4,11 +4,13 @@ import Header from '../components/Header';
 import StatCard from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 
 export default function DashboardPage() {
-    const { user, companyName, isAdmin, isSuperAdmin, isMasterOwner, canCreateOrders, canManageUsers } = useAuth();
+    const { user, companyName, canCreateOrders, canManageUsers } = useAuth();
     const { toast } = useToast();
+    const { t, isRTL } = useLanguage();
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
@@ -23,7 +25,6 @@ export default function DashboardPage() {
         if (ok && data.success) {
             setOverviewData(data);
         } else {
-            // Fallback to basic stats if needed
             const statsRes = await api.getStats();
             if (statsRes.ok && statsRes.data.success) {
                 setOverviewData({
@@ -34,7 +35,7 @@ export default function DashboardPage() {
                     priority_orders: []
                 });
             } else {
-                toast('فشل جلب إحصائيات لوحة القيادة', 'error');
+                toast(t('common.error'), 'error');
             }
         }
 
@@ -49,17 +50,13 @@ export default function DashboardPage() {
         }
         loadDashboardData();
 
-        // تحديث حي هادئ كل 15 ثانية للوحة القيادة
+        // Silent background sync every 15s
         const interval = setInterval(() => {
-            api.getDashboardOverview().then(({ ok, data }) => {
-                if (ok && data.success) {
-                    setOverviewData(data);
-                }
-            });
+            loadDashboardData(false);
         }, 15000);
 
         return () => clearInterval(interval);
-    }, [user, navigate]);
+    }, [user]);
 
     const summary = overviewData?.summary || {};
     const stages = overviewData?.stages_distribution || [];
@@ -67,17 +64,17 @@ export default function DashboardPage() {
     const liveActivity = overviewData?.live_activity || [];
     const priorityOrders = overviewData?.priority_orders || [];
 
-    const totalOrders = summary.total_orders || 0;
-    const activeOrders = summary.active_orders || 0;
-    const closedOrders = summary.closed_orders || 0;
-    const totalScans = summary.total_scans || 0;
+    const totalOrders = (summary.factory_orders || 0) + (summary.external_orders || 0);
+    const activeOrders = (summary.factory_active_orders || 0) + (summary.external_active_orders || 0);
+    const closedOrders = Math.max(0, totalOrders - activeOrders);
+    const totalScans = (summary.factory_scans || 0) + (summary.external_scans || 0);
     const completionRate = totalOrders > 0 ? Math.round((closedOrders / totalOrders) * 100) : 0;
 
     return (
-        <div className="navy-slate-bg min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col bg-[#070b14] text-slate-100">
             <Header
-                title="لوحة القيادة والمتابعة التنفيذية للمصنع"
-                subtitle={`${companyName} | المراقبة الحية لخطوط الإنتاج والتشغيل`}
+                title={t('dashboard.title')}
+                subtitle={`${companyName} | ${t('common.app_tagline')}`}
                 badgeText="COMMAND CENTER"
                 activePage="dashboard"
             />
@@ -94,14 +91,14 @@ export default function DashboardPage() {
                         <div>
                             <div className="flex items-center gap-2">
                                 <h1 className="text-base sm:text-lg font-black text-white">
-                                    مركز القيادة التنفيذي
+                                    {t('dashboard.title')}
                                 </h1>
                                 <span className="badge-clean text-[10px] font-mono font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20">
                                     LIVE AUDIT
                                 </span>
                             </div>
                             <p className="text-xs text-slate-400 mt-0.5">
-                                تتبع لحظي شامل للإنتاج الداخلي، التشغيل الخارجي، وسرعة المشغلين
+                                {t('dashboard.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -110,9 +107,9 @@ export default function DashboardPage() {
                         {/* System Status Pill */}
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-xs font-mono">
                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-                            <span className="text-slate-300 font-semibold">SERVER ONLINE</span>
+                            <span className="text-slate-300 font-semibold">{t('dashboard.status_online')}</span>
                             <span className="text-slate-600">|</span>
-                            <span className="text-cyan-400 font-bold">{summary.active_stages_count || 6} مراحل</span>
+                            <span className="text-cyan-400 font-bold">{summary.active_stages_count || 6} {t('common.stage')}</span>
                         </div>
 
                         {/* Refresh Button */}
@@ -120,10 +117,10 @@ export default function DashboardPage() {
                             onClick={() => loadDashboardData(true)}
                             disabled={refreshing}
                             className="btn-slate btn-slate-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer"
-                            title="تحديث البيانات فوراً"
+                            title={t('common.refresh')}
                         >
                             <i className={`fas fa-sync-alt text-xs ${refreshing ? 'fa-spin text-sky-400' : ''}`}></i>
-                            <span className="hidden sm:inline">تحديث</span>
+                            <span className="hidden sm:inline">{t('common.refresh')}</span>
                         </button>
                     </div>
                 </div>
@@ -131,44 +128,44 @@ export default function DashboardPage() {
                 {/* ── Executive KPI Grid ── */}
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <StatCard
-                        label="إجمالي الأوردرات (مصنع + خارجي)"
+                        label={t('dashboard.kpi_total_orders')}
                         value={loading ? '...' : totalOrders.toLocaleString('en-US')}
                         colorClass="text-sky-400"
                         icon="fas fa-boxes"
-                        subValue={`${summary.factory_orders || 0} مصنع | ${summary.external_orders || 0} خارجي`}
+                        subValue={t('dashboard.kpi_factory_ext_sub', { factory: summary.factory_orders || 0, external: summary.external_orders || 0 })}
                     />
 
                     <StatCard
-                        label="أوامر جارية تحت التشغيل"
+                        label={t('dashboard.kpi_active_orders')}
                         value={loading ? '...' : activeOrders.toLocaleString('en-US')}
                         colorClass="text-amber-400"
                         icon="fas fa-spinner"
-                        subValue={`${summary.factory_active_orders || 0} داخلي | ${summary.external_active_orders || 0} خارجي`}
+                        subValue={t('dashboard.kpi_factory_ext_sub', { factory: summary.factory_active_orders || 0, external: summary.external_active_orders || 0 })}
                     />
 
                     <StatCard
-                        label="إجمالي الحركات والمسحات"
+                        label={t('dashboard.kpi_total_scans')}
                         value={loading ? '...' : totalScans.toLocaleString('en-US')}
                         colorClass="text-emerald-400"
                         icon="fas fa-barcode"
-                        subValue="حركة مسح ليزري مسجلة"
+                        subValue={t('dashboard.kpi_scans_sub')}
                     />
 
                     <StatCard
-                        label="معدل الإنجاز والتتميم الكلي"
+                        label={t('dashboard.kpi_completion_rate')}
                         value={loading ? '...' : `${completionRate}%`}
                         colorClass="text-cyan-400"
                         icon="fas fa-chart-pie"
-                        subValue={`${closedOrders} مكتمل من أصل ${totalOrders}`}
+                        subValue={t('dashboard.kpi_completion_sub', { closed: closedOrders, total: totalOrders })}
                     />
                 </div>
 
-                {/* ── Admin Fast Execution Hub (أهم مهام الإدارة السريعة) ── */}
+                {/* ── Admin Fast Execution Hub ── */}
                 <div className="slate-card p-4 bg-gradient-to-r from-[#0b1426] via-[#0e1933] to-[#0a1224] border border-sky-500/25">
                     <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-700/60">
                         <div className="flex items-center gap-2">
                             <i className="fas fa-bolt text-amber-400 text-xs"></i>
-                            <h3 className="text-xs sm:text-sm font-bold text-white">إجراءات ومهام الإدارة الفورية</h3>
+                            <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.admin_hub_title')}</h3>
                         </div>
                         <span className="badge-clean badge-blue text-[9.5px] font-mono">ADMIN HUB</span>
                     </div>
@@ -183,11 +180,11 @@ export default function DashboardPage() {
                                     <span className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
                                         <i className="fas fa-plus"></i>
                                     </span>
-                                    <i className="fas fa-arrow-left text-[10px] text-slate-500 group-hover:text-sky-400 transition-colors"></i>
+                                    <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-[10px] text-slate-500 group-hover:text-sky-400 transition-colors`}></i>
                                 </div>
                                 <div>
-                                    <span className="text-xs font-bold text-white block">إنشاء أوردر جديد</span>
-                                    <span className="text-[10px] text-slate-400">بدء تشغيل أمر إنتاج داخلي</span>
+                                    <span className="text-xs font-bold text-white block">{t('dashboard.card_create_order')}</span>
+                                    <span className="text-[10px] text-slate-400">{t('dashboard.card_create_order_desc')}</span>
                                 </div>
                             </Link>
                         )}
@@ -200,11 +197,11 @@ export default function DashboardPage() {
                                 <span className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
                                     <i className="fas fa-truck-loading"></i>
                                 </span>
-                                <i className="fas fa-arrow-left text-[10px] text-slate-500 group-hover:text-cyan-400 transition-colors"></i>
+                                <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-[10px] text-slate-500 group-hover:text-cyan-400 transition-colors`}></i>
                             </div>
                             <div>
-                                <span className="text-xs font-bold text-white block">التشغيل الخارجي</span>
-                                <span className="text-[10px] text-slate-400">تتميم ومسح أوامر التوريد</span>
+                                <span className="text-xs font-bold text-white block">{t('dashboard.card_ext_tracking')}</span>
+                                <span className="text-[10px] text-slate-400">{t('dashboard.card_ext_tracking_desc')}</span>
                             </div>
                         </a>
 
@@ -216,11 +213,11 @@ export default function DashboardPage() {
                                 <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
                                     <i className="fas fa-barcode"></i>
                                 </span>
-                                <i className="fas fa-arrow-left text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors"></i>
+                                <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors`}></i>
                             </div>
                             <div>
-                                <span className="text-xs font-bold text-white block">محطة السكانر</span>
-                                <span className="text-[10px] text-slate-400">شاشة القراءة الليزرية الفورية</span>
+                                <span className="text-xs font-bold text-white block">{t('dashboard.card_scanner')}</span>
+                                <span className="text-[10px] text-slate-400">{t('dashboard.card_scanner_desc')}</span>
                             </div>
                         </Link>
 
@@ -235,13 +232,13 @@ export default function DashboardPage() {
                                     </span>
                                     {summary.locked_users > 0 && (
                                         <span className="badge-clean badge-red text-[9px] font-mono font-bold animate-pulse">
-                                            {summary.locked_users} مقفل
+                                            {summary.locked_users}
                                         </span>
                                     )}
                                 </div>
                                 <div>
-                                    <span className="text-xs font-bold text-white block">إدارة المستخدمين</span>
-                                    <span className="text-[10px] text-slate-400">الصلاحيات وفك حظر الحسابات</span>
+                                    <span className="text-xs font-bold text-white block">{t('dashboard.card_manage_users')}</span>
+                                    <span className="text-[10px] text-slate-400">{t('dashboard.card_manage_users_desc')}</span>
                                 </div>
                             </Link>
                         )}
@@ -251,13 +248,13 @@ export default function DashboardPage() {
                 {/* ── Mid Section: Stages Pipeline Distribution & Top Scanners ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     
-                    {/* Factory Stages Pipeline (2 Columns on large) */}
+                    {/* Factory Stages Pipeline */}
                     <div className="lg:col-span-2 slate-card p-5 flex flex-col justify-between">
                         <div>
                             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
                                 <div className="flex items-center gap-2">
                                     <i className="fas fa-industry text-sky-400 text-xs"></i>
-                                    <h3 className="text-xs sm:text-sm font-bold text-white">توزيع حركات الإنتاج على خط المراحل</h3>
+                                    <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.pipeline_title')}</h3>
                                 </div>
                                 <span className="text-[10.5px] font-mono text-slate-400">PIPELINE AUDIT</span>
                             </div>
@@ -265,7 +262,7 @@ export default function DashboardPage() {
                             {stages.length === 0 ? (
                                 <div className="text-center py-10 text-slate-500 text-xs">
                                     <i className="fas fa-layer-group text-2xl text-slate-700 mb-2 block"></i>
-                                    لا توجد حركات مسجلة بالمراحل حتى الآن
+                                    {t('dashboard.no_pipeline_data')}
                                 </div>
                             ) : (
                                 <div className="space-y-3">
@@ -284,7 +281,7 @@ export default function DashboardPage() {
                                                         <span className="font-bold text-white">{stg.stage_name}</span>
                                                         {stg.active_orders_count > 0 && (
                                                             <span className="text-[9.5px] text-slate-400 font-mono">
-                                                                ({stg.active_orders_count} أوردر)
+                                                                ({stg.active_orders_count})
                                                             </span>
                                                         )}
                                                     </div>
@@ -312,21 +309,21 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 font-mono">
-                            <span>إجمالي مستهدف القطع الكلي: <strong className="text-amber-400">{Number(summary.total_target_pieces || 0).toLocaleString('en-US')}</strong></span>
+                            <span>{t('common.total')}: <strong className="text-amber-400">{Number(summary.total_target_pieces || 0).toLocaleString('en-US')}</strong></span>
                             <Link to="/orders" className="text-sky-400 hover:text-sky-300 flex items-center gap-1">
-                                <span>عرض كشوف التتبع التفصيلية</span>
-                                <i className="fas fa-chevron-left text-[9px]"></i>
+                                <span>{t('orders.title')}</span>
+                                <i className={`fas fa-chevron-${isRTL ? 'left' : 'right'} text-[9px]`}></i>
                             </Link>
                         </div>
                     </div>
 
-                    {/* Top Scanners & Leaderboard */}
+                    {/* Top Scanners Leaderboard */}
                     <div className="slate-card p-5 flex flex-col justify-between">
                         <div>
                             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
                                 <div className="flex items-center gap-2">
                                     <i className="fas fa-trophy text-amber-400 text-xs"></i>
-                                    <h3 className="text-xs sm:text-sm font-bold text-white">صدارة المشغلين الأكثر إنجازاً</h3>
+                                    <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.leaderboard_title')}</h3>
                                 </div>
                                 <span className="badge-clean badge-amber text-[9px] font-mono">LEADERBOARD</span>
                             </div>
@@ -334,7 +331,7 @@ export default function DashboardPage() {
                             {topScanners.length === 0 ? (
                                 <div className="text-center py-10 text-slate-500 text-xs">
                                     <i className="fas fa-user-clock text-2xl text-slate-700 mb-2 block"></i>
-                                    لا يوجد مشغلون مسجلون بعد
+                                    {t('dashboard.no_scanners_data')}
                                 </div>
                             ) : (
                                 <div className="space-y-2.5">
@@ -356,15 +353,15 @@ export default function DashboardPage() {
                                                     <div>
                                                         <span className="text-xs font-bold text-white block">{sc.scanned_by}</span>
                                                         <span className="text-[9.5px] text-slate-400 font-mono">
-                                                            {sc.last_seen ? new Date(sc.last_seen).toLocaleTimeString('ar-EG-u-nu-latn') : 'نشط'}
+                                                            {sc.last_seen ? new Date(sc.last_seen).toLocaleTimeString('en-US') : t('common.active')}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div className="text-left font-mono">
+                                                <div className="font-mono text-right">
                                                     <span className="text-xs font-bold text-emerald-400 block">
                                                         {Number(sc.scan_count || 0).toLocaleString('en-US')}
                                                     </span>
-                                                    <span className="text-[9px] text-slate-500">ضربة مسح</span>
+                                                    <span className="text-[9px] text-slate-500">{t('common.barcode')}</span>
                                                 </div>
                                             </div>
                                         );
@@ -375,7 +372,7 @@ export default function DashboardPage() {
 
                         <div className="mt-4 pt-3 border-t border-slate-800/80 text-center">
                             <span className="text-[11px] text-slate-400">
-                                يتم احتساب الترتيب تلقائياً من كافة مساحات خطوط المصنع والتشغيل الخارجي
+                                {t('dashboard.leaderboard_subtitle')}
                             </span>
                         </div>
                     </div>
@@ -390,7 +387,7 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-700/60">
                             <div className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                                <h3 className="text-xs sm:text-sm font-bold text-white">سجل المسح الليزري اللحظي المباشر</h3>
+                                <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.live_ticker_title')}</h3>
                             </div>
                             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                                 LIVE TICKER
@@ -400,7 +397,7 @@ export default function DashboardPage() {
                         <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
                             {liveActivity.length === 0 ? (
                                 <div className="text-center py-10 text-slate-500 text-xs">
-                                    لا توجد حركات مسح مسجلة حالياً
+                                    {t('dashboard.no_live_data')}
                                 </div>
                             ) : (
                                 liveActivity.map((act, i) => (
@@ -414,7 +411,7 @@ export default function DashboardPage() {
                                                 {act.barcode}
                                             </span>
                                             <span className="text-slate-400 font-sans text-[11px]">
-                                                [{act.order_number || 'أوردر'}]
+                                                [{act.order_number || t('common.order')}]
                                             </span>
                                         </div>
 
@@ -424,7 +421,7 @@ export default function DashboardPage() {
                                             </span>
                                             <span className="text-slate-300 font-sans">{act.scanned_by}</span>
                                             <span className="text-slate-500 text-[10px]">
-                                                {act.created_at ? new Date(act.created_at).toLocaleTimeString('ar-EG-u-nu-latn') : ''}
+                                                {act.created_at ? new Date(act.created_at).toLocaleTimeString('en-US') : ''}
                                             </span>
                                         </div>
                                     </div>
@@ -438,17 +435,17 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-700/60">
                             <div className="flex items-center gap-2">
                                 <i className="fas fa-tasks text-sky-400 text-xs"></i>
-                                <h3 className="text-xs sm:text-sm font-bold text-white">أوامر التشغيل الجارية ذات الأولوية</h3>
+                                <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.priority_title')}</h3>
                             </div>
                             <Link to="/orders" className="text-xs text-sky-400 hover:underline">
-                                كل الأوردرات ({totalOrders})
+                                {t('common.all')} ({totalOrders})
                             </Link>
                         </div>
 
                         <div className="space-y-2.5">
                             {priorityOrders.length === 0 ? (
                                 <div className="text-center py-10 text-slate-500 text-xs">
-                                    لا توجد أوردرات جارية حالياً
+                                    {t('dashboard.no_priority_data')}
                                 </div>
                             ) : (
                                 priorityOrders.map((ord) => (
@@ -459,7 +456,7 @@ export default function DashboardPage() {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <strong className="text-white font-mono text-xs">{ord.order_number}</strong>
-                                                <span className="text-slate-400 text-xs font-medium">({ord.customer_name || 'عميل'})</span>
+                                                <span className="text-slate-400 text-xs font-medium">({ord.customer_name || 'Client'})</span>
                                             </div>
                                             <div className="w-full bg-[#070d19] rounded-full h-1.5 overflow-hidden border border-slate-800">
                                                 <div
@@ -469,12 +466,12 @@ export default function DashboardPage() {
                                             </div>
                                         </div>
 
-                                        <div className="text-left font-mono pl-1">
+                                        <div className="font-mono pl-1 text-right">
                                             <span className="text-xs font-bold text-sky-400 block">
                                                 {ord.completion_rate}%
                                             </span>
                                             <span className="text-[9.5px] text-slate-400">
-                                                {(ord.target_quantity || 0).toLocaleString('en-US')} قطعة
+                                                {(ord.target_quantity || 0).toLocaleString('en-US')} {t('common.quantity')}
                                             </span>
                                         </div>
                                     </div>

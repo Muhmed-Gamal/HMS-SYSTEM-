@@ -58,8 +58,8 @@
 
     /* Premium Modern Typography */
     --font-ar: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-en: 'Space Grotesk', -apple-system, sans-serif;
-    --font-code: 'JetBrains Mono', 'Space Grotesk', monospace;
+    --font-en: 'Inter', 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-code: 'JetBrains Mono', monospace;
     --font-report: 'IBM Plex Sans Arabic', sans-serif;
 
     /* Report Palette */
@@ -100,6 +100,26 @@ h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-ar);
     font-weight: 700;
     letter-spacing: -0.02em;
+}
+
+/* LTR Multi-language Mode Support */
+html[dir="ltr"] body,
+html[dir="ltr"] h1,
+html[dir="ltr"] h2,
+html[dir="ltr"] h3,
+html[dir="ltr"] h4,
+html[dir="ltr"] h5,
+html[dir="ltr"] h6,
+html[dir="ltr"] button,
+html[dir="ltr"] input,
+html[dir="ltr"] select,
+html[dir="ltr"] textarea {
+    font-family: var(--font-en);
+    letter-spacing: -0.01em;
+}
+
+html[dir="ltr"] body {
+    direction: ltr;
 }
 
 /* Background Texture — Elegant Deep Navy Canvas with Blueprint Subtlety */

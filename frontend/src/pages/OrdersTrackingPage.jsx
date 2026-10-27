@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import StatCard from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { api, getAuthHeaders } from '../services/api';
 import { 
     printBarcodesWindow, 
@@ -27,6 +28,7 @@ const PRODUCTION_STAGES = [
 export default function OrdersTrackingPage() {
     const { user, isAdmin, canCreateOrders, companyName } = useAuth();
     const { toast, confirm, showProgress, updateProgress, closeProgress, showAlert } = useToast();
+    const { t, isRTL } = useLanguage();
     const navigate = useNavigate();
 
     // Guard: Redirect if not logged in or unauthorized role
@@ -560,8 +562,8 @@ export default function OrdersTrackingPage() {
     return (
         <div className="navy-slate-bg min-h-screen flex flex-col">
             <Header
-                title="متابعة الإنتاج والباركود"
-                subtitle={`${companyName} | Operations`}
+                title={t('orders.title')}
+                subtitle={`${companyName} | ${t('orders.subtitle')}`}
                 badgeText="DASHBOARD"
                 activePage="orders"
             />

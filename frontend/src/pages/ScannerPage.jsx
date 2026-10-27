@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import StatCard from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 import { playBeepSuccess, playBeepError } from '../services/audio';
 
@@ -20,6 +21,7 @@ const PRODUCTION_STAGES = [
 export default function ScannerPage() {
     const { user, companyName, isAdmin, isExternalOperator } = useAuth();
     const { toast } = useToast();
+    const { t, isRTL } = useLanguage();
     const navigate = useNavigate();
 
     // Guard: Require login
@@ -438,8 +440,8 @@ export default function ScannerPage() {
     return (
         <div className="navy-slate-bg min-h-screen flex flex-col">
             <Header
-                title={isExternal ? 'محطة التشغيل الخارجي والمسح المفتوح' : 'محطة مسح وقراءة الباركود'}
-                subtitle={isExternal ? `${companyName} | مسح مفتوح — أي باركود` : (user?.stage_permission ? `${companyName} | محطة: ${user.stage_permission}` : companyName)}
+                title={isExternal ? 'محطة التشغيل الخارجي والمسح المفتوح' : t('scanner.title')}
+                subtitle={isExternal ? `${companyName} | مسح مفتوح — أي باركود` : (user?.stage_permission ? `${companyName} | ${t('common.stage')}: ${user.stage_permission}` : `${companyName} | ${t('scanner.subtitle')}`)}
                 badgeText={isExternal ? 'EXTERNAL' : 'STATION'}
                 activePage="scanner"
             />

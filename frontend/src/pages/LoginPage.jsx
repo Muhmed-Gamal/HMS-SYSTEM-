@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 
 export default function LoginPage() {
@@ -17,6 +18,7 @@ export default function LoginPage() {
 
     const { user, login, companyName, licenseInfo, reloadSystemInfo } = useAuth();
     const { toast, showAlert } = useToast();
+    const { t, isRTL } = useLanguage();
     const navigate = useNavigate();
 
     // دالة التوجيه حسب الدور والصلاحية
@@ -165,7 +167,7 @@ export default function LoginPage() {
                         {companyName || 'HMS Group'}
                     </h1>
                     <p className="text-[12px] text-slate-400 mt-1 font-medium tracking-wide">
-                        بوابة تسجيل الدخول الآمنة للعمليات
+                        {t('login.subtitle')}
                     </p>
                 </div>
 
@@ -174,7 +176,7 @@ export default function LoginPage() {
                     <div className="mb-5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between gap-2 shadow-sm animate-pulse">
                         <span className="flex items-center gap-2 font-medium">
                             <i className="fas fa-exclamation-triangle text-amber-400 text-sm"></i>
-                            <span>الترخيص غير مفعل أو منتهي</span>
+                            <span>{t('login.license_expired')}</span>
                         </span>
                         <button
                             type="button"
@@ -209,7 +211,7 @@ export default function LoginPage() {
                     {/* حقل اسم المستخدم */}
                     <div>
                         <label className="block text-[11px] font-bold text-slate-300 mb-1.5 tracking-wider uppercase" htmlFor="loginUser">
-                            اسم المستخدم
+                            {t('login.username')}
                         </label>
                         <div className="relative group">
                             <input
@@ -219,11 +221,11 @@ export default function LoginPage() {
                                 autoFocus
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                placeholder="اسم الحساب"
+                                placeholder={t('login.username_placeholder')}
                                 autoComplete="username"
-                                className="login-input pr-11 text-slate-100 placeholder-slate-500 font-mono"
+                                className={`login-input ${isRTL ? 'pr-11 pl-4' : 'pl-11 pr-4'} text-slate-100 placeholder-slate-500 font-mono`}
                             />
-                            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors pointer-events-none text-sm">
+                            <div className={`absolute ${isRTL ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors pointer-events-none text-sm`}>
                                 <i className="fas fa-user-circle"></i>
                             </div>
                         </div>
@@ -233,7 +235,7 @@ export default function LoginPage() {
                     <div>
                         <div className="flex items-center justify-between mb-1.5">
                             <label className="block text-[11px] font-bold text-slate-300 tracking-wider uppercase" htmlFor="loginPass">
-                                كلمة المرور
+                                {t('login.password')}
                             </label>
                         </div>
                         <div className="relative group">
@@ -243,19 +245,19 @@ export default function LoginPage() {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••••••"
+                                placeholder={t('login.password_placeholder')}
                                 autoComplete="current-password"
-                                className="login-input pr-11 pl-11 text-slate-100 placeholder-slate-500 font-mono tracking-widest"
+                                className="login-input px-11 text-slate-100 placeholder-slate-500 font-mono tracking-widest"
                             />
-                            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors pointer-events-none text-sm">
+                            <div className={`absolute ${isRTL ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors pointer-events-none text-sm`}>
                                 <i className="fas fa-lock"></i>
                             </div>
                             <button
                                 type="button"
                                 tabIndex={-1}
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-sky-300 text-sm transition-colors p-1 cursor-pointer"
-                                title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                                className={`absolute ${isRTL ? 'left-3.5' : 'right-3.5'} top-1/2 -translate-y-1/2 text-slate-500 hover:text-sky-300 text-sm transition-colors p-1 cursor-pointer`}
+                                title={showPassword ? 'Hide password' : 'Show password'}
                             >
                                 <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                             </button>
@@ -267,18 +269,18 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading || Boolean(welcomeUser)}
-                            className="login-btn relative overflow-hidden group"
+                            className="login-btn relative overflow-hidden group cursor-pointer"
                         >
                             <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <i className="fas fa-circle-notch fa-spin text-sm"></i>
-                                    <span>جاري التحقق من الصلاحيات...</span>
+                                    <span>{t('login.signing_in')}</span>
                                 </span>
                             ) : (
                                 <span className="flex items-center justify-center gap-2">
-                                    <span>تسجيل الدخول</span>
-                                    <i className="fas fa-arrow-left text-xs group-hover:-translate-x-1 transition-transform"></i>
+                                    <span>{t('login.sign_in')}</span>
+                                    <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-xs group-hover:-translate-x-1 transition-transform`}></i>
                                 </span>
                             )}
                         </button>

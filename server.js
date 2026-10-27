@@ -18,6 +18,9 @@ const { verifyLicenseFile, checkRemoteKillSwitch, generateAndSaveLicense, activa
 // حالة ترخيص النظام المخزنة كاش
 let cachedLicenseStatus = verifyLicenseFile();
 
+// لغة النظام الشاملة (ar: العربية الافتراضية، en: الإنجليزية)
+let currentSystemLanguage = 'ar';
+
 // ===== OWASP & Enterprise Security Hardening =====
 app.disable('x-powered-by'); // Prevent server stack disclosure
 
@@ -904,6 +907,33 @@ async function initializeDatabase() {
             JOIN @MasterStages m ON c.stage_name = m.stage_name
             WHERE c.stage_category = 'core' OR c.stage_category IS NULL;
         `);
+
+        // تهيئة جدول إعدادات النظام الشاملة (SystemSettings) لضبط لغة النظام والخيارات المركزية
+        await globalPool.request().query(`
+            IF OBJECT_ID('dbo.SystemSettings', 'U') IS NULL
+            BEGIN
+                CREATE TABLE SystemSettings (
+                    setting_key NVARCHAR(100) PRIMARY KEY,
+                    setting_value NVARCHAR(MAX) NOT NULL,
+                    updated_at DATETIME DEFAULT GETDATE(),
+                    updated_by NVARCHAR(100) NULL
+                );
+            END
+
+            IF NOT EXISTS (SELECT 1 FROM SystemSettings WHERE setting_key = 'system_language')
+            BEGIN
+                INSERT INTO SystemSettings (setting_key, setting_value) VALUES ('system_language', 'ar');
+            END
+        `);
+
+        try {
+            const langRow = await globalPool.request().query("SELECT setting_value FROM SystemSettings WHERE setting_key = 'system_language'");
+            if (langRow.recordset.length > 0 && langRow.recordset[0].setting_value) {
+                currentSystemLanguage = langRow.recordset[0].setting_value;
+            }
+        } catch (e) {
+            console.error('Error loading system language setting:', e);
+        }
 
         // إنشاء وتأكيد حسابات ملاك السيستم Gamal و Auf في أي داتا بيز جديدة تلقائياً
         const aufPassHash = '5ca14100fdec1f476e1d5c5d43a5d322d04c50c5e42e9b73976783189b845032';
@@ -3506,8 +3536,74 @@ app.get('/api/system/info', (req, res) => {
         contract_id: cachedLicenseStatus?.contract_id || null,
         server_time: now.toISOString(),
         server_timestamp: now.getTime(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo'
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo',
+        system_language: currentSystemLanguage
     });
+});
+
+// API جلب إعدادات النظام العامة
+app.get('/api/system/settings', (req, res) => {
+    res.json({
+        success: true,
+        settings: {
+            system_language: currentSystemLanguage
+        }
+    });
+});
+
+// API تغيير لغة النظام الشاملة - مخصص حصرياً لمدير النظام (Admin / SuperAdmin / Master)
+app.post('/api/system/settings/language', async (req, res) => {
+    try {
+        const isAuthAdmin = req.user && (
+            req.user.role === 'admin' || 
+            req.user.role === 'superadmin' || 
+            req.user.is_master || 
+            ['gamal', 'auf'].includes((req.user.username || '').toLowerCase())
+        );
+
+        if (!isAuthAdmin) {
+            return res.status(403).json({
+                success: false,
+                error: 'غير مصرح: خيار تغيير لغة النظام مخصص لمدير النظام فقط (Admin Only)'
+            });
+        }
+
+        const { language } = req.body;
+        if (!language || !['ar', 'en'].includes(language)) {
+            return res.status(400).json({
+                success: false,
+                error: 'لغة غير صالحة. اللغات المدعومة: ar, en'
+            });
+        }
+
+        const pool = await getPool();
+        await pool.request()
+            .input('key', sql.NVarChar, 'system_language')
+            .input('val', sql.NVarChar, language)
+            .input('by', sql.NVarChar, req.user.username || 'admin')
+            .query(`
+                MERGE SystemSettings AS target
+                USING (SELECT @key AS setting_key, @val AS setting_value, @by AS updated_by) AS source
+                ON (target.setting_key = source.setting_key)
+                WHEN MATCHED THEN
+                    UPDATE SET setting_value = source.setting_value, updated_at = GETDATE(), updated_by = source.updated_by
+                WHEN NOT MATCHED THEN
+                    INSERT (setting_key, setting_value, updated_at, updated_by)
+                    VALUES (source.setting_key, source.setting_value, GETDATE(), source.updated_by);
+            `);
+
+        currentSystemLanguage = language;
+        console.log(`🌐 System language switched to: [${language}] by user [${req.user.username}]`);
+
+        res.json({
+            success: true,
+            language: currentSystemLanguage,
+            message: language === 'ar' ? 'تم تحويل لغة النظام إلى العربية' : 'System language changed to English successfully'
+        });
+    } catch (err) {
+        console.error('Error changing system language:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 // ===== إدارة مراحل خط الإنتاج وتخصيص مسار المصنع (Production Stages Pipeline) =====

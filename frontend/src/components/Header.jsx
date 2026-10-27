@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useLanguage } from '../context/LanguageContext';
 import { getNowFormatted } from '../services/timeSync';
 
 export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activePage = '' }) {
@@ -12,13 +13,16 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
         canCreateOrders, canManageUsers, canViewOrders, companyName
     } = useAuth();
     const { confirm } = useToast();
+    const { language, changeLanguage, t, isRTL } = useLanguage();
     const navigate = useNavigate();
     const [liveTime, setLiveTime] = useState(() => getNowFormatted(true));
     const [moreOpen, setMoreOpen] = useState(false);
-    const [mobileOpen, setMobileOpen] = useState(false);
     const moreRef = useRef(null);
 
-    // Permissions
+    // هل المستخدم لديه صلاحية إدارة النظام لتغيير اللغة
+    const canSwitchLanguage = isAdmin || isSuperAdmin || isMasterOwner;
+
+    // الصلاحيات
     const canViewCreateOrder = isSuperAdmin || isAdmin || canCreateOrders;
     const canViewStandardOrders = isSuperAdmin || isAdmin || canViewOrders || (!isProduction && !isExternalOperator && !isExternalAdmin);
     const canViewExternal = isSuperAdmin || isAdmin || isExternalAdmin || isAdminView || canViewOrders;
@@ -26,19 +30,19 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
     const canViewAdmin = isSuperAdmin || isAdmin || isExternalAdmin || canManageUsers;
     const canViewPresentation = isSuperAdmin || isAdmin;
 
-    // Primary nav links (always visible)
+    // الروابط الأساسية (Primary)
     const primaryLinks = [
-        { to: '/dashboard', label: 'الداشبورد', icon: 'fas fa-chart-line', page: 'dashboard', show: true },
-        { to: '/orders', label: 'الأوردرات', icon: 'fas fa-layer-group', page: 'orders', show: canViewStandardOrders },
-        { to: '/', label: 'السكانر', icon: 'fas fa-barcode', page: 'scanner', show: canViewScanner },
+        { to: '/dashboard', label: t('nav.dashboard'), icon: 'fas fa-chart-line', page: 'dashboard', show: true },
+        { to: '/orders', label: t('nav.orders'), icon: 'fas fa-layer-group', page: 'orders', show: canViewStandardOrders },
+        { to: '/', label: t('nav.scanner'), icon: 'fas fa-barcode', page: 'scanner', show: canViewScanner },
     ].filter(l => l.show);
 
-    // Secondary nav links → go into "More" dropdown
+    // الروابط الثانوية (Secondary Dropdown)
     const secondaryLinks = [
-        { to: '/create-order', label: 'أوردر جديد', icon: 'fas fa-plus-circle', page: 'create-order', show: canViewCreateOrder, accent: 'sky' },
-        { href: '/external_tracking.html', label: 'التشغيل الخارجي', icon: 'fas fa-truck-loading', page: 'external', show: canViewExternal },
-        { to: '/admin', label: 'إدارة المستخدمين', icon: 'fas fa-users-cog', page: 'admin', show: canViewAdmin },
-        { href: '/presentation.html', label: 'الملف التعريفي', icon: 'fas fa-file-powerpoint', page: 'presentation', show: canViewPresentation, newTab: true, accent: 'amber' },
+        { to: '/create-order', label: t('nav.create_order'), icon: 'fas fa-plus-circle', page: 'create-order', show: canViewCreateOrder, accent: 'sky' },
+        { href: '/external_tracking.html', label: t('nav.external_tracking'), icon: 'fas fa-truck-loading', page: 'external', show: canViewExternal },
+        { to: '/admin', label: t('nav.user_management'), icon: 'fas fa-users-cog', page: 'admin', show: canViewAdmin },
+        { href: '/presentation.html', label: t('nav.presentation'), icon: 'fas fa-file-powerpoint', page: 'presentation', show: canViewPresentation, newTab: true, accent: 'amber' },
     ].filter(l => l.show);
 
     const hasActiveSecondary = secondaryLinks.some(l => l.page === activePage);
@@ -48,7 +52,6 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
         return () => clearInterval(timer);
     }, []);
 
-    // Close dropdown on outside click
     useEffect(() => {
         const handler = (e) => {
             if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false);
@@ -57,11 +60,8 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    // Close mobile menu on route change
-    useEffect(() => { setMobileOpen(false); }, [activePage]);
-
     const handleLogout = async () => {
-        const ok = await confirm('تسجيل الخروج', 'هل أنت متأكد من إنهاء جلسة العمل الحالية؟');
+        const ok = await confirm(t('nav.logout_confirm_title'), t('nav.logout_confirm_msg'));
         if (ok) { logout(); navigate('/login'); }
     };
 
@@ -71,28 +71,27 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
             return (
                 <span className="badge-clean text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold"
                     style={{ background: 'linear-gradient(135deg,#78350f,#92400e)', color: '#fef3c7', border: '1px solid #b45309' }}>
-                    <i className="fas fa-crown text-amber-300 text-[9px]"></i> مالك
+                    <i className="fas fa-crown text-amber-300 text-[9px]"></i> {t('nav.system_owner')}
                 </span>
             );
         }
-        if (user.role === 'admin') return <span className="badge-clean badge-red text-[10px] px-2 py-0.5 rounded-md font-bold">مدير</span>;
-        if (user.role === 'admin_view') return <span className="badge-clean badge-blue text-[10px] px-2 py-0.5 rounded-md font-bold">متابع</span>;
+        if (user.role === 'admin') return <span className="badge-clean badge-red text-[10px] px-2 py-0.5 rounded-md font-bold">{t('nav.admin')}</span>;
+        if (user.role === 'admin_view') return <span className="badge-clean badge-blue text-[10px] px-2 py-0.5 rounded-md font-bold">{t('nav.viewer')}</span>;
         if (user.role === 'external_operator') return (
             <span className="badge-clean text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: 'rgba(6,182,212,0.15)', color: '#22d3ee', border: '1px solid rgba(6,182,212,0.3)' }}>
-                <span className="badge-clean-dot" style={{ background: '#22d3ee' }}></span> خارجي
+                <span className="badge-clean-dot" style={{ background: '#22d3ee' }}></span> {t('nav.external_op')}
             </span>
         );
         if (user.role === 'external_admin') return (
             <span className="badge-clean text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: 'rgba(6,182,212,0.15)', color: '#22d3ee', border: '1px solid rgba(6,182,212,0.3)' }}>
-                <span className="badge-clean-dot" style={{ background: '#22d3ee' }}></span> مشرف خارجي
+                <span className="badge-clean-dot" style={{ background: '#22d3ee' }}></span> {t('nav.external_admin')}
             </span>
         );
-        return <span className="badge-clean badge-green text-[10px] px-2 py-0.5 rounded-md font-bold">{user.stage_permission || 'مشغل'}</span>;
+        return <span className="badge-clean badge-green text-[10px] px-2 py-0.5 rounded-md font-bold">{user.stage_permission || t('nav.production_op')}</span>;
     };
 
     const getUserInitial = () => (!user?.username ? 'U' : user.username.charAt(0).toUpperCase());
 
-    // Shared nav link class
     const navLinkClass = (page) =>
         `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 ${activePage === page
             ? 'bg-sky-500/15 text-sky-400 font-bold border border-sky-500/30 shadow-sm shadow-sky-500/10'
@@ -121,7 +120,7 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
         <header className="no-print sticky top-0 z-40 border-b border-slate-800/70"
             style={{ background: 'rgba(7,11,22,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
 
-            {/* Top gradient accent */}
+            {/* Top gradient line */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500" />
 
             <div className="max-w-7xl mx-auto px-3 sm:px-5 flex items-center justify-between gap-3 h-14">
@@ -137,7 +136,7 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
                             <span className="text-sm font-black text-white tracking-wide group-hover:text-sky-300 transition-colors">HMS</span>
                             <span className="text-[9px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20 font-mono">SYSTEM</span>
                         </div>
-                        <span className="text-[9px] text-slate-500 font-mono mt-0.5">Industrial Platform</span>
+                        <span className="text-[9px] text-slate-500 font-mono mt-0.5">{t('nav.system_badge')}</span>
                     </div>
                 </Link>
 
@@ -153,7 +152,7 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
                         <div className="h-4 w-px bg-slate-700/60 mx-0.5 flex-shrink-0"></div>
                     )}
 
-                    {/* ── "More" dropdown ── */}
+                    {/* "More" dropdown */}
                     {secondaryLinks.length > 0 && (
                         <div className="relative flex-shrink-0" ref={moreRef}>
                             <button
@@ -164,27 +163,26 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
                                     }`}
                             >
                                 <i className="fas fa-th-large text-xs"></i>
-                                <span className="hidden sm:inline">المزيد</span>
+                                <span className="hidden sm:inline">{t('nav.more')}</span>
                                 <i className={`fas fa-chevron-down text-[9px] transition-transform duration-200 ${moreOpen ? 'rotate-180' : ''}`}></i>
                             </button>
 
                             {/* Dropdown panel */}
                             {moreOpen && (
-                                <div className="absolute top-full mt-2 right-0 w-52 rounded-xl overflow-hidden z-50"
+                                <div className={`absolute top-full mt-2 ${isRTL ? 'right-0' : 'left-0'} w-52 rounded-xl overflow-hidden z-50`}
                                     style={{
                                         background: 'rgba(8,13,28,0.98)',
                                         border: '1px solid rgba(148,163,184,0.12)',
                                         boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(14,165,233,0.05)',
                                         backdropFilter: 'blur(20px)',
                                     }}>
-                                    {/* Dropdown header */}
                                     <div className="px-3 py-2 border-b border-slate-800/80">
-                                        <span className="text-[10px] font-bold text-slate-500 tracking-widest uppercase">قائمة الأدوات</span>
+                                        <span className="text-[10px] font-bold text-slate-500 tracking-widest uppercase">{t('nav.tools_menu')}</span>
                                     </div>
                                     <div className="p-1.5 flex flex-col gap-0.5">
                                         {secondaryLinks.map(link => {
                                             const isActive = activePage === link.page;
-                                            const cls = `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all w-full text-right ${isActive
+                                            const cls = `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all w-full ${isRTL ? 'text-right' : 'text-left'} ${isActive
                                                 ? 'bg-sky-500/15 text-sky-400 font-bold border border-sky-500/20'
                                                 : link.accent === 'amber'
                                                     ? 'text-amber-400 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20'
@@ -198,7 +196,7 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
                                                         <i className={`${link.icon} text-[10px]`}></i>
                                                     </div>
                                                     <span>{link.label}</span>
-                                                    {link.newTab && <i className="fas fa-external-link-alt text-[9px] text-slate-600 mr-auto"></i>}
+                                                    {link.newTab && <i className={`fas fa-external-link-alt text-[9px] text-slate-600 ${isRTL ? 'mr-auto' : 'ml-auto'}`}></i>}
                                                 </>
                                             );
                                             if (link.href) {
@@ -222,8 +220,35 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
                     )}
                 </nav>
 
-                {/* ── RIGHT: Clock + User + Logout ── */}
+                {/* ── RIGHT: Language Switcher (Admin Only) + Clock + User + Logout ── */}
                 <div className="flex items-center gap-2 flex-shrink-0">
+
+                    {/* Admin-Only Language Switcher Pill */}
+                    {canSwitchLanguage && (
+                        <div className="flex items-center bg-[#070e1c] rounded-lg p-0.5 border border-slate-700/70 shadow-inner"
+                            title={t('nav.lang_toggle_tip')}>
+                            <button
+                                onClick={() => changeLanguage('ar')}
+                                className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono transition-all flex items-center gap-1 ${
+                                    language === 'ar'
+                                        ? 'bg-sky-500 text-white shadow-sm shadow-sky-500/30 font-black'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                                }`}
+                            >
+                                <span>ع</span>
+                            </button>
+                            <button
+                                onClick={() => changeLanguage('en')}
+                                className={`px-2 py-0.5 rounded text-[11px] font-bold font-mono transition-all flex items-center gap-1 ${
+                                    language === 'en'
+                                        ? 'bg-sky-500 text-white shadow-sm shadow-sky-500/30 font-black'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                                }`}
+                            >
+                                <span>EN</span>
+                            </button>
+                        </div>
+                    )}
 
                     {/* Live clock — desktop only */}
                     <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono text-slate-300"
@@ -249,7 +274,7 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
                     <button onClick={handleLogout}
                         className="w-8 h-8 rounded-lg flex items-center justify-center text-xs transition-all hover:scale-105"
                         style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.22)' }}
-                        title="تسجيل الخروج">
+                        title={t('nav.logout')}>
                         <i className="fas fa-sign-out-alt"></i>
                     </button>
                 </div>
