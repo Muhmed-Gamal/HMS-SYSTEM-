@@ -66,19 +66,20 @@ export function AuthProvider({ children }) {
     );
     const isSuperAdmin = isMasterOwner || user?.role === 'superadmin';
     const isAdmin = isSuperAdmin || user?.role === 'admin';
+    const isFactoryOwner = !isSuperAdmin && user?.role === 'factory_owner';
     const isProduction = !isSuperAdmin && user?.role === 'production';
     const isAdminView = !isSuperAdmin && user?.role === 'admin_view';
     const isExternalOperator = !isSuperAdmin && user?.role === 'external_operator';
     const isExternalAdmin = !isSuperAdmin && user?.role === 'external_admin';
     const canCreateOrders = isSuperAdmin || isAdmin || Boolean(user?.can_create_orders);
     const canManageUsers = isSuperAdmin || isAdmin || Boolean(user?.can_manage_users);
-    const canPrintReports = isSuperAdmin || isAdmin || Boolean(user?.can_print_reports);
-    const canViewOrders = isSuperAdmin || Boolean(user?.can_view_orders);
+    const canPrintReports = isSuperAdmin || isAdmin || isFactoryOwner || Boolean(user?.can_print_reports);
+    const canViewOrders = isSuperAdmin || isFactoryOwner || Boolean(user?.can_view_orders);
 
     return (
         <AuthContext.Provider value={{ 
             user, login, logout, 
-            isAdmin, isSuperAdmin, isMasterOwner,
+            isAdmin, isSuperAdmin, isMasterOwner, isFactoryOwner,
             isProduction, isAdminView, isExternalOperator, isExternalAdmin, 
             canCreateOrders, canManageUsers, canPrintReports, canViewOrders,
             companyName, setCompanyName, licenseInfo, isMasterGeneral, reloadSystemInfo 
