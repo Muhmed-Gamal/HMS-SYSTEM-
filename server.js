@@ -1445,12 +1445,13 @@ app.post('/api/users', async (req, res) => {
         const isSA = (role === 'superadmin');
         const isAdm = (role === 'admin');
         const isAdmView = (role === 'admin_view');
+        const isFactoryOwner = (role === 'factory_owner');
         const isExtOp = (role === 'external_operator');
         const isExtAdm = (role === 'external_admin');
 
         const can_view    = (isExtOp || isExtAdm) ? 0 : 1; // حجب أوردرات العملاء العادية عن حسابات التشغيل الخارجي
-        const can_create  = (isSA || isAdm || isAdmView) ? 1 : 0;
-        const can_print   = (isSA || isAdm || isAdmView || isExtAdm) ? 1 : 0;
+        const can_create  = (isSA || isAdm || isAdmView) ? 1 : 0; // صاحب المصنع لا ينشئ بل يتابع
+        const can_print   = (isSA || isAdm || isAdmView || isFactoryOwner || isExtAdm) ? 1 : 0;
         const can_manage  = (isSA || isAdm) ? 1 : (isExtAdm ? 1 : 0);
 
         // دعم الصلاحيات الثلاث الدقيقة لمشغلي التشغيل الخارجي (دخول / خروج / عام)
@@ -1618,6 +1619,7 @@ app.put('/api/users/:id', async (req, res) => {
         const isSA = (role === 'superadmin');
         const isAdm = (role === 'admin');
         const isAdmView = (role === 'admin_view');
+        const isFactoryOwner = (role === 'factory_owner');
         const isExtOp = (role === 'external_operator');
         const isExtAdm = (role === 'external_admin');
 
