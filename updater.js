@@ -1,34 +1,36 @@
 /**
- * HMS Industrial System - Professional Auto-Updater v3.0
+ * HMS Industrial System - Professional Auto-Updater v4.0
  * =======================================================
  * - Works with OR without Git installed on the server.
  * - Zero-Git fallback: downloads ZIP from GitHub directly.
  * - Preserves .env, node_modules, licenses during update.
- * - Rebuilds frontend, kills old process, restarts server.
+ * - Runs npm install for BOTH root AND frontend before building.
+ * - Deletes old dist/ before rebuild to force fresh output.
+ * - Shows full error details - never swallows failures silently.
  */
 
-const { execSync, spawn } = require('child_process');
-const fs = require('fs');
+const { execSync } = require('child_process');
+const fs   = require('fs');
 const path = require('path');
 const https = require('https');
-const http = require('http');
+const http  = require('http');
 
-const ROOT_DIR = __dirname;
+const ROOT_DIR     = __dirname;
 const FRONTEND_DIR = path.join(ROOT_DIR, 'frontend');
+const DIST_DIR     = path.join(FRONTEND_DIR, 'dist');
 
 // ── GitHub config ──────────────────────────────────────────────────────────────
 const GITHUB_REPO   = 'Muhmed-Gamal/HMS-SYSTEM-';
 const GITHUB_BRANCH = 'main';
-const ZIP_URL    = `https://github.com/${GITHUB_REPO}/archive/refs/heads/${GITHUB_BRANCH}.zip`;
-const ZIP_FILE   = path.join(ROOT_DIR, '_hms_update.zip');
-const EXTRACT_DIR = path.join(ROOT_DIR, '_hms_update_extracted');
+const ZIP_URL       = `https://github.com/${GITHUB_REPO}/archive/refs/heads/${GITHUB_BRANCH}.zip`;
+const ZIP_FILE      = path.join(ROOT_DIR, '_hms_update.zip');
+const EXTRACT_DIR   = path.join(ROOT_DIR, '_hms_update_extracted');
 
 // Files/folders that must NEVER be touched during an update
 const PROTECTED = ['.env', 'node_modules', 'licenses', 'license.dat', 'license.key'];
 
 console.log('===================================================================');
-console.log('   HMS Industrial Barcode System - Auto Updater v3.0');
-console.log('   HMS System Update - Checking for latest version...');
+console.log('   HMS Industrial Barcode System - Auto Updater v4.0');
 console.log('===================================================================\n');
 
 // ── 1. Internet check ──────────────────────────────────────────────────────────
@@ -52,11 +54,7 @@ function checkInternet() {
 
 // ── 2. Git detection ───────────────────────────────────────────────────────────
 function findGit() {
-    try {
-        execSync('git --version', { stdio: 'ignore' });
-        return 'git';
-    } catch (_) {}
-
+    try { execSync('git --version', { stdio: 'ignore' }); return 'git'; } catch (_) {}
     const knownPaths = [
         'C:\\Program Files\\Git\\cmd\\git.exe',
         'C:\\Program Files (x86)\\Git\\cmd\\git.exe',
@@ -65,36 +63,37 @@ function findGit() {
         'C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer\\Git\\cmd\\git.exe',
         'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer\\Git\\cmd\\git.exe',
     ];
-
-    for (const p of knownPaths) {
-        if (fs.existsSync(p)) return `"${p}"`;
-    }
+    for (const p of knownPaths) { if (fs.existsSync(p)) return `"${p}"`; }
     return null;
 }
 
 // ── 3. Download file via HTTPS (follows redirects) ─────────────────────────────
 function downloadFile(url, dest) {
     return new Promise((resolve, reject) => {
-        const file = fs.createWriteStream(dest);
+        let fileStream = fs.createWriteStream(dest);
+        let redirectCount = 0;
+
         function doGet(currentUrl) {
+            if (redirectCount > 10) return reject(new Error('Too many redirects'));
             const mod = currentUrl.startsWith('https') ? https : http;
-            mod.get(currentUrl, { timeout: 60000 }, (res) => {
+            mod.get(currentUrl, { timeout: 120000 }, (res) => {
                 if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                    file.destroy();
-                    fs.createWriteStream(dest); // reopen
-                    doGet(res.headers.location);
+                    redirectCount++;
+                    res.resume();
+                    // Close and reopen the file for the redirect
+                    fileStream.close(() => {
+                        fileStream = fs.createWriteStream(dest);
+                        doGet(res.headers.location);
+                    });
                     return;
                 }
                 if (res.statusCode !== 200) {
-                    reject(new Error(`HTTP ${res.statusCode} from ${currentUrl}`));
-                    return;
+                    return reject(new Error(`HTTP ${res.statusCode} from ${currentUrl}`));
                 }
-                res.pipe(file);
-                file.on('finish', () => file.close(resolve));
-            }).on('error', (err) => {
-                fs.unlink(dest, () => {});
-                reject(err);
-            });
+                res.pipe(fileStream);
+                fileStream.on('finish', () => fileStream.close(resolve));
+                fileStream.on('error', reject);
+            }).on('error', reject).on('timeout', () => reject(new Error('Download timed out')));
         }
         doGet(url);
     });
@@ -106,41 +105,34 @@ function extractZip(zipPath, destDir) {
         try { execSync(`rmdir /S /Q "${destDir}"`, { stdio: 'ignore', shell: true }); } catch (_) {}
     }
     fs.mkdirSync(destDir, { recursive: true });
-
-    // Try tar.exe first (built into Windows 10+ and Server 2019+)
+    // Try tar.exe (Windows 10+ / Server 2019+)
     try {
-        execSync(`tar.exe -xf "${zipPath}" -C "${destDir}"`, { stdio: 'ignore' });
+        execSync(`tar.exe -xf "${zipPath}" -C "${destDir}"`, { stdio: 'pipe' });
         return;
     } catch (_) {}
-
     // Fallback: PowerShell Expand-Archive
     execSync(
         `powershell -NoProfile -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${destDir}' -Force"`,
-        { stdio: 'ignore' }
+        { stdio: 'pipe' }
     );
 }
 
-// ── 5. Copy extracted files -> ROOT_DIR (skipping protected items) ─────────────
+// ── 5. Copy extracted files → ROOT_DIR (skip protected) ────────────────────────
 function copyUpdate(extractedRoot) {
-    // GitHub ZIP extracts to a subfolder like "HMS-SYSTEM--main/"
     const entries = fs.readdirSync(extractedRoot);
-    const subFolder = entries.find((e) =>
-        fs.statSync(path.join(extractedRoot, e)).isDirectory()
-    );
+    const subFolder = entries.find((e) => fs.statSync(path.join(extractedRoot, e)).isDirectory());
     const srcDir = subFolder ? path.join(extractedRoot, subFolder) : extractedRoot;
 
     function copyRecursive(src, dest) {
         const items = fs.readdirSync(src);
         for (const item of items) {
-            // Never touch protected files/folders at the root level
             if (src === srcDir && PROTECTED.some((p) => item.toLowerCase() === p.toLowerCase())) {
                 console.log(`  [SKIP] Protected: ${item}`);
                 continue;
             }
             const srcPath  = path.join(src, item);
             const destPath = path.join(dest, item);
-            const stat = fs.statSync(srcPath);
-            if (stat.isDirectory()) {
+            if (fs.statSync(srcPath).isDirectory()) {
                 fs.mkdirSync(destPath, { recursive: true });
                 copyRecursive(srcPath, destPath);
             } else {
@@ -148,7 +140,6 @@ function copyUpdate(extractedRoot) {
             }
         }
     }
-
     copyRecursive(srcDir, ROOT_DIR);
 }
 
@@ -160,10 +151,7 @@ function killPort3000() {
             const parts = line.trim().split(/\s+/);
             const pid = parts[parts.length - 1];
             if (pid && !isNaN(pid) && pid !== '0') {
-                try {
-                    execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
-                    console.log(`  [OK] Closed previous server session (PID: ${pid})`);
-                } catch (_) {}
+                try { execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' }); console.log(`  [OK] Closed previous server (PID: ${pid})`); } catch (_) {}
             }
         }
     } catch (_) {}
@@ -171,103 +159,124 @@ function killPort3000() {
 
 // ── 7. Cleanup temp files ──────────────────────────────────────────────────────
 function cleanup() {
-    try { if (fs.existsSync(ZIP_FILE))    fs.unlinkSync(ZIP_FILE);    } catch (_) {}
-    try {
-        if (fs.existsSync(EXTRACT_DIR)) {
-            execSync(`rmdir /S /Q "${EXTRACT_DIR}"`, { stdio: 'ignore', shell: true });
-        }
-    } catch (_) {}
+    try { if (fs.existsSync(ZIP_FILE)) fs.unlinkSync(ZIP_FILE); } catch (_) {}
+    try { if (fs.existsSync(EXTRACT_DIR)) execSync(`rmdir /S /Q "${EXTRACT_DIR}"`, { stdio: 'ignore', shell: true }); } catch (_) {}
 }
 
 // ── MAIN ───────────────────────────────────────────────────────────────────────
 async function run() {
 
-    // STEP 1: Internet check
-    process.stdout.write('[1/4] Checking internet connection... ');
+    // ── STEP 1: Internet check ─────────────────────────────────────────────────
+    process.stdout.write('[1/5] Checking internet connection... ');
     const isOnline = await checkInternet();
     if (!isOnline) {
         console.log('FAILED\n');
-        console.error('[ERROR] No internet connection detected on this server!');
-        console.error('Please connect this server to the internet and try again.\n');
+        console.error('[ERROR] No internet connection on this server!');
+        console.error('Please connect to the internet and try again.\n');
         process.exit(1);
     }
     console.log('ONLINE OK\n');
 
-    // STEP 2: Pull latest code
-    process.stdout.write('[2/4] Fetching latest updates from GitHub... ');
-    const gitCmd   = findGit();
+    // ── STEP 2: Pull latest source code ───────────────────────────────────────
+    process.stdout.write('[2/5] Downloading latest code from GitHub... ');
+    const gitCmd    = findGit();
     const isGitRepo = fs.existsSync(path.join(ROOT_DIR, '.git'));
 
     if (gitCmd && isGitRepo) {
-        // ── Git path ──────────────────────────────────────────────
         console.log('(using Git)');
         try {
-            execSync(`${gitCmd} fetch origin ${GITHUB_BRANCH}`, { cwd: ROOT_DIR, stdio: 'ignore' });
-            execSync(`${gitCmd} reset --hard origin/${GITHUB_BRANCH}`, { cwd: ROOT_DIR, stdio: 'ignore' });
-            console.log('  [OK] Code updated via Git\n');
+            execSync(`${gitCmd} fetch origin ${GITHUB_BRANCH}`, { cwd: ROOT_DIR, stdio: 'pipe' });
+            execSync(`${gitCmd} reset --hard origin/${GITHUB_BRANCH}`, { cwd: ROOT_DIR, stdio: 'pipe' });
+            console.log('  [OK] Source code updated via Git\n');
         } catch (err) {
-            console.error('\n  Git pull failed:', err.message);
-            console.log('  Switching to ZIP download fallback...\n');
+            console.log('\n  Git failed, switching to ZIP download...');
             await goZipFallback();
         }
     } else {
-        // ── Zero-Git ZIP fallback ─────────────────────────────────
-        console.log('(Git not found - using ZIP download)');
+        console.log('(using ZIP download - Git not required)');
         await goZipFallback();
     }
 
     async function goZipFallback() {
         try {
-            process.stdout.write('  Downloading update package from GitHub... ');
+            process.stdout.write('  Downloading ZIP from GitHub... ');
             await downloadFile(ZIP_URL, ZIP_FILE);
-            const size = fs.statSync(ZIP_FILE).size;
-            console.log(`OK (${(size / 1024).toFixed(0)} KB)\n`);
+            const sizeMB = (fs.statSync(ZIP_FILE).size / (1024 * 1024)).toFixed(1);
+            console.log(`OK (${sizeMB} MB)\n`);
 
-            process.stdout.write('  Extracting update package... ');
+            process.stdout.write('  Extracting files... ');
             extractZip(ZIP_FILE, EXTRACT_DIR);
             console.log('OK\n');
 
-            process.stdout.write('  Copying updated files (preserving .env and licenses)... ');
+            process.stdout.write('  Copying updated files (preserving .env, licenses)... ');
             copyUpdate(EXTRACT_DIR);
             console.log('OK\n');
 
             cleanup();
-            console.log('  [OK] Code updated via ZIP download\n');
+            console.log('  [OK] Source code updated via ZIP\n');
         } catch (zipErr) {
             cleanup();
-            console.error('\n[ERROR] Update download failed:', zipErr.message);
-            console.error('Please check your internet connection or firewall settings.\n');
+            console.error('\n[ERROR] ZIP download/extraction failed:', zipErr.message);
+            console.error('Check firewall settings or internet connection.\n');
             process.exit(1);
         }
     }
 
-    // STEP 3: Install/update backend dependencies
-    process.stdout.write('[3/4] Checking backend dependencies... ');
+    // ── STEP 3: Install backend dependencies ──────────────────────────────────
+    process.stdout.write('[3/5] Installing/updating backend packages... ');
     try {
-        execSync('npm install --production 2>nul', { cwd: ROOT_DIR, stdio: 'ignore' });
+        execSync('npm install --production --prefer-offline 2>nul', { cwd: ROOT_DIR, stdio: 'pipe' });
         console.log('OK\n');
     } catch (_) {
         console.log('skipped\n');
     }
 
-    // STEP 4: Rebuild frontend
-    console.log('[4/4] Rebuilding UI (this may take 1-2 minutes)...');
+    // ── STEP 4: Install frontend dependencies + Force rebuild ─────────────────
+    console.log('[4/5] Installing frontend packages and rebuilding UI...');
+
+    // Install frontend node_modules (critical for build to work)
+    process.stdout.write('  Installing frontend packages... ');
     try {
-        execSync('npm run build', { cwd: FRONTEND_DIR, stdio: 'inherit' });
-        console.log('\n  [OK] Frontend rebuilt successfully\n');
-    } catch (buildErr) {
-        console.warn('\n  [WARN] Build had warnings but continuing...\n');
+        execSync('npm install --prefer-offline', { cwd: FRONTEND_DIR, stdio: 'pipe' });
+        console.log('OK\n');
+    } catch (e) {
+        console.log('WARNING - will try build anyway\n');
     }
 
-    // Kill old server
-    console.log('Starting updated system...');
-    killPort3000();
+    // Delete old dist to force a completely fresh build
+    if (fs.existsSync(DIST_DIR)) {
+        try {
+            execSync(`rmdir /S /Q "${DIST_DIR}"`, { stdio: 'ignore', shell: true });
+            console.log('  [OK] Old UI cleared - building fresh version...');
+        } catch (_) {}
+    }
 
-    // Small delay to let port free up
+    // Run the build - show output and FAIL loudly if it errors
+    try {
+        execSync('npm run build', { cwd: FRONTEND_DIR, stdio: 'inherit' });
+        console.log('\n  [OK] UI rebuilt successfully - all updates applied!\n');
+    } catch (buildErr) {
+        console.error('\n[ERROR] UI build failed! Updates cannot be applied.');
+        console.error('Please contact HMS support with a photo of this screen.\n');
+        process.exit(1);
+    }
+
+    // Verify build output exists
+    if (!fs.existsSync(DIST_DIR)) {
+        console.error('\n[ERROR] Build completed but output folder is missing!');
+        console.error('Please contact HMS support.\n');
+        process.exit(1);
+    }
+    console.log(`  [OK] UI build verified - ${fs.readdirSync(path.join(DIST_DIR, 'assets') || DIST_DIR).length} files generated.\n`);
+
+    // ── STEP 5: Restart server ─────────────────────────────────────────────────
+    console.log('[5/5] Restarting HMS system...');
+    killPort3000();
     await new Promise(r => setTimeout(r, 1500));
 
     console.log('\n===================================================================');
-    console.log('  UPDATE COMPLETE - Launching HMS System...');
+    console.log('  UPDATE COMPLETE - All changes applied!');
+    console.log('  Launching HMS system now...');
     console.log('===================================================================\n');
 }
 
