@@ -5,6 +5,11 @@ color 0B
 
 cd /d "%~dp0"
 
+echo ===================================================================
+echo   HMS Industrial Barcode System - Auto Updater
+echo ===================================================================
+echo.
+
 node -v >nul 2>&1
 if %errorlevel% neq 0 (
     color 0C
@@ -20,16 +25,9 @@ if %errorlevel% neq 0 (
 
 node updater.js
 
-if %errorlevel% neq 0 (
-    echo.
-    echo ===================================================================
-    echo  [NOTICE] Update encountered an error. See the details above.
-    echo ===================================================================
-    echo.
-    pause
-    exit /b 1
-)
-
-timeout /t 2 >nul 2>&1
+echo.
+echo ===================================================================
+echo  ???? ?? ?? ?????? ??????? ???? / Press any key to start system...
+echo ===================================================================
+pause
 start "" "%~dp0start_system.bat"
-exit
