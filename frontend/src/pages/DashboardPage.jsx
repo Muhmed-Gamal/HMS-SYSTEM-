@@ -1,29 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-import StatCard from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 
+// ── Mini KPI Card ──────────────────────────────────────────────────────────────
+function KpiCard({ label, value, sub, icon, color, loading }) {
+    const colorMap = {
+        sky:     { text: 'text-sky-400',     bg: 'bg-sky-500/10',     border: 'border-sky-500/20',     glow: 'shadow-sky-500/10' },
+        amber:   { text: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   glow: 'shadow-amber-500/10' },
+        emerald: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', glow: 'shadow-emerald-500/10' },
+        cyan:    { text: 'text-cyan-400',    bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20',    glow: 'shadow-cyan-500/10' },
+        rose:    { text: 'text-rose-400',    bg: 'bg-rose-500/10',    border: 'border-rose-500/20',    glow: 'shadow-rose-500/10' },
+    };
+    const c = colorMap[color] || colorMap.sky;
+    return (
+        <div className={`slate-card p-4 flex items-center gap-3 shadow-lg ${c.glow}`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${c.bg} border ${c.border}`}>
+                <i className={`${icon} ${c.text} text-sm`}></i>
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="text-[10.5px] text-slate-400 font-medium truncate">{label}</p>
+                <p className={`text-lg font-black font-mono leading-tight ${c.text}`}>
+                    {loading ? <span className="inline-block w-12 h-4 bg-slate-700 rounded animate-pulse" /> : value}
+                </p>
+                {sub && <p className="text-[10px] text-slate-500 font-mono truncate">{sub}</p>}
+            </div>
+        </div>
+    );
+}
+
+// ── Quick Action Button ────────────────────────────────────────────────────────
+function QuickAction({ to, href, icon, label, color, badge }) {
+    const colorMap = {
+        sky:     'text-sky-400   bg-sky-500/10   border-sky-500/30   hover:border-sky-400/60   hover:bg-sky-500/15',
+        cyan:    'text-cyan-400  bg-cyan-500/10  border-cyan-500/30  hover:border-cyan-400/60  hover:bg-cyan-500/15',
+        emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-400/60 hover:bg-emerald-500/15',
+        amber:   'text-amber-400 bg-amber-500/10 border-amber-500/30 hover:border-amber-400/60 hover:bg-amber-500/15',
+    };
+    const cls = `relative p-3 rounded-xl border transition-all duration-200 flex flex-col items-center gap-1.5 text-center cursor-pointer ${colorMap[color] || colorMap.sky}`;
+    const inner = (
+        <>
+            {badge > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse z-10">
+                    {badge}
+                </span>
+            )}
+            <i className={`${icon} text-base`}></i>
+            <span className="text-[10px] font-semibold leading-tight">{label}</span>
+        </>
+    );
+    if (href) return <a href={href} className={cls}>{inner}</a>;
+    return <Link to={to} className={cls}>{inner}</Link>;
+}
+
 export default function DashboardPage() {
     const { user, companyName, canCreateOrders, canManageUsers } = useAuth();
     const { toast } = useToast();
-    const { t, translateStage, isRTL } = useLanguage();
+    const { t, translateStage, isRTL, language } = useLanguage();
     const navigate = useNavigate();
 
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+    const [loading, setLoading]         = useState(true);
+    const [refreshing, setRefreshing]   = useState(false);
     const [overviewData, setOverviewData] = useState(null);
+    const [lastUpdated, setLastUpdated]  = useState(null);
 
     const loadDashboardData = async (isManual = false) => {
         if (isManual) setRefreshing(true);
-        else setLoading(true);
+        else if (!overviewData) setLoading(true);
 
         const { ok, data } = await api.getDashboardOverview();
         if (ok && data.success) {
             setOverviewData(data);
+            setLastUpdated(new Date());
         } else {
             const statsRes = await api.getStats();
             if (statsRes.ok && statsRes.data.success) {
@@ -34,41 +85,40 @@ export default function DashboardPage() {
                     live_activity: [],
                     priority_orders: []
                 });
+                setLastUpdated(new Date());
             } else {
                 toast(t('common.error'), 'error');
             }
         }
-
         setLoading(false);
         setRefreshing(false);
     };
 
     useEffect(() => {
-        if (!user) {
-            navigate('/login');
-            return;
-        }
+        if (!user) { navigate('/login'); return; }
         loadDashboardData();
-
-        // Silent background sync every 15s
-        const interval = setInterval(() => {
-            loadDashboardData(false);
-        }, 15000);
-
+        const interval = setInterval(() => loadDashboardData(false), 20000);
         return () => clearInterval(interval);
     }, [user]);
 
-    const summary = overviewData?.summary || {};
-    const stages = overviewData?.stages_distribution || [];
-    const topScanners = overviewData?.top_scanners || [];
-    const liveActivity = overviewData?.live_activity || [];
+    const summary        = overviewData?.summary || {};
+    const stages         = overviewData?.stages_distribution || [];
+    const topScanners    = overviewData?.top_scanners || [];
+    const liveActivity   = overviewData?.live_activity || [];
     const priorityOrders = overviewData?.priority_orders || [];
 
-    const totalOrders = (summary.factory_orders || 0) + (summary.external_orders || 0);
-    const activeOrders = (summary.factory_active_orders || 0) + (summary.external_active_orders || 0);
-    const closedOrders = Math.max(0, totalOrders - activeOrders);
-    const totalScans = (summary.factory_scans || 0) + (summary.external_scans || 0);
+    const totalOrders    = (summary.factory_orders || 0) + (summary.external_orders || 0);
+    const activeOrders   = (summary.factory_active_orders || 0) + (summary.external_active_orders || 0);
+    const closedOrders   = Math.max(0, totalOrders - activeOrders);
+    const totalScans     = (summary.factory_scans || 0) + (summary.external_scans || 0);
     const completionRate = totalOrders > 0 ? Math.round((closedOrders / totalOrders) * 100) : 0;
+    const totalPieces    = Number(summary.total_target_pieces || 0);
+
+    const now = new Date();
+    const greetHour = now.getHours();
+    const greeting = language === 'ar'
+        ? (greetHour < 12 ? 'صباح الخير' : greetHour < 18 ? 'مساء الخير' : 'مساء النور')
+        : (greetHour < 12 ? 'Good morning' : greetHour < 18 ? 'Good afternoon' : 'Good evening');
 
     return (
         <div className="min-h-screen flex flex-col bg-[#070b14] text-slate-100">
@@ -79,45 +129,39 @@ export default function DashboardPage() {
                 activePage="dashboard"
             />
 
-            <main className="flex-1 p-3 sm:p-5 max-w-7xl w-full mx-auto space-y-4">
+            <main className="flex-1 p-3 sm:p-4 max-w-7xl w-full mx-auto space-y-4">
 
-                {/* ── Top Bar: Welcome + System Health + Refresh ── */}
-                <div className="slate-card p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white text-lg shadow-md shadow-sky-500/20"
-                            style={{ background: 'linear-gradient(135deg, #0284c7, #2563eb)', border: '1px solid rgba(56,189,248,0.4)' }}>
-                            <i className="fas fa-chart-line"></i>
+                {/* ── Welcome Bar ─────────────────────────────────────────── */}
+                <div className="slate-card px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+                            style={{ background: 'linear-gradient(135deg,#0284c7,#2563eb)', border: '1px solid rgba(56,189,248,0.35)' }}>
+                            <i className="fas fa-chart-line text-sm"></i>
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-base sm:text-lg font-black text-white">
-                                    {t('dashboard.title')}
-                                </h1>
-                                <span className="badge-clean text-[10px] font-mono font-bold text-sky-400 bg-sky-500/10 border border-sky-500/20">
-                                    LIVE AUDIT
-                                </span>
-                            </div>
-                            <p className="text-xs text-slate-400 mt-0.5">
-                                {t('dashboard.subtitle')}
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold text-white truncate">
+                                {greeting}، <span className="text-sky-400">{user?.username}</span>
                             </p>
+                            <p className="text-[10.5px] text-slate-400 truncate">{t('dashboard.subtitle')}</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
-                        {/* System Status Pill */}
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-xs font-mono">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-                            <span className="text-slate-300 font-semibold">{t('dashboard.status_online')}</span>
-                            <span className="text-slate-600">|</span>
-                            <span className="text-cyan-400 font-bold">{summary.active_stages_count || 6} {t('common.stage')}</span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* Live pulse */}
+                        <div className="hidden sm:flex items-center gap-1.5 text-[10.5px] font-mono text-slate-300 bg-slate-900/70 border border-slate-700/50 px-2.5 py-1 rounded-lg">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span className="text-emerald-400 font-bold">LIVE</span>
+                            {lastUpdated && (
+                                <span className="text-slate-500 text-[9.5px]">
+                                    {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </span>
+                            )}
                         </div>
 
-                        {/* Refresh Button */}
                         <button
                             onClick={() => loadDashboardData(true)}
                             disabled={refreshing}
                             className="btn-slate btn-slate-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer"
-                            title={t('common.refresh')}
                         >
                             <i className={`fas fa-sync-alt text-xs ${refreshing ? 'fa-spin text-sky-400' : ''}`}></i>
                             <span className="hidden sm:inline">{t('common.refresh')}</span>
@@ -125,361 +169,319 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* ── Executive KPI Grid ── */}
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <StatCard
+                {/* ── KPI Strip (5 cards) ──────────────────────────────────── */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <KpiCard
                         label={t('dashboard.kpi_total_orders')}
-                        value={loading ? '...' : totalOrders.toLocaleString('en-US')}
-                        colorClass="text-sky-400"
-                        icon="fas fa-boxes"
-                        subValue={t('dashboard.kpi_factory_ext_sub', { factory: summary.factory_orders || 0, external: summary.external_orders || 0 })}
+                        value={totalOrders.toLocaleString('en-US')}
+                        sub={`${language === 'ar' ? 'مصنع' : 'Factory'} ${summary.factory_orders || 0} · ${language === 'ar' ? 'خارجي' : 'Ext'} ${summary.external_orders || 0}`}
+                        icon="fas fa-boxes" color="sky" loading={loading}
                     />
-
-                    <StatCard
+                    <KpiCard
                         label={t('dashboard.kpi_active_orders')}
-                        value={loading ? '...' : activeOrders.toLocaleString('en-US')}
-                        colorClass="text-amber-400"
-                        icon="fas fa-spinner"
-                        subValue={t('dashboard.kpi_factory_ext_sub', { factory: summary.factory_active_orders || 0, external: summary.external_active_orders || 0 })}
+                        value={activeOrders.toLocaleString('en-US')}
+                        sub={`${language === 'ar' ? 'منتهي' : 'Closed'}: ${closedOrders}`}
+                        icon="fas fa-spinner" color="amber" loading={loading}
                     />
-
-                    <StatCard
+                    <KpiCard
                         label={t('dashboard.kpi_total_scans')}
-                        value={loading ? '...' : totalScans.toLocaleString('en-US')}
-                        colorClass="text-emerald-400"
-                        icon="fas fa-barcode"
-                        subValue={t('dashboard.kpi_scans_sub')}
+                        value={totalScans.toLocaleString('en-US')}
+                        sub={language === 'ar' ? 'إجمالي المسح' : 'Total Scans'}
+                        icon="fas fa-barcode" color="emerald" loading={loading}
                     />
-
-                    <StatCard
+                    <KpiCard
                         label={t('dashboard.kpi_completion_rate')}
-                        value={loading ? '...' : `${completionRate}%`}
-                        colorClass="text-cyan-400"
-                        icon="fas fa-chart-pie"
-                        subValue={t('dashboard.kpi_completion_sub', { closed: closedOrders, total: totalOrders })}
+                        value={`${completionRate}%`}
+                        sub={`${closedOrders} / ${totalOrders}`}
+                        icon="fas fa-chart-pie" color="cyan" loading={loading}
+                    />
+                    <KpiCard
+                        label={language === 'ar' ? 'إجمالي القطع المستهدفة' : 'Total Target Pieces'}
+                        value={totalPieces > 999 ? `${(totalPieces / 1000).toFixed(1)}K` : totalPieces.toLocaleString('en-US')}
+                        sub={language === 'ar' ? 'قطعة في كل الأوردرات' : 'pieces across all orders'}
+                        icon="fas fa-layer-group" color="rose" loading={loading}
                     />
                 </div>
 
-                {/* ── Admin Fast Execution Hub ── */}
-                <div className="slate-card p-4 bg-gradient-to-r from-[#0b1426] via-[#0e1933] to-[#0a1224] border border-sky-500/25">
-                    <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-700/60">
-                        <div className="flex items-center gap-2">
-                            <i className="fas fa-bolt text-amber-400 text-xs"></i>
-                            <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.admin_hub_title')}</h3>
-                        </div>
-                        <span className="badge-clean badge-blue text-[9.5px] font-mono">ADMIN HUB</span>
+                {/* ── Quick Actions ────────────────────────────────────────── */}
+                <div className="slate-card p-3">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800">
+                        <i className="fas fa-bolt text-amber-400 text-xs"></i>
+                        <span className="text-xs font-bold text-white">{t('dashboard.admin_hub_title')}</span>
+                        <span className="ml-auto text-[9.5px] font-mono text-slate-500">QUICK ACTIONS</span>
                     </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="grid grid-cols-4 sm:grid-cols-4 gap-2">
                         {canCreateOrders && (
-                            <Link
-                                to="/create-order"
-                                className="p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-700/60 hover:border-sky-500/40 transition-all flex flex-col justify-between group"
-                            >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
-                                        <i className="fas fa-plus"></i>
-                                    </span>
-                                    <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-[10px] text-slate-500 group-hover:text-sky-400 transition-colors`}></i>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-bold text-white block">{t('dashboard.card_create_order')}</span>
-                                    <span className="text-[10px] text-slate-400">{t('dashboard.card_create_order_desc')}</span>
-                                </div>
-                            </Link>
+                            <QuickAction to="/create-order" icon="fas fa-plus" label={t('dashboard.card_create_order')} color="sky" />
                         )}
-
-                        <a
-                            href="/external_tracking.html"
-                            className="p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-700/60 hover:border-cyan-500/40 transition-all flex flex-col justify-between group"
-                        >
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
-                                    <i className="fas fa-truck-loading"></i>
-                                </span>
-                                <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-[10px] text-slate-500 group-hover:text-cyan-400 transition-colors`}></i>
-                            </div>
-                            <div>
-                                <span className="text-xs font-bold text-white block">{t('dashboard.card_ext_tracking')}</span>
-                                <span className="text-[10px] text-slate-400">{t('dashboard.card_ext_tracking_desc')}</span>
-                            </div>
-                        </a>
-
-                        <Link
-                            to="/"
-                            className="p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-700/60 hover:border-emerald-500/40 transition-all flex flex-col justify-between group"
-                        >
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
-                                    <i className="fas fa-barcode"></i>
-                                </span>
-                                <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors`}></i>
-                            </div>
-                            <div>
-                                <span className="text-xs font-bold text-white block">{t('dashboard.card_scanner')}</span>
-                                <span className="text-[10px] text-slate-400">{t('dashboard.card_scanner_desc')}</span>
-                            </div>
-                        </Link>
-
+                        <QuickAction to="/orders" icon="fas fa-list-alt" label={language === 'ar' ? 'تتبع الأوردرات' : 'Track Orders'} color="emerald" />
+                        <QuickAction to="/" icon="fas fa-barcode" label={t('dashboard.card_scanner')} color="cyan" />
+                        <QuickAction href="/external_tracking.html" icon="fas fa-truck-loading" label={t('dashboard.card_ext_tracking')} color="amber" />
                         {canManageUsers && (
-                            <Link
-                                to="/admin"
-                                className="p-3 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-700/60 hover:border-amber-500/40 transition-all flex flex-col justify-between group"
-                            >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm group-hover:scale-110 transition-transform">
-                                        <i className="fas fa-user-shield"></i>
-                                    </span>
-                                    {summary.locked_users > 0 && (
-                                        <span className="badge-clean badge-red text-[9px] font-mono font-bold animate-pulse">
-                                            {summary.locked_users}
-                                        </span>
-                                    )}
-                                </div>
-                                <div>
-                                    <span className="text-xs font-bold text-white block">{t('dashboard.card_manage_users')}</span>
-                                    <span className="text-[10px] text-slate-400">{t('dashboard.card_manage_users_desc')}</span>
-                                </div>
-                            </Link>
+                            <QuickAction to="/admin" icon="fas fa-user-shield" label={t('dashboard.card_manage_users')} color="amber" badge={summary.locked_users || 0} />
                         )}
                     </div>
                 </div>
 
-                {/* ── Mid Section: Stages Pipeline Distribution & Top Scanners ── */}
+                {/* ── Main Body: 3-column grid ─────────────────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    
-                    {/* Factory Stages Pipeline */}
-                    <div className="lg:col-span-2 slate-card p-5 flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
+
+                    {/* ── Col 1+2: Pipeline + Priority Orders (stacked) ─────── */}
+                    <div className="lg:col-span-2 space-y-4">
+
+                        {/* Stage Pipeline */}
+                        <div className="slate-card p-4">
+                            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-700/60">
                                 <div className="flex items-center gap-2">
                                     <i className="fas fa-industry text-sky-400 text-xs"></i>
                                     <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.pipeline_title')}</h3>
                                 </div>
-                                <span className="text-[10.5px] font-mono text-slate-400">PIPELINE AUDIT</span>
+                                <span className="text-[9.5px] font-mono text-slate-500">PIPELINE AUDIT</span>
                             </div>
 
                             {stages.length === 0 ? (
-                                <div className="text-center py-10 text-slate-500 text-xs">
-                                    <i className="fas fa-layer-group text-2xl text-slate-700 mb-2 block"></i>
+                                <div className="py-6 text-center text-slate-500 text-xs">
+                                    <i className="fas fa-layer-group text-2xl text-slate-700 mb-1 block"></i>
                                     {t('dashboard.no_pipeline_data')}
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {stages.map((stg, i) => {
                                         const sQty = Number(stg.total_scanned) || 0;
                                         const tQty = Number(stg.total_target) || 1;
-                                        const pct = tQty > 0 ? Math.min(100, Math.round((sQty / tQty) * 100)) : 0;
+                                        const pct  = tQty > 0 ? Math.min(100, Math.round((sQty / tQty) * 100)) : 0;
+                                        const isComplete = pct >= 100;
 
                                         return (
-                                            <div key={stg.stage_name || i} className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                                                <div className="flex justify-between items-center text-xs mb-1.5">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-5 h-5 rounded-md bg-sky-500/10 text-sky-400 font-mono text-[10px] font-bold flex items-center justify-center border border-sky-500/20">
-                                                            {i + 1}
-                                                        </span>
-                                                        <span className="font-bold text-white">{translateStage(stg.stage_name)}</span>
-                                                        {stg.active_orders_count > 0 && (
-                                                            <span className="text-[9.5px] text-slate-400 font-mono">
-                                                                ({stg.active_orders_count} {t('common.order')})
+                                            <div key={stg.stage_name || i} className="flex items-center gap-2 group">
+                                                {/* Rank badge */}
+                                                <span className="w-5 h-5 rounded-md bg-slate-800 border border-slate-700 text-slate-400 font-mono text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+                                                    {i + 1}
+                                                </span>
+
+                                                {/* Bar section */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <span className="text-xs font-bold text-white truncate">{translateStage(stg.stage_name)}</span>
+                                                            {stg.active_orders_count > 0 && (
+                                                                <span className="text-[9px] text-sky-400 font-mono flex-shrink-0">
+                                                                    ×{stg.active_orders_count}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 font-mono text-[10.5px] flex-shrink-0 ml-2">
+                                                            <span className={isComplete ? 'text-emerald-400 font-bold' : 'text-slate-300'}>
+                                                                {sQty.toLocaleString('en-US')}
                                                             </span>
-                                                        )}
+                                                            <span className="text-slate-600">/</span>
+                                                            <span className="text-slate-500">{tQty > 1 ? tQty.toLocaleString('en-US') : '—'}</span>
+                                                            <span className={`font-bold ml-0.5 ${isComplete ? 'text-emerald-400' : 'text-sky-400'}`}>
+                                                                {pct}%
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="font-mono text-xs flex items-center gap-2">
-                                                        <strong className="text-emerald-400">{sQty.toLocaleString('en-US')}</strong>
-                                                        <span className="text-slate-500">/</span>
-                                                        <span className="text-slate-400">{tQty > 1 ? tQty.toLocaleString('en-US') : '—'}</span>
-                                                        <span className="text-sky-300 font-bold mr-1">({pct}%)</span>
+                                                    <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden border border-slate-800/80">
+                                                        <div
+                                                            className="h-1.5 rounded-full transition-all duration-500"
+                                                            style={{
+                                                                width: `${pct}%`,
+                                                                background: isComplete
+                                                                    ? '#10b981'
+                                                                    : pct > 60
+                                                                    ? 'linear-gradient(90deg,#0284c7,#22d3ee)'
+                                                                    : 'linear-gradient(90deg,#1e3a5f,#0284c7)'
+                                                            }}
+                                                        />
                                                     </div>
                                                 </div>
-                                                <div className="w-full bg-[#070d19] rounded-full h-2 overflow-hidden border border-slate-800">
-                                                    <div
-                                                        className="h-2 rounded-full transition-all duration-500"
-                                                        style={{
-                                                            width: `${pct}%`,
-                                                            background: pct >= 100 ? '#10b981' : 'linear-gradient(90deg, #0284c7, #38bdf8)'
-                                                        }}
-                                                    ></div>
-                                                </div>
+
+                                                {/* Status icon */}
+                                                <span className="flex-shrink-0 text-[10px]">
+                                                    {isComplete
+                                                        ? <i className="fas fa-check-circle text-emerald-400"></i>
+                                                        : <i className="fas fa-circle-notch text-slate-600 fa-spin" style={{ animationDuration: '3s' }}></i>
+                                                    }
+                                                </span>
                                             </div>
                                         );
                                     })}
                                 </div>
                             )}
+
+                            <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[10.5px]">
+                                <span className="text-slate-500 font-mono">
+                                    {language === 'ar' ? 'إجمالي المستهدف' : 'Total target'}:
+                                    <strong className="text-amber-400 ml-1">{Number(summary.total_target_pieces || 0).toLocaleString('en-US')}</strong>
+                                </span>
+                                <Link to="/orders" className="text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium">
+                                    <span>{t('dashboard.view_detailed_reports')}</span>
+                                    <i className={`fas fa-chevron-${isRTL ? 'left' : 'right'} text-[9px]`}></i>
+                                </Link>
+                            </div>
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 font-mono">
-                            <span>{t('dashboard.total_target_pieces')}: <strong className="text-amber-400">{Number(summary.total_target_pieces || 0).toLocaleString('en-US')}</strong></span>
-                            <Link to="/orders" className="text-sky-400 hover:text-sky-300 flex items-center gap-1">
-                                <span>{t('dashboard.view_detailed_reports')}</span>
-                                <i className={`fas fa-chevron-${isRTL ? 'left' : 'right'} text-[9px]`}></i>
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Top Scanners Leaderboard */}
-                    <div className="slate-card p-5 flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60">
+                        {/* Priority Orders */}
+                        <div className="slate-card p-4">
+                            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-700/60">
                                 <div className="flex items-center gap-2">
-                                    <i className="fas fa-trophy text-amber-400 text-xs"></i>
-                                    <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.leaderboard_title')}</h3>
+                                    <i className="fas fa-fire text-rose-400 text-xs"></i>
+                                    <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.priority_title')}</h3>
                                 </div>
-                                <span className="badge-clean badge-amber text-[9px] font-mono">LEADERBOARD</span>
+                                <Link to="/orders" className="text-[10.5px] text-sky-400 hover:underline font-medium">
+                                    {t('common.all')} ({totalOrders})
+                                </Link>
                             </div>
 
-                            {topScanners.length === 0 ? (
-                                <div className="text-center py-10 text-slate-500 text-xs">
-                                    <i className="fas fa-user-clock text-2xl text-slate-700 mb-2 block"></i>
-                                    {t('dashboard.no_scanners_data')}
-                                </div>
-                            ) : (
-                                <div className="space-y-2.5">
-                                    {topScanners.map((sc, idx) => {
-                                        const medals = ['text-amber-400', 'text-slate-300', 'text-amber-600'];
-                                        const isTop3 = idx < 3;
-
-                                        return (
-                                            <div
-                                                key={sc.scanned_by || idx}
-                                                className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-3"
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-mono text-xs font-black ${
-                                                        isTop3 ? 'bg-amber-500/10 border border-amber-500/30 ' + medals[idx] : 'bg-slate-800 text-slate-400'
-                                                    }`}>
-                                                        {idx + 1}
-                                                    </span>
-                                                    <div>
-                                                        <span className="text-xs font-bold text-white block">{sc.scanned_by}</span>
-                                                        <span className="text-[9.5px] text-slate-400 font-mono">
-                                                            {sc.last_seen ? new Date(sc.last_seen).toLocaleTimeString('en-US') : t('common.active')}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="font-mono text-right">
-                                                    <span className="text-xs font-bold text-emerald-400 block">
-                                                        {Number(sc.scan_count || 0).toLocaleString('en-US')}
-                                                    </span>
-                                                    <span className="text-[9px] text-slate-500">{t('dashboard.kpi_scans_sub')}</span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-4 pt-3 border-t border-slate-800/80 text-center">
-                            <span className="text-[11px] text-slate-400">
-                                {t('dashboard.rankings_note')}
-                            </span>
-                        </div>
-                    </div>
-
-                </div>
-
-                {/* ── Bottom Section: Live Activity Ticker & Priority Orders ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-                    {/* Live Laser Activity Feed */}
-                    <div className="slate-card p-5">
-                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-700/60">
-                            <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                                <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.live_ticker_title')}</h3>
-                            </div>
-                            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                                LIVE TICKER
-                            </span>
-                        </div>
-
-                        <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
-                            {liveActivity.length === 0 ? (
-                                <div className="text-center py-10 text-slate-500 text-xs">
-                                    {t('dashboard.no_live_data')}
-                                </div>
-                            ) : (
-                                liveActivity.map((act, i) => (
-                                    <div
-                                        key={act.id || i}
-                                        className="p-2.5 rounded-lg bg-slate-900/50 border border-slate-800/80 hover:border-slate-700 flex items-center justify-between text-xs"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-2 h-2 rounded-full ${act.source_type === 'external' ? 'bg-cyan-400' : 'bg-sky-400'}`}></span>
-                                            <span className="font-mono font-bold text-white tracking-wider">
-                                                {act.barcode}
-                                            </span>
-                                            <span className="text-slate-400 font-sans text-[11px]">
-                                                [{act.order_number || t('common.order')}]
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-3 font-mono text-[11px]">
-                                            <span className="text-sky-300 bg-sky-950/60 px-2 py-0.5 rounded border border-sky-500/20">
-                                                {translateStage(act.stage_name)}
-                                            </span>
-                                            <span className="text-slate-300 font-sans">{act.scanned_by}</span>
-                                            <span className="text-slate-500 text-[10px]">
-                                                {act.created_at ? new Date(act.created_at).toLocaleTimeString('en-US') : ''}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Active Priority Orders */}
-                    <div className="slate-card p-5">
-                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-700/60">
-                            <div className="flex items-center gap-2">
-                                <i className="fas fa-tasks text-sky-400 text-xs"></i>
-                                <h3 className="text-xs sm:text-sm font-bold text-white">{t('dashboard.priority_title')}</h3>
-                            </div>
-                            <Link to="/orders" className="text-xs text-sky-400 hover:underline">
-                                {t('common.all')} ({totalOrders})
-                            </Link>
-                        </div>
-
-                        <div className="space-y-2.5">
                             {priorityOrders.length === 0 ? (
-                                <div className="text-center py-10 text-slate-500 text-xs">
+                                <div className="py-6 text-center text-slate-500 text-xs">
+                                    <i className="fas fa-check-double text-emerald-600 text-2xl mb-1 block"></i>
                                     {t('dashboard.no_priority_data')}
                                 </div>
                             ) : (
-                                priorityOrders.map((ord) => (
-                                    <div
-                                        key={ord.id}
-                                        className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-3"
-                                    >
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <strong className="text-white font-mono text-xs">{ord.order_number}</strong>
-                                                <span className="text-slate-400 text-xs font-medium">({ord.customer_name || 'Client'})</span>
-                                            </div>
-                                            <div className="w-full bg-[#070d19] rounded-full h-1.5 overflow-hidden border border-slate-800">
-                                                <div
-                                                    className="h-1.5 rounded-full bg-sky-400"
-                                                    style={{ width: `${ord.completion_rate}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
+                                <div className="space-y-2">
+                                    {priorityOrders.map((ord) => {
+                                        const pct = ord.completion_rate || 0;
+                                        const barColor = pct >= 90 ? '#10b981' : pct >= 50 ? '#38bdf8' : '#f59e0b';
+                                        return (
+                                            <div key={ord.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-colors">
+                                                {/* Completion ring placeholder */}
+                                                <div className="relative w-9 h-9 flex-shrink-0">
+                                                    <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                                                        <circle cx="18" cy="18" r="14" fill="none" stroke="#1e293b" strokeWidth="3.5" />
+                                                        <circle
+                                                            cx="18" cy="18" r="14" fill="none"
+                                                            stroke={barColor} strokeWidth="3.5"
+                                                            strokeDasharray={`${pct * 0.879} 87.9`}
+                                                            strokeLinecap="round"
+                                                        />
+                                                    </svg>
+                                                    <span className="absolute inset-0 flex items-center justify-center text-[8.5px] font-mono font-bold text-white">
+                                                        {pct}%
+                                                    </span>
+                                                </div>
 
-                                        <div className="font-mono pl-1 text-right">
-                                            <span className="text-xs font-bold text-sky-400 block">
-                                                {ord.completion_rate}%
-                                            </span>
-                                            <span className="text-[9.5px] text-slate-400">
-                                                {(ord.target_quantity || 0).toLocaleString('en-US')} {t('common.pieces')}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-baseline gap-1.5">
+                                                        <strong className="text-white font-mono text-xs">{ord.order_number}</strong>
+                                                        <span className="text-slate-400 text-[10.5px] truncate">{ord.customer_name || 'Client'}</span>
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-500 font-mono">
+                                                        {(ord.target_quantity || 0).toLocaleString('en-US')} {t('common.pieces')}
+                                                    </span>
+                                                </div>
+
+                                                <span className={`text-[9.5px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                                                    pct >= 100
+                                                        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                                                        : 'text-sky-400 bg-sky-500/10 border-sky-500/30'
+                                                }`}>
+                                                    {pct >= 100 ? '✓' : `${pct}%`}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
                     </div>
 
+                    {/* ── Col 3: Right sidebar (Leaderboard + Live Feed) ─────── */}
+                    <div className="space-y-4">
+
+                        {/* Top Scanners Leaderboard */}
+                        <div className="slate-card p-4">
+                            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-700/60">
+                                <div className="flex items-center gap-2">
+                                    <i className="fas fa-trophy text-amber-400 text-xs"></i>
+                                    <h3 className="text-xs font-bold text-white">{t('dashboard.leaderboard_title')}</h3>
+                                </div>
+                                <span className="text-[9px] font-mono text-amber-400/70">TODAY</span>
+                            </div>
+
+                            {topScanners.length === 0 ? (
+                                <div className="py-6 text-center text-slate-500 text-xs">
+                                    <i className="fas fa-user-clock text-2xl text-slate-700 mb-1 block"></i>
+                                    {t('dashboard.no_scanners_data')}
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {topScanners.slice(0, 6).map((sc, idx) => {
+                                        const medals   = ['text-amber-400', 'text-slate-300', 'text-orange-500'];
+                                        const medalBg  = ['bg-amber-500/15 border-amber-500/30', 'bg-slate-700/50 border-slate-600/40', 'bg-orange-500/10 border-orange-500/20'];
+                                        const isTop3   = idx < 3;
+                                        const maxCount = topScanners[0]?.scan_count || 1;
+                                        const barPct   = Math.round((sc.scan_count / maxCount) * 100);
+
+                                        return (
+                                            <div key={sc.scanned_by || idx} className="flex items-center gap-2">
+                                                <span className={`w-5 h-5 rounded-md flex items-center justify-center font-mono text-[9.5px] font-black flex-shrink-0 border ${
+                                                    isTop3 ? `${medalBg[idx]} ${medals[idx]}` : 'bg-slate-800 border-slate-700 text-slate-500'
+                                                }`}>
+                                                    {idx + 1}
+                                                </span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex justify-between items-baseline mb-0.5">
+                                                        <span className="text-[11px] font-bold text-white truncate">{sc.scanned_by}</span>
+                                                        <span className="text-[10px] font-mono font-bold text-emerald-400 flex-shrink-0 ml-1">
+                                                            {Number(sc.scan_count || 0).toLocaleString('en-US')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-900 rounded-full h-1 overflow-hidden">
+                                                        <div
+                                                            className="h-1 rounded-full"
+                                                            style={{
+                                                                width: `${barPct}%`,
+                                                                background: isTop3 ? '#f59e0b' : '#334155'
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Live Activity Feed */}
+                        <div className="slate-card p-4">
+                            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-700/60">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                    <h3 className="text-xs font-bold text-white">{t('dashboard.live_ticker_title')}</h3>
+                                </div>
+                                <span className="text-[9.5px] font-mono text-emerald-400">LIVE</span>
+                            </div>
+
+                            <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-0.5">
+                                {liveActivity.length === 0 ? (
+                                    <div className="py-6 text-center text-slate-500 text-xs">
+                                        <i className="fas fa-satellite-dish text-2xl text-slate-700 mb-1 block"></i>
+                                        {t('dashboard.no_live_data')}
+                                    </div>
+                                ) : (
+                                    liveActivity.map((act, i) => (
+                                        <div
+                                            key={act.id || i}
+                                            className="flex items-center gap-2 p-2 rounded-lg bg-slate-900/50 border border-slate-800/60 hover:border-slate-700/80 transition-colors text-[10.5px]"
+                                        >
+                                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${act.source_type === 'external' ? 'bg-cyan-400' : 'bg-sky-400'}`}></span>
+                                            <span className="font-mono font-bold text-white tracking-wider truncate flex-1">
+                                                {act.barcode}
+                                            </span>
+                                            <span className="text-sky-300 bg-sky-950/60 px-1.5 py-0.5 rounded border border-sky-500/20 flex-shrink-0 text-[9px]">
+                                                {translateStage(act.stage_name)}
+                                            </span>
+                                            <span className="text-slate-500 text-[9px] flex-shrink-0">
+                                                {act.created_at ? new Date(act.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                            </span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </main>
