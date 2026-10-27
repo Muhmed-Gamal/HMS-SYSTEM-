@@ -8,6 +8,7 @@ import ScannerPage from './pages/ScannerPage';
 import OrdersTrackingPage from './pages/OrdersTrackingPage';
 import CreateOrderPage from './pages/CreateOrderPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import DashboardPage from './pages/DashboardPage';
 
 export default function App() {
     return (
@@ -16,6 +17,7 @@ export default function App() {
                 <BrowserRouter>
                     <Routes>
                         <Route path="/login" element={<LoginPage />} />
+                        <Route path="/dashboard" element={<DashboardPage />} />
                         <Route path="/" element={<ScannerPage />} />
                         <Route path="/orders" element={<OrdersTrackingPage />} />
                         <Route path="/create-order" element={<CreateOrderPage />} />

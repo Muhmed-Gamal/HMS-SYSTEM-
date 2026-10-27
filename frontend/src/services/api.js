@@ -87,6 +87,7 @@ export const api = {
 
     // Reports & Stats
     getStats: () => request('/stats', { method: 'GET' }),
+    getDashboardOverview: () => request('/dashboard/overview', { method: 'GET' }),
     getComprehensiveReport: () => request('/reports/comprehensive', { method: 'GET' }),
 
     // Users & Permissions (Admin)

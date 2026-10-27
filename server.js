@@ -2960,6 +2960,159 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
+// مركز القيادة التنفيذي اللحظي (Executive Command Center Feed)
+app.get('/api/dashboard/overview', async (req, res) => {
+    try {
+        const pool = await getPool();
+
+        // 1. مؤشرات الأداء اللحظية الموحدة
+        const statsRes = await pool.request().query(`
+            SELECT
+                (SELECT COUNT(*) FROM Orders) as factory_orders,
+                (SELECT COUNT(*) FROM Orders WHERE status != 'closed') as factory_active_orders,
+                (SELECT COUNT(*) FROM Orders WHERE status = 'closed') as factory_closed_orders,
+                (SELECT ISNULL(SUM(target_quantity), 0) FROM Orders) as factory_target_units,
+                (SELECT COUNT(*) FROM StockMovements) as factory_total_scans,
+                (SELECT COUNT(*) FROM ExternalOrders) as external_orders,
+                (SELECT COUNT(*) FROM ExternalOrders WHERE status != 'closed') as external_active_orders,
+                (SELECT COUNT(*) FROM ExternalOrders WHERE status = 'closed') as external_closed_orders,
+                (SELECT ISNULL(SUM(target_quantity), 0) FROM ExternalOrders) as external_target_units,
+                (SELECT COUNT(*) FROM ExternalScans) as external_total_scans,
+                (SELECT COUNT(*) FROM Users) as total_users,
+                (SELECT COUNT(*) FROM Users WHERE is_locked = 1) as locked_users,
+                (SELECT COUNT(*) FROM ProductionStagesConfig WHERE is_active = 1) as active_stages_count
+        `);
+        const s = statsRes.recordset[0] || {};
+
+        // 2. توزيع الإنتاج على مراحل المصنع الست
+        const stagesDistRes = await pool.request().query(`
+            SELECT 
+                s.stage_name, 
+                ISNULL(SUM(s.scanned_quantity), 0) as total_scanned,
+                ISNULL(SUM(s.target_quantity), 0) as total_target,
+                COUNT(DISTINCT s.order_id) as active_orders_count
+            FROM OrderStages s
+            GROUP BY s.stage_name
+            ORDER BY MIN(s.order_index) ASC
+        `);
+
+        // 3. قائمة صدارة المشغلين (Top 6 Operators by Scan Volume)
+        const topScannersRes = await pool.request().query(`
+            SELECT TOP 6
+                scanned_by,
+                COUNT(*) as scan_count,
+                MAX(created_at) as last_seen
+            FROM (
+                SELECT scanned_by, created_at FROM StockMovements WHERE scanned_by IS NOT NULL
+                UNION ALL
+                SELECT scanned_by, created_at FROM ExternalScans WHERE scanned_by IS NOT NULL
+            ) all_scans
+            GROUP BY scanned_by
+            ORDER BY scan_count DESC
+        `);
+
+        // 4. أحدث حركات المسح الليزري اللحظية الحية (Live Ticker Stream)
+        const recentActivityRes = await pool.request().query(`
+            SELECT TOP 12
+                act.id,
+                act.barcode,
+                act.order_id,
+                act.order_number,
+                act.stage_name,
+                act.scanned_by,
+                act.source_type,
+                act.created_at
+            FROM (
+                SELECT 
+                    sm.id,
+                    sm.barcode,
+                    sm.order_id,
+                    o.order_number,
+                    sm.stage_name,
+                    sm.scanned_by,
+                    'factory' as source_type,
+                    sm.created_at
+                FROM StockMovements sm
+                LEFT JOIN Orders o ON o.id = sm.order_id
+
+                UNION ALL
+
+                SELECT 
+                    es.id,
+                    es.barcode,
+                    es.external_order_id as order_id,
+                    eo.order_number,
+                    ISNULL(es.scan_type, N'تشغيل خارجي') as stage_name,
+                    es.scanned_by,
+                    'external' as source_type,
+                    es.created_at
+                FROM ExternalScans es
+                LEFT JOIN ExternalOrders eo ON eo.id = es.external_order_id
+            ) act
+            ORDER BY act.created_at DESC
+        `);
+
+        // 5. الأوامر النشطة ذات الأولوية العالية ومعدل إنجاز كل منها
+        const priorityOrdersRes = await pool.request().query(`
+            SELECT TOP 5
+                o.id,
+                o.order_number,
+                o.customer_name,
+                o.target_quantity,
+                o.status,
+                o.created_at,
+                'factory' as order_type,
+                ISNULL((SELECT SUM(scanned_quantity) FROM OrderStages WHERE order_id = o.id), 0) as total_scanned,
+                ISNULL((SELECT COUNT(*) FROM OrderStages WHERE order_id = o.id), 6) as stages_count
+            FROM Orders o
+            WHERE o.status != 'closed'
+            ORDER BY o.id DESC
+        `);
+
+        const priorityOrders = priorityOrdersRes.recordset.map(o => {
+            const tQty = Number(o.target_quantity) || 1;
+            const maxExpected = tQty * (Number(o.stages_count) || 6);
+            const scanned = Number(o.total_scanned) || 0;
+            const pct = maxExpected > 0 ? Math.min(100, Math.round((scanned / maxExpected) * 100)) : 0;
+            return {
+                ...o,
+                completion_rate: pct
+            };
+        });
+
+        const totalOrders = (Number(s.factory_orders) || 0) + (Number(s.external_orders) || 0);
+        const activeOrders = (Number(s.factory_active_orders) || 0) + (Number(s.external_active_orders) || 0);
+        const closedOrders = (Number(s.factory_closed_orders) || 0) + (Number(s.external_closed_orders) || 0);
+        const totalScans = (Number(s.factory_total_scans) || 0) + (Number(s.external_total_scans) || 0);
+
+        res.json({
+            success: true,
+            summary: {
+                total_orders: totalOrders,
+                active_orders: activeOrders,
+                closed_orders: closedOrders,
+                total_scans: totalScans,
+                factory_orders: Number(s.factory_orders) || 0,
+                external_orders: Number(s.external_orders) || 0,
+                factory_active_orders: Number(s.factory_active_orders) || 0,
+                external_active_orders: Number(s.external_active_orders) || 0,
+                total_target_pieces: (Number(s.factory_target_units) || 0) + (Number(s.external_target_units) || 0),
+                total_users: Number(s.total_users) || 0,
+                locked_users: Number(s.locked_users) || 0,
+                active_stages_count: Number(s.active_stages_count) || 6,
+                license: cachedLicenseStatus || {}
+            },
+            stages_distribution: stagesDistRes.recordset,
+            top_scanners: topScannersRes.recordset,
+            live_activity: recentActivityRes.recordset,
+            priority_orders: priorityOrders
+        });
+    } catch (err) {
+        console.error('Dashboard Overview Error:', err);
+        res.status(500).json({ success: false, message: 'فشل جلب بيانات لوحة القيادة: ' + err.message });
+    }
+});
+
 // ============================================================================
 // 🏭 منظومة التشغيل الخارجي المستقلة (External Processing & Outsourcing Engine)
 // جداول منفصلة تماماً (ExternalOrders & ExternalScans) - تقبل أي باركود

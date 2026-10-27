@@ -126,6 +126,16 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
                 <nav className="flex items-center gap-0.5 p-1 rounded-xl overflow-x-auto no-scrollbar flex-1 justify-center"
                     style={{ background: 'rgba(5,9,20,0.8)', border: '1px solid rgba(148,163,184,0.07)' }}>
 
+                    <Link to="/dashboard"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all whitespace-nowrap flex-shrink-0 ${
+                            activePage === 'dashboard'
+                                ? 'bg-sky-500/15 text-sky-400 font-bold border border-sky-500/30 shadow-sm shadow-sky-500/10'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 font-medium border border-transparent'
+                        }`}>
+                        <i className="fas fa-chart-line text-xs"></i>
+                        <span>الداشبورد</span>
+                    </Link>
+
                     {canViewCreateOrder && (
                         <Link to="/create-order"
                             className={`flex md:hidden items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap flex-shrink-0 transition-all ${
