@@ -1279,6 +1279,7 @@ export default function AdminUsersPage() {
                                     className="slate-input text-xs cursor-pointer"
                                 >
                                     <option value="production">{language === 'ar' ? 'يوزر إنتاج (مسح مراحل محددة)' : 'Production Operator (specific stages)'}</option>
+                                    <option value="factory_owner">🏢 {language === 'ar' ? 'صاحب المصنع (داشبورد وتتبع شامل فقط)' : 'Factory Owner (Dashboard & Tracking Only)'}</option>
                                     <option value="external_operator">{language === 'ar' ? 'تشغيل خارجي (مسح أي باركود)' : 'External Operator (any barcode)'}</option>
                                     <option value="external_admin">{language === 'ar' ? 'مشرف تشغيل خارجي (متابعة الأوردرات الخارجية فقط)' : 'External Admin (external orders only)'}</option>
                                     <option value="admin_view">{language === 'ar' ? 'متابع إداري (اطلاع فقط)' : 'Admin Viewer (read-only)'}</option>
@@ -1403,6 +1404,12 @@ export default function AdminUsersPage() {
                                             roleBadge = (
                                                 <span className="badge-clean badge-amber text-[10px]">
                                                     <span className="badge-clean-dot"></span> {language === 'ar' ? 'مدير نظام' : 'System Admin'}
+                                                </span>
+                                            );
+                                        } else if (u.role === 'factory_owner') {
+                                            roleBadge = (
+                                                <span className="badge-clean text-[10px]" style={{background:'linear-gradient(135deg, rgba(2,132,199,0.2), rgba(99,102,241,0.2))',color:'#38bdf8',border:'1px solid rgba(56,189,248,0.4)'}}>
+                                                    <i className="fas fa-building-user text-[9px] mr-1"></i> {language === 'ar' ? 'صاحب المصنع' : 'Factory Owner'}
                                                 </span>
                                             );
                                         } else if (u.role === 'admin_view') {
@@ -1589,6 +1596,7 @@ export default function AdminUsersPage() {
                                         className="slate-input text-xs cursor-pointer"
                                     >
                                         <option value="production">{language === 'ar' ? 'يوزر إنتاج (مسح مراحل محددة)' : 'Production Operator (specific stages)'}</option>
+                                        <option value="factory_owner">🏢 {language === 'ar' ? 'صاحب المصنع (داشبورد وتتبع شامل فقط)' : 'Factory Owner (Dashboard & Tracking Only)'}</option>
                                         <option value="external_operator">{language === 'ar' ? 'تشغيل خارجي (مسح أي باركود)' : 'External Operator (any barcode)'}</option>
                                         <option value="external_admin">{language === 'ar' ? 'مشرف تشغيل خارجي (متابعة الأوردرات الخارجية فقط)' : 'External Admin (external orders only)'}</option>
                                         <option value="admin_view">{language === 'ar' ? 'متابع إداري (اطلاع فقط)' : 'Admin Viewer (read-only)'}</option>
