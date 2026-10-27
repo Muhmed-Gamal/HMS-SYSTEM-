@@ -8,7 +8,7 @@ import { getNowFormatted } from '../services/timeSync';
 export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activePage = '' }) {
     const {
         user, logout,
-        isAdmin, isSuperAdmin, isMasterOwner,
+        isAdmin, isSuperAdmin, isMasterOwner, isFactoryOwner,
         isProduction, isAdminView, isExternalOperator, isExternalAdmin,
         canCreateOrders, canManageUsers, canViewOrders, companyName
     } = useAuth();
@@ -20,15 +20,15 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
     const moreRef = useRef(null);
 
     // هل المستخدم لديه صلاحية إدارة النظام لتغيير اللغة
-    const canSwitchLanguage = isAdmin || isSuperAdmin || isMasterOwner;
+    const canSwitchLanguage = isAdmin || isSuperAdmin || isMasterOwner || isFactoryOwner;
 
     // الصلاحيات
-    const canViewCreateOrder = isSuperAdmin || isAdmin || canCreateOrders;
-    const canViewStandardOrders = isSuperAdmin || isAdmin || canViewOrders || (!isProduction && !isExternalOperator && !isExternalAdmin);
-    const canViewExternal = isSuperAdmin || isAdmin || isExternalAdmin || isAdminView || canViewOrders;
-    const canViewScanner = !isExternalAdmin;
-    const canViewAdmin = isSuperAdmin || isAdmin || isExternalAdmin || canManageUsers;
-    const canViewPresentation = isSuperAdmin || isAdmin;
+    const canViewCreateOrder = (isSuperAdmin || isAdmin || canCreateOrders) && !isFactoryOwner;
+    const canViewStandardOrders = isSuperAdmin || isAdmin || isFactoryOwner || canViewOrders || (!isProduction && !isExternalOperator && !isExternalAdmin);
+    const canViewExternal = (isSuperAdmin || isAdmin || isExternalAdmin || isAdminView || canViewOrders) && !isFactoryOwner;
+    const canViewScanner = !isExternalAdmin && !isFactoryOwner;
+    const canViewAdmin = (isSuperAdmin || isAdmin || isExternalAdmin || canManageUsers) && !isFactoryOwner;
+    const canViewPresentation = (isSuperAdmin || isAdmin) && !isFactoryOwner;
 
     // الروابط الأساسية (Primary)
     const primaryLinks = [
@@ -76,6 +76,12 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
             );
         }
         if (user.role === 'admin') return <span className="badge-clean badge-red text-[10px] px-2 py-0.5 rounded-md font-bold">{t('nav.admin')}</span>;
+        if (user.role === 'factory_owner') return (
+            <span className="badge-clean text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold"
+                style={{ background: 'linear-gradient(135deg, rgba(2,132,199,0.25), rgba(99,102,241,0.25))', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.4)' }}>
+                <i className="fas fa-building-user text-sky-400 text-[10px]"></i> {language === 'ar' ? 'صاحب المصنع' : 'Factory Owner'}
+            </span>
+        );
         if (user.role === 'admin_view') return <span className="badge-clean badge-blue text-[10px] px-2 py-0.5 rounded-md font-bold">{t('nav.viewer')}</span>;
         if (user.role === 'external_operator') return (
             <span className="badge-clean text-[10px] px-2 py-0.5 rounded-md font-bold" style={{ background: 'rgba(6,182,212,0.15)', color: '#22d3ee', border: '1px solid rgba(6,182,212,0.3)' }}>
