@@ -3101,20 +3101,21 @@ app.get('/api/dashboard/overview', async (req, res) => {
             ORDER BY o.id DESC
         `);
 
-        // 6. نشاط المسح على مدار اليوم (Hourly Scanning Activity - Stacked)
-        const hourlyScansRes = await pool.request().query(`
+        // 6. نشاط المسح على مدار الـ 7 أيام الماضية (Stock Movement - Last 7 Days)
+        const dailyMovementRes = await pool.request().query(`
             SELECT 
-                DATEPART(HOUR, created_at) as [hour],
-                COUNT(CASE WHEN source_type = 'factory' THEN 1 END) as factory_scans,
-                COUNT(CASE WHEN source_type = 'external' THEN 1 END) as external_scans,
+                CONVERT(VARCHAR(10), created_at, 120) as [date],
+                DATENAME(WEEKDAY, created_at) as [day_name],
+                COUNT(CASE WHEN source_type = 'factory' THEN 1 END) as in_scans,
+                COUNT(CASE WHEN source_type = 'external' THEN 1 END) as out_scans,
                 COUNT(*) as total_scans
             FROM (
-                SELECT created_at, 'factory' as source_type FROM StockMovements WHERE created_at >= DATEADD(HOUR, -24, GETDATE())
+                SELECT created_at, 'factory' as source_type FROM StockMovements WHERE created_at >= DATEADD(DAY, -7, GETDATE())
                 UNION ALL
-                SELECT created_at, 'external' as source_type FROM ExternalScans WHERE created_at >= DATEADD(HOUR, -24, GETDATE())
-            ) h_scans
-            GROUP BY DATEPART(HOUR, created_at)
-            ORDER BY [hour] ASC
+                SELECT created_at, 'external' as source_type FROM ExternalScans WHERE created_at >= DATEADD(DAY, -7, GETDATE())
+            ) d_scans
+            GROUP BY CONVERT(VARCHAR(10), created_at, 120), DATENAME(WEEKDAY, created_at)
+            ORDER BY [date] ASC
         `);
 
         const priorityOrders = priorityOrdersRes.recordset.map(o => {
@@ -3154,7 +3155,7 @@ app.get('/api/dashboard/overview', async (req, res) => {
             top_scanners: topScannersRes.recordset,
             live_activity: recentActivityRes.recordset,
             priority_orders: priorityOrders,
-            hourly_activity: hourlyScansRes.recordset
+            daily_movement: dailyMovementRes.recordset
         });
     } catch (err) {
         console.error('Dashboard Overview Error:', err);
