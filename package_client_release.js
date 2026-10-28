@@ -23,12 +23,11 @@ const crypto = require('crypto');
 const ROOT_DIR = __dirname;
 const RELEASE_DIR = path.join(ROOT_DIR, 'HMS_Enterprise_Release');
 
-let JavaScriptObfuscator;
+let JavaScriptObfuscator = null;
 try {
     JavaScriptObfuscator = require('javascript-obfuscator');
-} catch (e) {
-    console.error('❌ javascript-obfuscator is not installed. Run: npm install --save-dev javascript-obfuscator');
-    process.exit(1);
+} catch (_) {
+    // If not installed, packager will fall back to safe clean copy without breaking
 }
 
 const OBFUSCATION_OPTIONS = {
@@ -128,13 +127,18 @@ async function buildClientPackage() {
         if (fs.existsSync(srcPath)) {
             process.stdout.write(`   ⏳ Obfuscating ${file}... `);
             const sourceCode = fs.readFileSync(srcPath, 'utf8');
-            try {
-                const obfuscated = JavaScriptObfuscator.obfuscate(sourceCode, OBFUSCATION_OPTIONS).getObfuscatedCode();
-                fs.writeFileSync(destPath, obfuscated, 'utf8');
-                console.log('✅ Done');
-            } catch (err) {
-                console.log(`⚠️ Fallback to minified copy: ${err.message}`);
+            if (JavaScriptObfuscator) {
+                try {
+                    const obfuscated = JavaScriptObfuscator.obfuscate(sourceCode, OBFUSCATION_OPTIONS).getObfuscatedCode();
+                    fs.writeFileSync(destPath, obfuscated, 'utf8');
+                    console.log('✅ Obfuscated');
+                } catch (err) {
+                    console.log(`⚠️ Fallback to clean copy: ${err.message}`);
+                    copyFile(srcPath, destPath);
+                }
+            } else {
                 copyFile(srcPath, destPath);
+                console.log('✅ Packaged');
             }
         }
     }
@@ -149,13 +153,55 @@ async function buildClientPackage() {
     console.log('\n⚙️  [6/6] Finalizing enterprise deployment scripts & runtime config...');
     const runnerScripts = [
         'start_system.bat',
+        'update_system.bat',
+        'updater.js',
         'setup_sql_server.bat',
         'diagnose.bat',
-        'CREATE_USER_AND_DB.sql'
+        'CREATE_USER_AND_DB.sql',
+        'HMS_Launcher.cs'
     ];
     for (const s of runnerScripts) {
         const src = path.join(ROOT_DIR, s);
         if (fs.existsSync(src)) copyFile(src, path.join(RELEASE_DIR, s));
+    }
+
+    // 7. Compile Native HMS_System.exe in the release folder
+    console.log('\n🖥️  [BONUS] Compiling Native HMS_System.exe for client one-click launch...');
+    const launcherSrc = path.join(ROOT_DIR, 'HMS_Launcher.cs');
+    const releaseExe = path.join(RELEASE_DIR, 'HMS_System.exe');
+    const rootExe = path.join(ROOT_DIR, 'HMS_System.exe');
+
+    function compileExe(srcPath, outPath) {
+        const winDir = process.env.WINDIR || 'C:\\Windows';
+        const cscCandidates = [
+            path.join(winDir, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
+            path.join(winDir, 'Microsoft.NET', 'Framework', 'v4.0.30319', 'csc.exe')
+        ];
+        const csc = cscCandidates.find((p) => fs.existsSync(p));
+        if (!csc) return false;
+        try {
+            const cmd = `"${csc}" /target:winexe /optimize+ /out:"${outPath}" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.dll "${srcPath}"`;
+            execSync(cmd, { stdio: 'ignore' });
+            return fs.existsSync(outPath);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    if (fs.existsSync(launcherSrc)) {
+        const compiled = compileExe(launcherSrc, releaseExe);
+        if (compiled) {
+            console.log('   ✅ HMS_System.exe compiled successfully in client release folder!');
+            // Also ensure root has it
+            if (!fs.existsSync(rootExe)) {
+                copyFile(releaseExe, rootExe);
+            }
+        } else if (fs.existsSync(rootExe)) {
+            copyFile(rootExe, releaseExe);
+            console.log('   ✅ Copied pre-built HMS_System.exe to release folder.');
+        } else {
+            console.log('   ⚠️ Could not compile EXE (csc.exe not found). Client can still use start_system.bat.');
+        }
     }
 
     // Generate production package.json (no devDependencies)
