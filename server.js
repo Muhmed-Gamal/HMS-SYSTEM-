@@ -3101,6 +3101,22 @@ app.get('/api/dashboard/overview', async (req, res) => {
             ORDER BY o.id DESC
         `);
 
+        // 6. نشاط المسح على مدار اليوم (Hourly Scanning Activity - Stacked)
+        const hourlyScansRes = await pool.request().query(`
+            SELECT 
+                DATEPART(HOUR, created_at) as [hour],
+                COUNT(CASE WHEN source_type = 'factory' THEN 1 END) as factory_scans,
+                COUNT(CASE WHEN source_type = 'external' THEN 1 END) as external_scans,
+                COUNT(*) as total_scans
+            FROM (
+                SELECT created_at, 'factory' as source_type FROM StockMovements WHERE created_at >= DATEADD(HOUR, -24, GETDATE())
+                UNION ALL
+                SELECT created_at, 'external' as source_type FROM ExternalScans WHERE created_at >= DATEADD(HOUR, -24, GETDATE())
+            ) h_scans
+            GROUP BY DATEPART(HOUR, created_at)
+            ORDER BY [hour] ASC
+        `);
+
         const priorityOrders = priorityOrdersRes.recordset.map(o => {
             const tQty = Number(o.target_quantity) || 1;
             const maxExpected = tQty * (Number(o.stages_count) || 6);
@@ -3137,7 +3153,8 @@ app.get('/api/dashboard/overview', async (req, res) => {
             stages_distribution: stagesDistRes.recordset,
             top_scanners: topScannersRes.recordset,
             live_activity: recentActivityRes.recordset,
-            priority_orders: priorityOrders
+            priority_orders: priorityOrders,
+            hourly_activity: hourlyScansRes.recordset
         });
     } catch (err) {
         console.error('Dashboard Overview Error:', err);
