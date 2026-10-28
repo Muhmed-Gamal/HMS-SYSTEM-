@@ -6,65 +6,74 @@ import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../services/api';
 
-/* ─────────────────────────────────────────────────────────
-   SVG LINE CHART  (Analytics — trend line)
-───────────────────────────────────────────────────────── */
-function LineChart({ data, color = '#38bdf8', height = 120 }) {
-    if (!data || data.length < 2) return null;
-    const W = 400, H = height;
+/* ─────────────────────────────────────────────────────────────────────────
+   SVG LINE CHART — pure real data, no fallbacks
+────────────────────────────────────────────────────────────────────────── */
+function LineChart({ data = [], color = '#38bdf8', height = 130 }) {
+    if (data.length < 2) {
+        return (
+            <div className="w-full flex items-center justify-center text-slate-600 text-xs" style={{ height }}>
+                {data.length === 0 ? 'لا توجد بيانات بعد — ستظهر بعد أول عملية مسح' : '...'}
+            </div>
+        );
+    }
+    const W = 500, H = height;
     const max = Math.max(...data.map(d => d.value), 1);
-    const pts = data.map((d, i) => {
-        const x = (i / (data.length - 1)) * W;
-        const y = H - (d.value / max) * (H - 16) - 8;
-        return `${x},${y}`;
-    });
-    const area = `M${pts.join('L')}L${W},${H}L0,${H}Z`;
-    const line = `M${pts.join('L')}`;
+    const xs = data.map((_, i) => (i / (data.length - 1)) * W);
+    const ys = data.map(d => H - 8 - ((d.value / max) * (H - 24)));
+    const linePath = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x},${ys[i]}`).join(' ');
+    const areaPath = linePath + ` L${W},${H} L0,${H} Z`;
     return (
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height }} preserveAspectRatio="none">
             <defs>
-                <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+                <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity="0.20" />
                     <stop offset="100%" stopColor={color} stopOpacity="0" />
                 </linearGradient>
             </defs>
-            <path d={area} fill="url(#lg1)" />
-            <path d={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-            {data.map((d, i) => {
-                const x = (i / (data.length - 1)) * W;
-                const y = H - (d.value / max) * (H - 16) - 8;
-                return <circle key={i} cx={x} cy={y} r="3.5" fill={color} stroke="#0c1322" strokeWidth="2" />;
-            })}
+            <path d={areaPath} fill="url(#lineGrad)" />
+            <path d={linePath} fill="none" stroke={color} strokeWidth="2.5"
+                strokeLinejoin="round" strokeLinecap="round" />
+            {xs.map((x, i) => (
+                <circle key={i} cx={x} cy={ys[i]} r="3.5"
+                    fill={color} stroke="#0c1322" strokeWidth="2" />
+            ))}
         </svg>
     );
 }
 
-/* ─────────────────────────────────────────────────────────
-   SVG BAR CHART  (Daily Activity)
-───────────────────────────────────────────────────────── */
-function BarChart({ data, height = 120 }) {
-    if (!data || data.length === 0) return null;
+/* ─────────────────────────────────────────────────────────────────────────
+   SVG BAR CHART — real hourly / daily data
+────────────────────────────────────────────────────────────────────────── */
+function BarChart({ data = [], height = 110 }) {
+    if (data.length === 0) {
+        return (
+            <div className="w-full flex items-center justify-center text-slate-600 text-xs" style={{ height }}>
+                لا يوجد نشاط اليوم بعد
+            </div>
+        );
+    }
+    const W = 300, H = height;
     const max = Math.max(...data.map(d => d.total), 1);
-    const W = 320, H = height, pad = 18;
-    const bw = Math.max(12, (W - pad * 2) / data.length - 8);
-    const gap = (W - pad * 2 - bw * data.length) / Math.max(data.length - 1, 1);
+    const bw = Math.max(10, (W - 24) / data.length - 6);
+    const gap = data.length > 1 ? (W - 24 - bw * data.length) / (data.length - 1) : 0;
+
     return (
-        <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full" style={{ height: H + 20 }} preserveAspectRatio="none">
+        <svg viewBox={`0 0 ${W} ${H + 18}`} className="w-full"
+            style={{ height: H + 18 }} preserveAspectRatio="none">
             {data.map((d, i) => {
-                const fH = ((d.factory || 0) / max) * (H - 10);
-                const eH = ((d.external || 0) / max) * (H - 10);
-                const x = pad + i * (bw + gap);
-                const isHighest = d.total === max;
+                const fH  = Math.max(2, ((d.factory || 0)  / max) * (H - 8));
+                const eH  = Math.max(0, ((d.external || 0) / max) * (H - 8));
+                const x   = 12 + i * (bw + gap);
+                const isTop = d.total === max;
                 return (
                     <g key={i}>
-                        {/* external (top) */}
                         <rect x={x} y={H - fH - eH} width={bw} height={eH} rx="2"
-                            fill="#22d3ee" opacity={isHighest ? 1 : 0.7} />
-                        {/* factory (bottom) */}
+                            fill="#22d3ee" opacity={isTop ? 1 : 0.65} />
                         <rect x={x} y={H - fH} width={bw} height={fH} rx="2"
-                            fill="#38bdf8" opacity={isHighest ? 1 : 0.55} />
-                        <text x={x + bw / 2} y={H + 14} textAnchor="middle"
-                            fontSize="9" fill={isHighest ? '#94a3b8' : '#475569'}>
+                            fill="#38bdf8" opacity={isTop ? 1 : 0.5} />
+                        <text x={x + bw / 2} y={H + 13} textAnchor="middle"
+                            fontSize="8.5" fill={isTop ? '#94a3b8' : '#475569'}>
                             {d.label}
                         </text>
                     </g>
@@ -74,77 +83,102 @@ function BarChart({ data, height = 120 }) {
     );
 }
 
-/* ─────────────────────────────────────────────────────────
-   SVG DONUT CHART  (Usage / Completion %)
-───────────────────────────────────────────────────────── */
-function DonutChart({ pct = 73, size = 120, color = '#38bdf8', label = '' }) {
+/* ─────────────────────────────────────────────────────────────────────────
+   SVG DONUT — real completion %
+────────────────────────────────────────────────────────────────────────── */
+function DonutChart({ pct = 0, size = 110, color = '#38bdf8', sublabel = '' }) {
     const r = 44, cx = 60, cy = 60;
     const circ = 2 * Math.PI * r;
-    const dash = (pct / 100) * circ;
+    const dash = (Math.min(pct, 100) / 100) * circ;
     return (
         <svg width={size} height={size} viewBox="0 0 120 120">
             <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1e293b" strokeWidth="12" />
-            <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="12"
-                strokeDasharray={`${dash} ${circ}`}
-                strokeLinecap="round"
-                transform={`rotate(-90 ${cx} ${cy})`}
-                style={{ transition: 'stroke-dasharray 0.8s ease' }}
-            />
-            <text x={cx} y={cy - 6} textAnchor="middle" fontSize="18" fontWeight="800" fill="white">{pct}%</text>
-            <text x={cx} y={cy + 12} textAnchor="middle" fontSize="8" fill="#64748b">{label}</text>
+            {pct > 0 && (
+                <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="12"
+                    strokeDasharray={`${dash} ${circ}`}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${cx} ${cy})`}
+                    style={{ transition: 'stroke-dasharray 1s ease' }} />
+            )}
+            <text x={cx} y={cy - 5} textAnchor="middle"
+                fontSize="17" fontWeight="900" fill="white">
+                {pct > 0 ? `${pct}%` : '—'}
+            </text>
+            <text x={cx} y={cy + 11} textAnchor="middle"
+                fontSize="7.5" fill="#64748b">{sublabel}</text>
         </svg>
     );
 }
 
-/* ─────────────────────────────────────────────────────────
-   MAIN DASHBOARD PAGE
-───────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   STAT CARD SKELETON
+────────────────────────────────────────────────────────────────────────── */
+function StatCard({ label, value, sub, icon, color = 'sky', pulse = false, loading = false }) {
+    const colors = {
+        sky:     { border: 'border-sky-500',     ring: 'ring-sky-500/20',     icon: 'bg-sky-500/10 border-sky-500/20 text-sky-400',     trend: 'text-sky-400' },
+        emerald: { border: 'border-emerald-500', ring: 'ring-emerald-500/20', icon: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400', trend: 'text-emerald-400' },
+        amber:   { border: 'border-amber-500',   ring: 'ring-amber-500/20',   icon: 'bg-amber-500/10 border-amber-500/20 text-amber-400',   trend: 'text-amber-400' },
+        cyan:    { border: 'border-cyan-500',     ring: 'ring-cyan-500/20',     icon: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400',     trend: 'text-cyan-400' },
+    };
+    const c = colors[color];
+    return (
+        <div className={`relative overflow-hidden rounded-2xl bg-[#0c1322] border p-4 sm:p-5 flex flex-col gap-1 shadow-xl transition-all duration-300
+            ${pulse ? `${c.border} ring-2 ${c.ring}` : `border-slate-800 hover:${c.border.replace('border-', 'border-')}/40`}`}>
+            <div className="absolute inset-0 bg-gradient-to-br from-current/5 to-transparent pointer-events-none opacity-10" />
+            <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</span>
+                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center text-xs ${c.icon}`}>
+                    <i className={`fas ${icon}`} />
+                </div>
+            </div>
+            {loading ? (
+                <div className="h-8 w-20 bg-slate-700/50 rounded animate-pulse mt-1" />
+            ) : (
+                <div className="text-3xl font-black font-mono text-white tracking-tight">{value}</div>
+            )}
+            {sub && <div className={`text-[10px] font-mono ${c.trend}`}>{sub}</div>}
+        </div>
+    );
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MAIN DASHBOARD
+═════════════════════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
     const { user, companyName, canCreateOrders, isFactoryOwner } = useAuth();
     const { toast } = useToast();
-    const { t, translateStage, isRTL, language } = useLanguage();
+    const { t, isRTL, language } = useLanguage();
     const navigate = useNavigate();
 
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [overviewData, setOverviewData] = useState(null);
+    const [loading, setLoading]         = useState(true);
+    const [refreshing, setRefreshing]   = useState(false);
+    const [data, setData]               = useState(null);
     const [lastUpdated, setLastUpdated] = useState(null);
-    const [pulseTrigger, setPulseTrigger] = useState(false);
-    const [activeTab, setActiveTab] = useState('6m'); // analytics timeframe
+    const [pulse, setPulse]             = useState(false);
+    const [chartTab, setChartTab]       = useState('today'); // 'today' | 'week'
 
-    const prevScansRef = useRef(0);
+    const prevTotalScans = useRef(0);
+    const isAr = language === 'ar';
 
-    /* ── Data Loader ── */
-    const loadDashboardData = async (isManual = false) => {
-        if (isManual) setRefreshing(true);
-        else if (!overviewData) setLoading(true);
+    /* ── loader ── */
+    const load = async (manual = false) => {
+        if (manual) setRefreshing(true);
+        else if (!data) setLoading(true);
 
-        const { ok, data } = await api.getDashboardOverview();
-        if (ok && data.success) {
-            const currentTotalScans = data.summary?.total_scans || 0;
-            if (prevScansRef.current > 0 && currentTotalScans > prevScansRef.current) {
-                setPulseTrigger(true);
-                setTimeout(() => setPulseTrigger(false), 1500);
+        const { ok, data: d } = await api.getDashboardOverview();
+        if (ok && d?.success) {
+            // pulse on new scan
+            const cur = d.summary?.total_scans || 0;
+            if (prevTotalScans.current > 0 && cur > prevTotalScans.current) {
+                setPulse(true);
+                setTimeout(() => setPulse(false), 2000);
             }
-            prevScansRef.current = currentTotalScans;
-            setOverviewData(data);
+            prevTotalScans.current = cur;
+            setData(d);
             setLastUpdated(new Date());
-        } else {
-            const statsRes = await api.getStats();
-            if (statsRes.ok && statsRes.data.success) {
-                setOverviewData({
-                    summary: statsRes.data.stats,
-                    stages_distribution: [],
-                    top_scanners: [],
-                    live_activity: [],
-                    priority_orders: [],
-                    hourly_activity: [],
-                    daily_movement: []
-                });
-                setLastUpdated(new Date());
-            } else {
-                toast(t('common.error'), 'error');
-            }
+        } else if (!data) {
+            // only show error toast on first load failure
+            toast(t('common.error'), 'error');
         }
         setLoading(false);
         setRefreshing(false);
@@ -152,168 +186,130 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (!user) { navigate('/login'); return; }
-        loadDashboardData();
-        // 🔄 Auto-refresh: poll every 60 seconds
-        const interval = setInterval(() => loadDashboardData(false), 60000);
-        return () => clearInterval(interval);
+        load();
+        const iv = setInterval(() => load(false), 60000); // 1 minute
+        return () => clearInterval(iv);
     }, [user]);
 
-    const isArabic = language === 'ar';
+    /* ── real computed metrics — zero if nothing ── */
+    const summary   = data?.summary         || {};
+    const stages    = data?.stages_distribution || [];
+    const scanners  = data?.top_scanners    || [];
+    const activity  = data?.live_activity   || [];
+    const orders    = data?.priority_orders || [];
+    const hourly    = data?.hourly_activity || [];
+    const daily     = data?.daily_movement  || [];
 
-    /* ── Derived Metrics ── */
-    const summary        = overviewData?.summary || {};
-    const stages         = overviewData?.stages_distribution || [];
-    const topScanners    = overviewData?.top_scanners || [];
-    const liveActivity   = overviewData?.live_activity || [];
-    const priorityOrders = overviewData?.priority_orders || [];
-    const hourlyActivity = overviewData?.hourly_activity || [];
-    const dailyMovement  = overviewData?.daily_movement || [];
+    const totalOrders   = Number(summary.total_orders)   || 0;
+    const activeOrders  = Number(summary.active_orders)  || 0;
+    const closedOrders  = Number(summary.closed_orders)  || 0;
+    const totalScans    = Number(summary.total_scans)    || 0;
+    const todayScans    = Number(summary.today_scans)    || 0;
+    const todayFactory  = Number(summary.today_factory_scans)  || 0;
+    const todayExternal = Number(summary.today_external_scans) || 0;
+    const totalPieces   = Number(summary.total_target_pieces)  || 0;
+    const activeDevices = Number(summary.active_devices_count) || 0;
 
-    const totalOrders        = (summary.factory_orders || 0) + (summary.external_orders || 0);
-    const activeOrders       = (summary.factory_active_orders || 0) + (summary.external_active_orders || 0);
-    const closedOrders       = Math.max(0, totalOrders - activeOrders);
-    const totalScans         = (summary.factory_scans || 0) + (summary.external_scans || 0);
-    const todayScans         = Number(summary.today_scans) || Math.round(totalScans * 0.28 || 0);
-    const totalPieces        = Number(summary.total_target_pieces || 0);
-    const totalScannedPieces = stages.reduce((acc, s) => acc + (Number(s.total_scanned) || 0), 0);
-    const activeDevices      = Number(summary.active_devices_count) || Math.max(1, topScanners.length);
-    const completionPct      = totalPieces > 0 ? Math.min(99, Math.round((totalScannedPieces / totalPieces) * 100)) : 0;
+    // real scanned pieces — sum of all OrderStages scanned_quantity
+    const scannedPieces = stages.reduce((a, s) => a + (Number(s.total_scanned) || 0), 0);
 
-    /* ── Analytics Line Chart Data (months or days) ── */
-    const analyticsData = useMemo(() => {
-        if (dailyMovement.length >= 4) {
-            return dailyMovement.slice(-6).map(d => ({
-                label: d.day_name ? d.day_name.substring(0, 3) : d.date?.substring(5),
-                value: Number(d.total_scans) || 0
+    // real completion pct — 0 if no target
+    const completionPct = totalPieces > 0
+        ? Math.min(100, Math.round((scannedPieces / totalPieces) * 100))
+        : 0;
+
+    /* ── Analytics line chart — real daily_movement data ── */
+    const analyticsLine = useMemo(() => {
+        if (chartTab === 'week' && daily.length > 0) {
+            return daily.map(d => ({
+                label: d.day_name
+                    ? d.day_name.substring(0, 3)
+                    : (d.date || '').substring(5),
+                value: Number(d.total_scans) || 0,
             }));
         }
-        // Fallback
-        const MONTHS = isArabic
-            ? ['يناير','فبراير','مارس','أبريل','مايو','يونيو']
-            : ['Jan','Feb','Mar','Apr','May','Jun'];
-        const base = [120, 340, 520, 410, 680, 890];
-        return MONTHS.map((m, i) => ({ label: m, value: base[i] + (totalScans ? Math.round(totalScans * 0.05 * (i + 1)) : 0) }));
-    }, [dailyMovement, totalScans, isArabic]);
-
-    /* ── Daily Activity Bar Chart Data ── */
-    const dailyBars = useMemo(() => {
-        const DAYS = isArabic
-            ? ['سبت','أحد','اثن','ثلا','أرب','خمي','جمع']
-            : ['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
-        if (hourlyActivity.length > 0) {
-            // Group hourly into morning/afternoon/evening
-            const slots = [
-                { label: '8am', start: 8, end: 11 },
-                { label: '11am', start: 11, end: 13 },
-                { label: '1pm', start: 13, end: 15 },
-                { label: '3pm', start: 15, end: 17 },
-                { label: '5pm', start: 17, end: 19 },
-                { label: '7pm', start: 19, end: 21 },
-            ];
-            return slots.map(s => {
-                const found = hourlyActivity.filter(h => Number(h.hour) >= s.start && Number(h.hour) < s.end);
-                const factory  = found.reduce((a, h) => a + Number(h.factory_scans || 0), 0);
-                const external = found.reduce((a, h) => a + Number(h.external_scans || 0), 0);
-                return { label: s.label, factory, external, total: factory + external };
-            });
-        }
-        return DAYS.map((d, i) => {
-            const f = Math.round(80 + Math.sin(i) * 60 + (totalScans * 0.015));
-            const e = Math.round(30 + Math.cos(i) * 20 + (totalScans * 0.005));
-            return { label: d, factory: f, external: e, total: f + e };
-        });
-    }, [hourlyActivity, totalScans, isArabic]);
-
-    /* ── Recent Activity rows (last 6 live events or priority orders) ── */
-    const recentRows = useMemo(() => {
-        if (liveActivity.length > 0) {
-            return liveActivity.slice(0, 6).map(a => ({
-                id: a.barcode || a.order_id || '—',
-                date: a.scanned_at ? new Date(a.scanned_at).toLocaleDateString('en-GB') : '—',
-                status: a.stage || 'Scan',
-                tracking: a.scanned_by || '—',
-                value: a.order_number || '—',
+        if (chartTab === 'today' && hourly.length > 0) {
+            // show hourly points for today
+            return hourly.map(h => ({
+                label: `${h.hour}h`,
+                value: Number(h.total_scans) || 0,
             }));
         }
-        if (priorityOrders.length > 0) {
-            return priorityOrders.slice(0, 6).map(o => ({
-                id: `#${o.id || o.order_id}`,
-                date: o.created_at ? new Date(o.created_at).toLocaleDateString('en-GB') : '—',
-                status: o.status || (o.is_closed ? 'Closed' : 'Active'),
-                tracking: o.customer_name || '—',
-                value: o.target_quantity ? `${Number(o.target_quantity).toLocaleString('en-US')} pcs` : '—',
+        return []; // genuinely empty — no data yet
+    }, [chartTab, daily, hourly]);
+
+    /* ── Daily activity bar chart — real hourly data ── */
+    const activityBars = useMemo(() => {
+        if (hourly.length > 0) {
+            return hourly.map(h => ({
+                label: `${h.hour}h`,
+                factory:  Number(h.factory_scans)  || 0,
+                external: Number(h.external_scans) || 0,
+                total:    Number(h.total_scans)    || 0,
             }));
         }
-        return [];
-    }, [liveActivity, priorityOrders]);
+        return []; // no scans today yet
+    }, [hourly]);
 
-    /* ── Order tracking list (right panel) ── */
-    const trackingList = useMemo(() => {
-        const base = priorityOrders.slice(0, 4);
-        if (base.length > 0) return base.map(o => ({
-            id: `#ORD-${o.id || o.order_id}`,
-            label: o.customer_name || (isArabic ? 'غير محدد' : 'Unnamed'),
-            pct: totalPieces > 0 ? Math.min(100, Math.round(((o.scanned_qty || 0) / (o.target_quantity || 1)) * 100)) : 0,
-            status: o.is_closed ? 'closed' : 'active',
-        }));
-        return [
-            { id: '#ORD-001', label: isArabic ? 'أمر تشغيل 1' : 'Run Order 1', pct: 85, status: 'active' },
-            { id: '#ORD-002', label: isArabic ? 'أمر تشغيل 2' : 'Run Order 2', pct: 100, status: 'closed' },
-            { id: '#ORD-003', label: isArabic ? 'أمر تشغيل 3' : 'Run Order 3', pct: 42, status: 'active' },
-        ];
-    }, [priorityOrders, totalPieces, isArabic]);
+    /* ── Recent events table — real live_activity ── */
+    const recentRows = useMemo(() => activity.slice(0, 8).map(a => ({
+        code:    a.barcode     || '—',
+        order:   a.order_number || '—',
+        stage:   a.stage_name  || (a.source_type === 'external' ? (isAr ? 'خارجي' : 'External') : '—'),
+        by:      a.scanned_by  || '—',
+        type:    a.source_type || 'factory',
+        time:    a.created_at
+            ? new Date(a.created_at).toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })
+            : '—',
+    })), [activity, isAr]);
 
-    /* ── Analytics peak label ── */
-    const peakValue = analyticsData.length > 0 ? Math.max(...analyticsData.map(d => d.value)) : 0;
+    /* ── Order tracking (right panel) — real priority_orders ── */
+    const trackingList = useMemo(() => orders.slice(0, 4).map(o => ({
+        id:     o.order_number || `#${o.id}`,
+        label:  o.customer_name || (isAr ? 'غير محدد' : 'Unnamed'),
+        pct:    Number(o.completion_rate) || 0,
+        status: o.status === 'closed' ? 'closed' : 'active',
+        target: Number(o.target_quantity) || 0,
+    })), [orders, isAr]);
 
-    /* ── Skeleton ── */
-    if (loading) {
-        return (
-            <div className="min-h-screen flex flex-col bg-[#070b14] text-slate-100">
-                <Header title={t('dashboard.title')} subtitle={companyName} activePage="dashboard" />
-                <main className="flex-1 p-5 flex flex-col gap-4 animate-pulse">
-                    <div className="h-8 w-48 bg-slate-800 rounded-xl" />
-                    <div className="grid grid-cols-4 gap-4">
-                        {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-slate-800/60 rounded-2xl" />)}
-                    </div>
-                    <div className="grid grid-cols-12 gap-4">
-                        <div className="col-span-8 h-56 bg-slate-800/60 rounded-2xl" />
-                        <div className="col-span-4 h-56 bg-slate-800/60 rounded-2xl" />
-                    </div>
-                    <div className="grid grid-cols-12 gap-4">
-                        <div className="col-span-8 h-64 bg-slate-800/60 rounded-2xl" />
-                        <div className="col-span-4 h-64 bg-slate-800/60 rounded-2xl" />
-                    </div>
-                </main>
-            </div>
-        );
-    }
+    /* ── peak for annotation ── */
+    const peakVal = analyticsLine.length > 0
+        ? Math.max(...analyticsLine.map(d => d.value))
+        : null;
 
+    /* ════════════════════════════════════════════════════════ RENDER ═══ */
     return (
         <div className="min-h-screen flex flex-col bg-[#070b14] text-slate-100 antialiased font-sans">
             <Header
                 title={t('dashboard.title')}
                 subtitle={`${companyName} | ${t('common.app_tagline')}`}
-                badgeText={isFactoryOwner ? (isArabic ? 'لوحة المالك' : 'OWNER') : 'LIVE'}
+                badgeText={isFactoryOwner ? (isAr ? 'لوحة المالك' : 'OWNER') : 'LIVE'}
                 activePage="dashboard"
             />
 
             <main className="flex-1 px-4 sm:px-6 py-5 max-w-[1600px] w-full mx-auto space-y-5">
 
-                {/* ══ WELCOME BAR ══════════════════════════════════════════════ */}
+                {/* ══ WELCOME BAR ══ */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                            {isArabic ? `مرحباً، ${user?.username || 'المدير'}` : `Welcome, ${user?.username || 'Manager'}`}
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all duration-300 ${pulseTrigger ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-400 scale-110' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${pulseTrigger ? 'bg-emerald-400 animate-ping' : 'bg-emerald-500 animate-pulse'}`} />
-                                {pulseTrigger ? (isArabic ? '! مسح جديد' : 'NEW SCAN!') : 'AUTO 1min'}
+                        <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-3 flex-wrap">
+                            {isAr
+                                ? `مرحباً، ${user?.username || ''}`
+                                : `Welcome, ${user?.username || ''}`}
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all duration-300
+                                ${pulse
+                                    ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-400 scale-110'
+                                    : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${pulse ? 'bg-emerald-400 animate-ping' : 'bg-emerald-500 animate-pulse'}`} />
+                                {pulse ? (isAr ? '! مسح جديد' : 'NEW SCAN!') : (isAr ? 'مزامنة كل دقيقة' : 'SYNC 1min')}
                             </span>
                         </h1>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                            {isArabic
-                                ? `آخر تحديث: ${lastUpdated ? lastUpdated.toLocaleTimeString('ar-EG') : '...'}`
-                                : `Last sync: ${lastUpdated ? lastUpdated.toLocaleTimeString('en-US') : '...'}`}
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            {lastUpdated
+                                ? (isAr
+                                    ? `آخر تحديث: ${lastUpdated.toLocaleTimeString('ar-EG')}`
+                                    : `Last sync: ${lastUpdated.toLocaleTimeString('en-US')}`)
+                                : (isAr ? 'جاري التحميل...' : 'Loading...')}
                         </p>
                     </div>
 
@@ -322,385 +318,344 @@ export default function DashboardPage() {
                             <Link to="/create-order"
                                 className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-lg shadow-sky-600/20 flex items-center gap-2 transition active:scale-95">
                                 <i className="fas fa-plus" />
-                                {isArabic ? 'أمر تشغيل جديد' : '+ New Order'}
+                                {isAr ? 'أمر تشغيل جديد' : '+ New Order'}
                             </Link>
                         )}
-                        <button
-                            onClick={() => loadDashboardData(true)}
-                            disabled={refreshing}
+                        <button onClick={() => load(true)} disabled={refreshing}
                             className="p-2 rounded-xl bg-[#0c1322] hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
-                            title={t('common.refresh')}>
+                            title={isAr ? 'تحديث يدوي' : 'Manual refresh'}>
                             <i className={`fas fa-rotate text-sm ${refreshing ? 'animate-spin text-sky-400' : ''}`} />
                         </button>
                         <Link to="/orders"
-                            className="px-3 py-2 rounded-xl bg-[#0c1322] hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition">
+                            className="px-3 py-2 rounded-xl bg-[#0c1322] hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-2 transition">
                             <i className="fas fa-download text-xs text-slate-400" />
-                            {isArabic ? 'تصدير' : 'Export'}
+                            {isAr ? 'تصدير' : 'Export'}
                         </Link>
                     </div>
                 </div>
 
-                {/* ══ ROW 1 — 4 KPI CARDS ═════════════════════════════════════ */}
+                {/* ══ ROW 1 — KPI CARDS ══ */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <StatCard
+                        label={isAr ? 'مسحات اليوم' : 'Scans Today'}
+                        value={todayScans.toLocaleString('en-US')}
+                        sub={todayFactory > 0 || todayExternal > 0
+                            ? `${todayFactory} ${isAr ? 'مصنع' : 'factory'} · ${todayExternal} ${isAr ? 'خارجي' : 'ext'}`
+                            : (isAr ? 'لا يوجد مسح اليوم بعد' : 'No scans yet today')}
+                        icon="fa-barcode" color="sky" pulse={pulse} loading={loading} />
 
-                    {/* Card 1 */}
-                    <div className={`relative overflow-hidden rounded-2xl bg-[#0c1322] border p-4 sm:p-5 flex flex-col gap-1 shadow-xl transition-all duration-300 ${pulseTrigger ? 'border-sky-500 ring-2 ring-sky-500/20' : 'border-slate-800 hover:border-sky-500/40'}`}>
-                        <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent pointer-events-none" />
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                {isArabic ? 'مسحات اليوم' : 'Scans Today'}
-                            </span>
-                            <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 text-xs">
-                                <i className="fas fa-barcode" />
-                            </div>
-                        </div>
-                        <div className="text-3xl font-black font-mono text-white tracking-tight">
-                            {todayScans.toLocaleString('en-US')}
-                        </div>
-                        <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-                            <i className="fas fa-arrow-trend-up text-[9px]" />
-                            +14.8% {isArabic ? 'عن المتوسط' : 'vs avg'}
-                        </div>
-                    </div>
+                    <StatCard
+                        label={isAr ? 'إجمالي الأوردرات' : 'Total Orders'}
+                        value={totalOrders.toLocaleString('en-US')}
+                        sub={`${activeOrders} ${isAr ? 'نشط' : 'active'} · ${closedOrders} ${isAr ? 'مغلق' : 'closed'}`}
+                        icon="fa-clipboard-list" color="emerald" loading={loading} />
 
-                    {/* Card 2 */}
-                    <div className="relative overflow-hidden rounded-2xl bg-[#0c1322] border border-slate-800 hover:border-emerald-500/40 p-4 sm:p-5 flex flex-col gap-1 shadow-xl transition-all duration-300">
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                {isArabic ? 'إجمالي الأوردرات' : 'Total Orders'}
-                            </span>
-                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs">
-                                <i className="fas fa-clipboard-list" />
-                            </div>
-                        </div>
-                        <div className="text-3xl font-black font-mono text-white tracking-tight">
-                            {totalOrders.toLocaleString('en-US')}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono flex items-center gap-2">
-                            <span className="text-emerald-400">{activeOrders} {isArabic ? 'نشط' : 'active'}</span>
-                            <span>·</span>
-                            <span>{closedOrders} {isArabic ? 'مغلق' : 'closed'}</span>
-                        </div>
-                    </div>
+                    <StatCard
+                        label={isAr ? 'إجمالي المسحات' : 'Total Scans'}
+                        value={totalScans > 999 ? `${(totalScans / 1000).toFixed(1)}k` : totalScans.toLocaleString('en-US')}
+                        sub={`${activeDevices} ${isAr ? 'جهاز نشط (آخر ساعتين)' : 'active devices (last 2h)'}`}
+                        icon="fa-wave-square" color="amber" loading={loading} />
 
-                    {/* Card 3 */}
-                    <div className="relative overflow-hidden rounded-2xl bg-[#0c1322] border border-slate-800 hover:border-amber-500/40 p-4 sm:p-5 flex flex-col gap-1 shadow-xl transition-all duration-300">
-                        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent pointer-events-none" />
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                {isArabic ? 'إجمالي المسحات' : 'Total Scans'}
-                            </span>
-                            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xs">
-                                <i className="fas fa-wave-square" />
-                            </div>
-                        </div>
-                        <div className="text-3xl font-black font-mono text-white tracking-tight">
-                            {totalScans > 999 ? `${(totalScans / 1000).toFixed(1)}k` : totalScans.toLocaleString('en-US')}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono flex items-center gap-2">
-                            <span className="text-amber-400">{activeDevices}</span>
-                            {isArabic ? 'جهاز نشط الآن' : 'active devices'}
-                        </div>
-                    </div>
-
-                    {/* Card 4 */}
-                    <div className="relative overflow-hidden rounded-2xl bg-[#0c1322] border border-slate-800 hover:border-cyan-500/40 p-4 sm:p-5 flex flex-col gap-1 shadow-xl transition-all duration-300">
-                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent pointer-events-none" />
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                {isArabic ? 'القطع المنجزة' : 'Pieces Done'}
-                            </span>
-                            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs">
-                                <i className="fas fa-layer-group" />
-                            </div>
-                        </div>
-                        <div className="text-3xl font-black font-mono text-white tracking-tight">
-                            {totalScannedPieces > 999 ? `${(totalScannedPieces / 1000).toFixed(1)}k` : totalScannedPieces.toLocaleString('en-US')}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono">
-                            {isArabic ? `من ${totalPieces.toLocaleString('en-US')} قطعة مستهدفة` : `of ${totalPieces.toLocaleString('en-US')} target`}
-                        </div>
-                    </div>
-
+                    <StatCard
+                        label={isAr ? 'القطع المنجزة' : 'Pieces Done'}
+                        value={scannedPieces > 999 ? `${(scannedPieces / 1000).toFixed(1)}k` : scannedPieces.toLocaleString('en-US')}
+                        sub={totalPieces > 0
+                            ? `${isAr ? 'من' : 'of'} ${totalPieces.toLocaleString('en-US')} ${isAr ? 'مستهدف' : 'target'}`
+                            : (isAr ? 'لا يوجد أوردرات بعد' : 'No orders yet')}
+                        icon="fa-layer-group" color="cyan" loading={loading} />
                 </div>
 
-                {/* ══ ROW 2 — ANALYTICS LINE + DAILY BAR ══════════════════════ */}
+                {/* ══ ROW 2 — LINE CHART + BAR CHART ══ */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-                    {/* Analytics — Line Chart (8 cols) */}
+                    {/* Analytics Line Chart — 8 cols */}
                     <div className="lg:col-span-8 rounded-2xl bg-[#0c1322] border border-slate-800 p-4 sm:p-5 shadow-xl">
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
                             <div>
                                 <h3 className="text-sm font-bold text-white">
-                                    {isArabic ? 'تحليلات نشاط المسح' : 'Scanning Analytics'}
+                                    {isAr ? 'تحليلات نشاط المسح' : 'Scanning Analytics'}
                                 </h3>
                                 <p className="text-[11px] text-slate-400 mt-0.5">
-                                    {isArabic ? 'منحنى الإنتاجية والمسح عبر الفترات' : 'Scan throughput trend over time'}
+                                    {isAr
+                                        ? (chartTab === 'today' ? 'الحركة الساعية لليوم الحالي' : 'حركة المسح لآخر 7 أيام')
+                                        : (chartTab === 'today' ? 'Hourly scan activity — today' : 'Daily scan movement — last 7 days')}
                                 </p>
                             </div>
                             <div className="flex items-center gap-1 bg-[#070b14] rounded-lg p-0.5 border border-slate-800 self-start">
-                                {['1w','1m','6m'].map(tab => (
-                                    <button key={tab}
-                                        onClick={() => setActiveTab(tab)}
-                                        className={`px-2.5 py-1 rounded text-[10px] font-bold transition ${activeTab === tab ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'}`}>
-                                        {tab}
+                                {[
+                                    { key: 'today', label: isAr ? 'اليوم' : 'Today' },
+                                    { key: 'week',  label: isAr ? '7 أيام' : '7 Days' },
+                                ].map(tab => (
+                                    <button key={tab.key}
+                                        onClick={() => setChartTab(tab.key)}
+                                        className={`px-2.5 py-1 rounded text-[10px] font-bold transition
+                                            ${chartTab === tab.key ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+                                        {tab.label}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Peak annotation */}
-                        <div className="flex items-center gap-4 mb-3">
+                        {/* Legend + peak */}
+                        <div className="flex items-center gap-4 mb-3 flex-wrap">
                             <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                                 <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
-                                {isArabic ? 'مسحات المصنع' : 'Factory Scans'}
+                                {isAr ? 'مسح المصنع' : 'Factory scans'}
                             </div>
                             <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                                {isArabic ? 'المسح الخارجي' : 'External Scans'}
+                                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+                                {isAr ? 'المسح الخارجي' : 'External scans'}
                             </div>
-                            <div className="ms-auto text-[10px] font-mono text-sky-400 font-bold">
-                                Peak: {peakValue.toLocaleString('en-US')}
-                            </div>
+                            {peakVal !== null && peakVal > 0 && (
+                                <div className="ms-auto text-[10px] font-mono text-sky-400 font-bold">
+                                    Peak: {peakVal.toLocaleString('en-US')}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Line Chart */}
-                        <div className="w-full">
-                            <LineChart data={analyticsData} color="#38bdf8" height={130} />
-                        </div>
+                        <LineChart data={analyticsLine} color="#38bdf8" height={130} />
 
                         {/* X-axis labels */}
-                        <div className="flex justify-between mt-1 px-1">
-                            {analyticsData.map((d, i) => (
-                                <span key={i} className="text-[9.5px] font-mono text-slate-500">{d.label}</span>
-                            ))}
-                        </div>
+                        {analyticsLine.length >= 2 && (
+                            <div className="flex justify-between mt-1 px-0.5">
+                                {analyticsLine.map((d, i) => (
+                                    <span key={i} className="text-[9px] font-mono text-slate-600">{d.label}</span>
+                                ))}
+                            </div>
+                        )}
 
-                        {/* Footnote */}
                         <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-mono">
                             <span>
-                                {isArabic ? 'متوسط ساعي:' : 'Hourly avg:'}
-                                {' '}<strong className="text-emerald-400">~{Math.round(totalScans / Math.max(analyticsData.length * 8, 1))} {isArabic ? 'مسح/ساعة' : 'scans/hr'}</strong>
+                                {isAr ? 'إجمالي آخر 7 أيام:' : '7-day total:'}{' '}
+                                <strong className="text-emerald-400">
+                                    {daily.reduce((a, d) => a + (Number(d.total_scans) || 0), 0).toLocaleString('en-US')}
+                                </strong>
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                {isArabic ? 'تحديث تلقائي كل دقيقة' : 'Auto-refresh every 1 min'}
+                                {isAr ? 'تحديث تلقائي كل دقيقة' : 'Auto-refresh every 1 min'}
                             </span>
                         </div>
                     </div>
 
-                    {/* Daily Activity Bar Chart (4 cols) */}
+                    {/* Daily Activity Bar Chart — 4 cols */}
                     <div className="lg:col-span-4 rounded-2xl bg-[#0c1322] border border-slate-800 p-4 sm:p-5 shadow-xl flex flex-col">
                         <div className="mb-3">
                             <h3 className="text-sm font-bold text-white">
-                                {isArabic ? 'نشاط اليوم' : 'Daily Activity'}
+                                {isAr ? 'نشاط اليوم بالساعة' : 'Today by Hour'}
                             </h3>
                             <p className="text-[11px] text-slate-400 mt-0.5">
-                                {isArabic ? 'توزيع المسح بالساعات' : 'Scan distribution by hour'}
+                                {isAr ? 'توزيع المسح على ساعات اليوم' : 'Scan distribution per hour'}
                             </p>
                         </div>
 
-                        {/* Selectors */}
-                        <div className="flex items-center gap-1 mb-3">
-                            {[isArabic ? 'كل الأيام' : 'All Days', isArabic ? 'اليوم' : 'Today'].map((l, i) => (
-                                <button key={i}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-semibold transition ${i === 1 ? 'bg-sky-600/20 text-sky-400 border border-sky-500/30' : 'text-slate-500 hover:text-slate-300'}`}>
-                                    {l}
-                                </button>
-                            ))}
+                        <div className="flex-1 flex items-end min-h-[120px]">
+                            <BarChart data={activityBars} height={110} />
                         </div>
 
-                        {/* Bar Chart */}
-                        <div className="flex-1 flex items-end">
-                            <BarChart data={dailyBars} height={110} />
-                        </div>
-
-                        {/* Legend */}
-                        <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-500 font-mono">
-                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-sky-500" />{isArabic ? 'مصنع' : 'Factory'}</span>
-                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-cyan-400" />{isArabic ? 'خارجي' : 'External'}</span>
+                        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-500 font-mono">
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-sky-500" />{isAr ? 'مصنع' : 'Factory'}</span>
+                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-cyan-400" />{isAr ? 'خارجي' : 'External'}</span>
+                            <span className="ms-auto text-slate-600">
+                                {isAr ? `اليوم: ${todayScans} مسحة` : `Today: ${todayScans} scans`}
+                            </span>
                         </div>
                     </div>
-
                 </div>
 
-                {/* ══ ROW 3 — RECENT ORDERS TABLE + RIGHT PANEL ═══════════════ */}
+                {/* ══ ROW 3 — RECENT EVENTS TABLE + RIGHT PANEL ══ */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-                    {/* Recent Orders / Scan Events Table (8 cols) */}
+                    {/* Recent Scan Events Table — 8 cols */}
                     <div className="lg:col-span-8 rounded-2xl bg-[#0c1322] border border-slate-800 shadow-xl overflow-hidden">
                         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
                             <div>
                                 <h3 className="text-sm font-bold text-white">
-                                    {isArabic ? 'آخر الأحداث والأوردرات' : 'Recent Orders & Scan Events'}
+                                    {isAr ? 'آخر عمليات المسح' : 'Recent Scan Events'}
                                 </h3>
                                 <p className="text-[11px] text-slate-400 mt-0.5">
-                                    {isArabic ? 'سجل لحظي لآخر عمليات المسح' : 'Live log of latest scan activity'}
+                                    {isAr
+                                        ? `${activity.length} حدث مسح مسجل — يتحدث كل دقيقة`
+                                        : `${activity.length} scan events — updates every 1 min`}
                                 </p>
                             </div>
                             <Link to="/orders"
                                 className="text-[10px] text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 transition">
-                                {isArabic ? 'عرض الكل' : 'View All'}
+                                {isAr ? 'الأوردرات' : 'Orders'}
                                 <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-[9px]`} />
                             </Link>
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                                <thead>
-                                    <tr className="border-b border-slate-800/60 text-slate-500 text-[10px] uppercase font-bold">
-                                        <th className="px-5 py-2.5 text-start">ID / {isArabic ? 'الكود' : 'Code'}</th>
-                                        <th className="px-3 py-2.5 text-start">{isArabic ? 'التاريخ' : 'Date'}</th>
-                                        <th className="px-3 py-2.5 text-start">{isArabic ? 'الحالة / المرحلة' : 'Status'}</th>
-                                        <th className="px-3 py-2.5 text-start">{isArabic ? 'بواسطة' : 'Tracking'}</th>
-                                        <th className="px-3 py-2.5 text-start">{isArabic ? 'القيمة' : 'Value'}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {recentRows.length > 0 ? recentRows.map((row, i) => (
-                                        <tr key={i} className={`border-b border-slate-800/40 hover:bg-slate-800/30 transition-colors ${pulseTrigger && i === 0 ? 'bg-sky-500/5' : ''}`}>
-                                            <td className="px-5 py-3 font-mono text-sky-400 font-bold">{row.id}</td>
-                                            <td className="px-3 py-3 text-slate-400">{row.date}</td>
-                                            <td className="px-3 py-3">
-                                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
-                                                    row.status === 'Closed' || row.status === 'مغلق'
-                                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                        : 'bg-sky-500/10 text-sky-400 border-sky-500/20'
-                                                }`}>
-                                                    {row.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-3 py-3 text-slate-300">{row.tracking}</td>
-                                            <td className="px-3 py-3 text-slate-400 font-mono">{row.value}</td>
+                            {recentRows.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-slate-600 gap-2">
+                                    <i className="fas fa-barcode text-3xl opacity-30" />
+                                    <p className="text-xs">
+                                        {isAr ? 'لا توجد عمليات مسح مسجلة بعد' : 'No scan events recorded yet'}
+                                    </p>
+                                    <p className="text-[10px] text-slate-700">
+                                        {isAr ? 'ستظهر البيانات بمجرد بدء المسح في الماسح' : 'Data appears as soon as scanning begins'}
+                                    </p>
+                                </div>
+                            ) : (
+                                <table className="w-full text-xs">
+                                    <thead>
+                                        <tr className="border-b border-slate-800/60 text-slate-500 text-[10px] uppercase font-bold">
+                                            <th className="px-5 py-2.5 text-start">{isAr ? 'الباركود' : 'Barcode'}</th>
+                                            <th className="px-3 py-2.5 text-start">{isAr ? 'الأوردر' : 'Order'}</th>
+                                            <th className="px-3 py-2.5 text-start">{isAr ? 'المرحلة' : 'Stage'}</th>
+                                            <th className="px-3 py-2.5 text-start">{isAr ? 'بواسطة' : 'Scanned By'}</th>
+                                            <th className="px-3 py-2.5 text-start">{isAr ? 'النوع' : 'Type'}</th>
+                                            <th className="px-3 py-2.5 text-start">{isAr ? 'الوقت' : 'Time'}</th>
                                         </tr>
-                                    )) : (
-                                        // Empty state with a few skeleton-like placeholder rows
-                                        [...Array(4)].map((_, i) => (
-                                            <tr key={i} className="border-b border-slate-800/40">
-                                                <td className="px-5 py-3 text-slate-700 font-mono">—</td>
-                                                <td className="px-3 py-3 text-slate-700">—</td>
-                                                <td className="px-3 py-3"><span className="px-2 py-0.5 rounded-full text-[9px] bg-slate-800 text-slate-600 border border-slate-700">—</span></td>
-                                                <td className="px-3 py-3 text-slate-700">—</td>
-                                                <td className="px-3 py-3 text-slate-700">—</td>
+                                    </thead>
+                                    <tbody>
+                                        {recentRows.map((row, i) => (
+                                            <tr key={i}
+                                                className={`border-b border-slate-800/40 hover:bg-slate-800/30 transition-colors
+                                                    ${pulse && i === 0 ? 'bg-sky-500/5 border-sky-500/20' : ''}`}>
+                                                <td className="px-5 py-3 font-mono text-sky-400 font-bold text-[11px] max-w-[140px] truncate">
+                                                    {row.code}
+                                                </td>
+                                                <td className="px-3 py-3 text-slate-300 font-mono text-[11px]">{row.order}</td>
+                                                <td className="px-3 py-3">
+                                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 border border-slate-700 text-slate-300">
+                                                        {row.stage}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-3 text-slate-400">{row.by}</td>
+                                                <td className="px-3 py-3">
+                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                                        row.type === 'external'
+                                                            ? 'bg-cyan-500/10 text-cyan-400'
+                                                            : 'bg-sky-500/10 text-sky-400'}`}>
+                                                        {row.type === 'external' ? (isAr ? 'خارجي' : 'Ext') : (isAr ? 'مصنع' : 'Fact')}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-3 text-slate-500 font-mono text-[10px]">{row.time}</td>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
                     </div>
 
-                    {/* Right Panel — Usage Donut + Order Tracking (4 cols) */}
+                    {/* Right panel: Donut + Order Tracking — 4 cols */}
                     <div className="lg:col-span-4 flex flex-col gap-4">
 
-                        {/* Usage / Completion Donut */}
+                        {/* Completion Donut */}
                         <div className="rounded-2xl bg-[#0c1322] border border-slate-800 p-4 sm:p-5 shadow-xl">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-sm font-bold text-white">
-                                    {isArabic ? 'نسبة الإنجاز الكلي' : 'Overall Completion'}
+                                    {isAr ? 'نسبة الإنجاز الكلي' : 'Overall Completion'}
                                 </h3>
-                                <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">LIVE</span>
+                                <span className={`text-[9px] font-mono px-2 py-0.5 rounded border font-bold
+                                    ${completionPct === 0 ? 'bg-slate-800 text-slate-500 border-slate-700' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                                    {completionPct > 0 ? 'LIVE' : (isAr ? 'لا بيانات' : 'NO DATA')}
+                                </span>
                             </div>
 
                             <div className="flex items-center gap-4">
-                                {/* Donut */}
                                 <DonutChart
-                                    pct={completionPct || 73}
+                                    pct={completionPct}
                                     size={110}
-                                    color={completionPct > 80 ? '#10b981' : '#38bdf8'}
-                                    label={isArabic ? 'مكتمل' : 'Done'}
+                                    color={completionPct >= 100 ? '#10b981' : completionPct > 50 ? '#38bdf8' : '#f59e0b'}
+                                    sublabel={isAr ? 'مكتمل' : 'Done'}
                                 />
-
-                                {/* Legend */}
                                 <div className="flex flex-col gap-2 text-[11px] text-slate-400">
                                     <div className="flex items-center gap-2">
                                         <span className="w-2 h-2 rounded-full bg-sky-400" />
-                                        <span>{isArabic ? 'القطع المنجزة' : 'Pieces done'}</span>
+                                        {isAr ? 'قطع منجزة' : 'Pieces done'}
                                     </div>
-                                    <div className="font-mono font-bold text-white text-sm">
-                                        {totalScannedPieces.toLocaleString('en-US')}
+                                    <div className="font-mono font-bold text-white">
+                                        {scannedPieces.toLocaleString('en-US')}
                                     </div>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="w-2 h-2 rounded-full bg-slate-600" />
-                                        <span>{isArabic ? 'المستهدف' : 'Target'}</span>
+                                        {isAr ? 'المستهدف الكلي' : 'Total target'}
                                     </div>
-                                    <div className="font-mono font-bold text-slate-400 text-sm">
-                                        {totalPieces.toLocaleString('en-US')}
+                                    <div className="font-mono font-bold text-slate-400">
+                                        {totalPieces > 0 ? totalPieces.toLocaleString('en-US') : '—'}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Order Tracking List */}
+                        {/* Order Tracking */}
                         <div className="rounded-2xl bg-[#0c1322] border border-slate-800 p-4 sm:p-5 shadow-xl flex-1">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-sm font-bold text-white">
-                                    {isArabic ? 'متابعة الأوردرات' : 'Order Tracking'}
+                                    {isAr ? 'متابعة الأوردرات النشطة' : 'Active Order Tracking'}
                                 </h3>
                                 <Link to="/orders"
                                     className="text-[10px] text-sky-400 hover:text-sky-300 font-semibold transition">
-                                    {isArabic ? 'الكل' : 'All'}
+                                    {isAr ? 'الكل' : 'All'}
                                 </Link>
                             </div>
 
-                            <div className="space-y-3">
-                                {/* Active orders display */}
-                                {trackingList.length > 0 ? trackingList.map((item, i) => (
-                                    <div key={i} className="flex flex-col gap-1.5">
-                                        <div className="flex items-center justify-between text-[11px]">
-                                            <span className="font-mono text-sky-400 font-bold">{item.id}</span>
-                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${item.status === 'closed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                                                {item.status === 'closed' ? (isArabic ? 'مكتمل' : 'Done') : (isArabic ? 'جارٍ' : 'Active')}
-                                            </span>
+                            {trackingList.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-8 text-slate-600 gap-1.5">
+                                    <i className="fas fa-clipboard-list text-2xl opacity-30" />
+                                    <p className="text-xs">
+                                        {isAr ? 'لا توجد أوردرات نشطة' : 'No active orders'}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {trackingList.map((item, i) => (
+                                        <div key={i} className="space-y-1.5">
+                                            <div className="flex items-center justify-between text-[11px]">
+                                                <span className="font-mono text-sky-400 font-bold">{item.id}</span>
+                                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold
+                                                    ${item.status === 'closed'
+                                                        ? 'bg-emerald-500/10 text-emerald-400'
+                                                        : 'bg-amber-500/10 text-amber-400'}`}>
+                                                    {item.status === 'closed'
+                                                        ? (isAr ? 'مكتمل' : 'Done')
+                                                        : (isAr ? 'جارٍ' : 'Active')}
+                                                </span>
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 truncate">{item.label}</div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-700
+                                                            ${item.pct >= 100 ? 'bg-emerald-500' : item.pct > 50 ? 'bg-sky-500' : 'bg-amber-500'}`}
+                                                        style={{ width: `${item.pct}%` }} />
+                                                </div>
+                                                <span className="text-[9px] font-mono text-slate-500 w-8 text-end">{item.pct}%</span>
+                                            </div>
+                                            {item.target > 0 && (
+                                                <div className="text-[9px] text-slate-600 font-mono">
+                                                    {isAr ? `المستهدف: ${item.target.toLocaleString('en-US')} قطعة` : `Target: ${item.target.toLocaleString('en-US')} pcs`}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="text-[10px] text-slate-400 truncate">{item.label}</div>
-                                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                            <div
-                                                className={`h-full rounded-full transition-all duration-700 ${item.pct >= 100 ? 'bg-emerald-500' : 'bg-sky-500'}`}
-                                                style={{ width: `${item.pct}%` }}
-                                            />
-                                        </div>
-                                        <div className="text-[9px] font-mono text-slate-500">{item.pct}%</div>
-                                    </div>
-                                )) : (
-                                    // Generic live stats when no orders data
-                                    <>
-                                        <div className="flex items-center justify-between py-2 border-b border-slate-800/60">
-                                            <span className="text-[11px] text-slate-400">{isArabic ? 'أوردرات نشطة' : 'Active Orders'}</span>
-                                            <span className="text-sm font-black font-mono text-amber-400">{activeOrders}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between py-2 border-b border-slate-800/60">
-                                            <span className="text-[11px] text-slate-400">{isArabic ? 'أوردرات مغلقة' : 'Closed Orders'}</span>
-                                            <span className="text-sm font-black font-mono text-emerald-400">{closedOrders}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between py-2 border-b border-slate-800/60">
-                                            <span className="text-[11px] text-slate-400">{isArabic ? 'أجهزة نشطة' : 'Active Devices'}</span>
-                                            <span className="text-sm font-black font-mono text-sky-400">{activeDevices}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between py-2">
-                                            <span className="text-[11px] text-slate-400">{isArabic ? 'دقة المسح' : 'Scan Accuracy'}</span>
-                                            <span className="text-sm font-black font-mono text-cyan-400">99.2%</span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
 
-                            {/* Top scanner */}
-                            {topScanners.length > 0 && (
-                                <div className="mt-3 pt-3 border-t border-slate-800 flex items-center gap-2">
+                            {/* Top Scanner */}
+                            {scanners.length > 0 && (
+                                <div className="mt-4 pt-3 border-t border-slate-800 flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-[10px]">
                                         <i className="fas fa-star" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-[10px] text-slate-400">{isArabic ? 'الأكثر مسحاً اليوم' : 'Top Scanner Today'}</div>
-                                        <div className="text-xs font-bold text-white truncate">{topScanners[0]?.username || '—'}</div>
+                                        <div className="text-[9px] text-slate-500 uppercase font-bold">
+                                            {isAr ? 'الأكثر مسحاً' : 'Top Scanner'}
+                                        </div>
+                                        <div className="text-xs font-bold text-white truncate">
+                                            {scanners[0]?.username || scanners[0]?.scanned_by || '—'}
+                                        </div>
                                     </div>
-                                    <span className="text-xs font-mono font-black text-amber-400">{topScanners[0]?.scan_count || 0}</span>
+                                    <span className="text-sm font-mono font-black text-amber-400">
+                                        {Number(scanners[0]?.scan_count || 0).toLocaleString('en-US')}
+                                    </span>
                                 </div>
                             )}
                         </div>
-
                     </div>
                 </div>
 
