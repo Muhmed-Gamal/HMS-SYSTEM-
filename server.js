@@ -276,8 +276,11 @@ app.get('/video', (req, res) => {
     res.sendFile(path.join(__dirname, 'Public', 'presentation.html'));
 });
 // تقديم الفيديو التسويقي مع دعم range requests للـ streaming
-app.get('/Freedom_Barcode_Marketing_Video.mp4', (req, res) => {
-    const videoPath = path.join(__dirname, 'Public', 'Freedom_Barcode_Marketing_Video.mp4');
+app.get(['/HMS_Marketing_Video.mp4', '/Freedom_Barcode_Marketing_Video.mp4'], (req, res) => {
+    let videoPath = path.join(__dirname, 'Public', 'HMS_Marketing_Video.mp4');
+    if (!fs.existsSync(videoPath)) {
+        videoPath = path.join(__dirname, 'Public', 'Freedom_Barcode_Marketing_Video.mp4');
+    }
     const fs = require('fs');
     if (!fs.existsSync(videoPath)) {
         return res.status(404).json({ error: 'Video not found' });
