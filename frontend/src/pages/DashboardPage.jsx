@@ -153,8 +153,8 @@ export default function DashboardPage() {
     useEffect(() => {
         if (!user) { navigate('/login'); return; }
         loadDashboardData();
-        // ⚡ Real-time: poll every 3.5s
-        const interval = setInterval(() => loadDashboardData(false), 3500);
+        // 🔄 Auto-refresh: poll every 60 seconds
+        const interval = setInterval(() => loadDashboardData(false), 60000);
         return () => clearInterval(interval);
     }, [user]);
 
@@ -307,7 +307,7 @@ export default function DashboardPage() {
                             {isArabic ? `مرحباً، ${user?.username || 'المدير'}` : `Welcome, ${user?.username || 'Manager'}`}
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all duration-300 ${pulseTrigger ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-400 scale-110' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${pulseTrigger ? 'bg-emerald-400 animate-ping' : 'bg-emerald-500 animate-pulse'}`} />
-                                {pulseTrigger ? (isArabic ? '! مسح جديد' : 'NEW SCAN!') : 'LIVE 3.5s'}
+                                {pulseTrigger ? (isArabic ? '! مسح جديد' : 'NEW SCAN!') : 'AUTO 1min'}
                             </span>
                         </h1>
                         <p className="text-xs text-slate-400 mt-0.5">
@@ -485,7 +485,7 @@ export default function DashboardPage() {
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                {isArabic ? 'تحديث تلقائي كل 3.5 ث' : 'Auto-refresh every 3.5s'}
+                                {isArabic ? 'تحديث تلقائي كل دقيقة' : 'Auto-refresh every 1 min'}
                             </span>
                         </div>
                     </div>
