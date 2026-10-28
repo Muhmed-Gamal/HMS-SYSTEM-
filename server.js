@@ -3012,7 +3012,14 @@ app.get('/api/dashboard/overview', async (req, res) => {
                 (SELECT COUNT(*) FROM ExternalScans) as external_total_scans,
                 (SELECT COUNT(*) FROM Users) as total_users,
                 (SELECT COUNT(*) FROM Users WHERE is_locked = 1) as locked_users,
-                (SELECT COUNT(*) FROM ProductionStagesConfig WHERE is_active = 1) as active_stages_count
+                (SELECT COUNT(*) FROM ProductionStagesConfig WHERE is_active = 1) as active_stages_count,
+                (SELECT COUNT(*) FROM StockMovements WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)) as today_factory_scans,
+                (SELECT COUNT(*) FROM ExternalScans WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)) as today_external_scans,
+                (SELECT COUNT(DISTINCT scanned_by) FROM (
+                    SELECT scanned_by FROM StockMovements WHERE created_at >= DATEADD(MINUTE, -120, GETDATE())
+                    UNION
+                    SELECT scanned_by FROM ExternalScans WHERE created_at >= DATEADD(MINUTE, -120, GETDATE())
+                ) active_devs) as active_devices_count
         `);
         const s = statsRes.recordset[0] || {};
 
@@ -3101,7 +3108,23 @@ app.get('/api/dashboard/overview', async (req, res) => {
             ORDER BY o.id DESC
         `);
 
-        // 6. نشاط المسح على مدار الـ 7 أيام الماضية (Stock Movement - Last 7 Days)
+        // 6. نشاط المسح على مدار اليوم بساعاته (Hourly Scanning Activity - Today)
+        const hourlyScansRes = await pool.request().query(`
+            SELECT 
+                DATEPART(HOUR, created_at) as [hour],
+                COUNT(CASE WHEN source_type = 'factory' THEN 1 END) as factory_scans,
+                COUNT(CASE WHEN source_type = 'external' THEN 1 END) as external_scans,
+                COUNT(*) as total_scans
+            FROM (
+                SELECT created_at, 'factory' as source_type FROM StockMovements WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
+                UNION ALL
+                SELECT created_at, 'external' as source_type FROM ExternalScans WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
+            ) h_scans
+            GROUP BY DATEPART(HOUR, created_at)
+            ORDER BY [hour] ASC
+        `);
+
+        // 7. نشاط المسح لآخر 7 أيام (Daily Movement - All Sites)
         const dailyMovementRes = await pool.request().query(`
             SELECT 
                 CONVERT(VARCHAR(10), created_at, 120) as [date],
@@ -3149,12 +3172,17 @@ app.get('/api/dashboard/overview', async (req, res) => {
                 total_users: Number(s.total_users) || 0,
                 locked_users: Number(s.locked_users) || 0,
                 active_stages_count: Number(s.active_stages_count) || 6,
+                today_scans: (Number(s.today_factory_scans) || 0) + (Number(s.today_external_scans) || 0),
+                today_factory_scans: Number(s.today_factory_scans) || 0,
+                today_external_scans: Number(s.today_external_scans) || 0,
+                active_devices_count: Math.max(1, Number(s.active_devices_count) || 0),
                 license: cachedLicenseStatus || {}
             },
             stages_distribution: stagesDistRes.recordset,
             top_scanners: topScannersRes.recordset,
             live_activity: recentActivityRes.recordset,
             priority_orders: priorityOrders,
+            hourly_activity: hourlyScansRes.recordset,
             daily_movement: dailyMovementRes.recordset
         });
     } catch (err) {
