@@ -3219,13 +3219,14 @@ app.get('/api/dashboard/overview', async (req, res) => {
             ORDER BY scan_count DESC
         `);
 
-        // 4. أحدث حركات المسح الليزري اللحظية الحية (Live Ticker Stream)
+        // 4. أحدث حركات المسح الليزري اللحظية الحية الشاملة لكافة الأوردرات (Live Ticker Stream)
         const recentActivityRes = await pool.request().query(`
-            SELECT TOP 12
+            SELECT TOP 40
                 act.id,
                 act.barcode,
                 act.order_id,
                 act.order_number,
+                act.customer_name,
                 act.stage_name,
                 act.scanned_by,
                 act.source_type,
@@ -3236,6 +3237,7 @@ app.get('/api/dashboard/overview', async (req, res) => {
                     sm.barcode,
                     sm.order_id,
                     o.order_number,
+                    o.customer_name,
                     sm.stage_name,
                     sm.scanned_by,
                     'factory' as source_type,
@@ -3250,6 +3252,7 @@ app.get('/api/dashboard/overview', async (req, res) => {
                     es.barcode,
                     es.external_order_id as order_id,
                     eo.order_number,
+                    eo.contractor_name as customer_name,
                     ISNULL(es.scan_type, N'تشغيل خارجي') as stage_name,
                     es.scanned_by,
                     'external' as source_type,
@@ -3260,9 +3263,9 @@ app.get('/api/dashboard/overview', async (req, res) => {
             ORDER BY act.created_at DESC
         `);
 
-        // 5. الأوامر النشطة ذات الأولوية العالية ومعدل إنجاز كل منها
+        // 5. متابعة حية شاملة لكافة الأوردرات الجارية في المصنع مرتبة حسب حركات الشغل الحية (Active Live Orders Tracker)
         const priorityOrdersRes = await pool.request().query(`
-            SELECT TOP 5
+            SELECT TOP 50
                 o.id,
                 o.order_number,
                 o.customer_name,
@@ -3271,10 +3274,15 @@ app.get('/api/dashboard/overview', async (req, res) => {
                 o.created_at,
                 'factory' as order_type,
                 ISNULL((SELECT SUM(scanned_quantity) FROM OrderStages WHERE order_id = o.id), 0) as total_scanned,
-                ISNULL((SELECT COUNT(*) FROM OrderStages WHERE order_id = o.id), 6) as stages_count
+                ISNULL((SELECT COUNT(*) FROM OrderStages WHERE order_id = o.id), 6) as stages_count,
+                (SELECT MAX(created_at) FROM StockMovements WHERE order_id = o.id) as last_scan_at,
+                (SELECT COUNT(DISTINCT stage_name) FROM StockMovements WHERE order_id = o.id) as active_stages_with_scans
             FROM Orders o
             WHERE o.status != 'closed'
-            ORDER BY o.id DESC
+            ORDER BY 
+                CASE WHEN (SELECT MAX(created_at) FROM StockMovements WHERE order_id = o.id) IS NOT NULL THEN 0 ELSE 1 END ASC,
+                last_scan_at DESC,
+                o.id DESC
         `);
 
         // 6. نشاط المسح على مدار اليوم بساعاته (Hourly Scanning Activity - Today)

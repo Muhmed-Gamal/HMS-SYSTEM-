@@ -184,10 +184,13 @@ export default function DashboardPage() {
         setRefreshing(false);
     };
 
+    const [orderFilter, setOrderFilter] = useState('all'); // 'all' | order_number
+
     useEffect(() => {
         if (!user) { navigate('/login'); return; }
         load();
-        const iv = setInterval(() => load(false), 60000); // 1 minute
+        // معايشة حية لحظية: تحديث دوري سريع كل 4 ثوانٍ لمتابعة جميع الأوردرات وعمليات المسح الحية
+        const iv = setInterval(() => load(false), 4000);
         return () => clearInterval(iv);
     }, [user]);
 
@@ -251,25 +254,34 @@ export default function DashboardPage() {
         return []; // no scans today yet
     }, [hourly]);
 
-    /* ── Recent events table — real live_activity ── */
-    const recentRows = useMemo(() => activity.slice(0, 8).map(a => ({
+    /* ── Recent events table — معايشة حية لكافة الأوردرات والمسحات الحية ── */
+    const filteredActivity = useMemo(() => {
+        if (orderFilter === 'all') return activity;
+        return activity.filter(a => a.order_number === orderFilter);
+    }, [activity, orderFilter]);
+
+    const recentRows = useMemo(() => filteredActivity.slice(0, 30).map(a => ({
         code:    a.barcode     || '—',
         order:   a.order_number || '—',
+        client:  a.customer_name || '',
         stage:   a.stage_name  || (a.source_type === 'external' ? (isAr ? 'خارجي' : 'External') : '—'),
         by:      a.scanned_by  || '—',
         type:    a.source_type || 'factory',
         time:    a.created_at
-            ? new Date(a.created_at).toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })
+            ? new Date(a.created_at).toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
             : '—',
-    })), [activity, isAr]);
+    })), [filteredActivity, isAr]);
 
-    /* ── Order tracking (right panel) — real priority_orders ── */
-    const trackingList = useMemo(() => orders.slice(0, 4).map(o => ({
+    /* ── Order tracking (right panel) — متابعة حية لجميع الأوردرات الشغالة ── */
+    const trackingList = useMemo(() => orders.map(o => ({
+        rawOrder: o.order_number,
         id:     o.order_number || `#${o.id}`,
         label:  o.customer_name || (isAr ? 'غير محدد' : 'Unnamed'),
         pct:    Number(o.completion_rate) || 0,
         status: o.status === 'closed' ? 'closed' : 'active',
         target: Number(o.target_quantity) || 0,
+        scanned: Number(o.total_scanned) || 0,
+        lastScan: o.last_scan_at ? new Date(o.last_scan_at).toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : null,
     })), [orders, isAr]);
 
     /* ── peak for annotation ── */
@@ -301,7 +313,7 @@ export default function DashboardPage() {
                                     ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-400 scale-110'
                                     : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${pulse ? 'bg-emerald-400 animate-ping' : 'bg-emerald-500 animate-pulse'}`} />
-                                {pulse ? (isAr ? '! مسح جديد' : 'NEW SCAN!') : (isAr ? 'مزامنة كل دقيقة' : 'SYNC 1min')}
+                                {pulse ? (isAr ? '⚡ نبض مسح حي الآن!' : 'LIVE SCAN!') : (isAr ? 'بث حي ومباشر (4ث)' : 'LIVE SYNC (4s)')}
                             </span>
                         </h1>
                         <p className="text-xs text-slate-500 mt-0.5">
@@ -433,7 +445,7 @@ export default function DashboardPage() {
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                {isAr ? 'تحديث تلقائي كل دقيقة' : 'Auto-refresh every 1 min'}
+                                {isAr ? 'بث حي لحظي متواصل (كل 4 ثوانٍ)' : 'Live real-time feed (every 4s)'}
                             </span>
                         </div>
                     </div>
@@ -468,25 +480,48 @@ export default function DashboardPage() {
 
                     {/* Recent Scan Events Table — 8 cols */}
                     <div className="lg:col-span-8 rounded-2xl bg-[#0c1322] border border-slate-800 shadow-xl overflow-hidden">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 py-4 border-b border-slate-800 gap-3">
                             <div>
-                                <h3 className="text-sm font-bold text-white">
-                                    {isAr ? 'آخر عمليات المسح' : 'Recent Scan Events'}
-                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                        <span>{isAr ? 'معايشة حية لعمليات المسح اللحظية' : 'Live Real-time Scan Feed'}</span>
+                                        <span className="badge-clean badge-green text-[9px] font-mono font-bold px-1.5 py-0.5">
+                                            LIVE RADAR
+                                        </span>
+                                    </h3>
+                                </div>
                                 <p className="text-[11px] text-slate-400 mt-0.5">
                                     {isAr
-                                        ? `${activity.length} حدث مسح مسجل — يتحدث كل دقيقة`
-                                        : `${activity.length} scan events — updates every 1 min`}
+                                        ? `متابعة حية لكافة حركات المسح عبر جميع الأوردرات والخطوط الإنتاجية لحظة بلحظة (${filteredActivity.length} مسحة حديثة)`
+                                        : `Live monitoring across all orders and stages (${filteredActivity.length} recent scans)`}
                                 </p>
                             </div>
-                            <Link to="/orders"
-                                className="text-[10px] text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 transition">
-                                {isAr ? 'الأوردرات' : 'Orders'}
-                                <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-[9px]`} />
-                            </Link>
+
+                            {/* فلتر الأوردرات لمشاهدة أوردر بعينه أو كافة الأوردرات حياً */}
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <select
+                                    value={orderFilter}
+                                    onChange={(e) => setOrderFilter(e.target.value)}
+                                    className="bg-slate-900 border border-slate-700/80 text-sky-300 text-xs rounded-lg px-2.5 py-1.5 focus:border-sky-500 font-mono cursor-pointer"
+                                    title={isAr ? 'تصفية حركات المسح حسب الأوردر' : 'Filter by Order'}
+                                >
+                                    <option value="all">⚡ {isAr ? 'كافة الأوردرات والخطوط' : 'All Orders & Stages'}</option>
+                                    {trackingList.map(t => (
+                                        <option key={t.rawOrder} value={t.rawOrder}>
+                                            {t.rawOrder} ({t.label})
+                                        </option>
+                                    ))}
+                                </select>
+                                <Link to="/orders"
+                                    className="text-[10px] text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 transition whitespace-nowrap">
+                                    {isAr ? 'إدارة الأوردرات' : 'Orders'}
+                                    <i className={`fas fa-arrow-${isRTL ? 'left' : 'right'} text-[9px]`} />
+                                </Link>
+                            </div>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto max-h-[460px] overflow-y-auto">
                             {recentRows.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-slate-600 gap-2">
                                     <i className="fas fa-barcode text-3xl opacity-30" />
@@ -500,13 +535,13 @@ export default function DashboardPage() {
                             ) : (
                                 <table className="w-full text-xs">
                                     <thead>
-                                        <tr className="border-b border-slate-800/60 text-slate-500 text-[10px] uppercase font-bold">
+                                        <tr className="border-b border-slate-800/60 text-slate-500 text-[10px] uppercase font-bold sticky top-0 bg-[#0c1322] z-10">
                                             <th className="px-5 py-2.5 text-start">{isAr ? 'الباركود' : 'Barcode'}</th>
-                                            <th className="px-3 py-2.5 text-start">{isAr ? 'الأوردر' : 'Order'}</th>
+                                            <th className="px-3 py-2.5 text-start">{isAr ? 'الأوردر / العميل' : 'Order / Client'}</th>
                                             <th className="px-3 py-2.5 text-start">{isAr ? 'المرحلة' : 'Stage'}</th>
                                             <th className="px-3 py-2.5 text-start">{isAr ? 'بواسطة' : 'Scanned By'}</th>
                                             <th className="px-3 py-2.5 text-start">{isAr ? 'النوع' : 'Type'}</th>
-                                            <th className="px-3 py-2.5 text-start">{isAr ? 'الوقت' : 'Time'}</th>
+                                            <th className="px-3 py-2.5 text-start">{isAr ? 'الوقت بالثانية' : 'Time'}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -514,11 +549,28 @@ export default function DashboardPage() {
                                             <tr key={i}
                                                 className={`border-b border-slate-800/40 hover:bg-slate-800/30 transition-colors
                                                     ${pulse && i === 0 ? 'bg-sky-500/5 border-sky-500/20' : ''}`}>
-                                                <td className="px-5 py-3 font-mono text-sky-400 font-bold text-[11px] max-w-[140px] truncate">
+                                                <td className="px-5 py-2.5 font-mono text-sky-400 font-bold text-[11px] max-w-[140px] truncate">
                                                     {row.code}
                                                 </td>
-                                                <td className="px-3 py-3 text-slate-300 font-mono text-[11px]">{row.order}</td>
-                                                <td className="px-3 py-3">
+                                                <td className="px-3 py-2.5 text-slate-300 text-[11px]">
+                                                    <div className="font-mono font-bold text-white flex items-center gap-1">
+                                                        <span>{row.order}</span>
+                                                        {row.order !== '—' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setOrderFilter(row.order)}
+                                                                className="text-[9px] text-sky-400/80 hover:text-sky-300 underline"
+                                                                title={isAr ? 'حصر المعايشة على هذا الأوردر' : 'Filter by this order'}
+                                                            >
+                                                                [تتبع]
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    {row.client && (
+                                                        <div className="text-[9.5px] text-slate-400 truncate max-w-[130px]">{row.client}</div>
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-2.5">
                                                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 border border-slate-700 text-slate-300">
                                                         {row.stage}
                                                     </span>
@@ -585,12 +637,20 @@ export default function DashboardPage() {
                         {/* Order Tracking */}
                         <div className="rounded-2xl bg-[#0c1322] border border-slate-800 p-4 sm:p-5 shadow-xl flex-1">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-sm font-bold text-white">
-                                    {isAr ? 'متابعة الأوردرات النشطة' : 'Active Order Tracking'}
-                                </h3>
+                                <div>
+                                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                        <span>{isAr ? 'متابعة حية لكافة الأوردرات' : 'All Active Orders'}</span>
+                                        <span className="badge-clean badge-amber text-[9px] font-mono px-1.5 py-0.2">
+                                            {trackingList.length}
+                                        </span>
+                                    </h3>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">
+                                        {isAr ? 'تحديث حي بنسب الإنجاز لكل أوردر' : 'Real-time order progress'}
+                                    </p>
+                                </div>
                                 <Link to="/orders"
                                     className="text-[10px] text-sky-400 hover:text-sky-300 font-semibold transition">
-                                    {isAr ? 'الكل' : 'All'}
+                                    {isAr ? 'جدول الأوردرات' : 'All Orders'}
                                 </Link>
                             </div>
 
@@ -602,11 +662,21 @@ export default function DashboardPage() {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
                                     {trackingList.map((item, i) => (
                                         <div key={i} className="space-y-1.5">
                                             <div className="flex items-center justify-between text-[11px]">
-                                                <span className="font-mono text-sky-400 font-bold">{item.id}</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="font-mono text-sky-400 font-bold">{item.id}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setOrderFilter(orderFilter === item.rawOrder ? 'all' : item.rawOrder)}
+                                                        className={`text-[9px] px-1 rounded transition ${orderFilter === item.rawOrder ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-sky-300'}`}
+                                                        title={isAr ? 'تصفية حركات المسح لهذا الأوردر' : 'Filter stream by this order'}
+                                                    >
+                                                        {orderFilter === item.rawOrder ? '✓ نشط' : '⚡ تتبع'}
+                                                    </button>
+                                                </div>
                                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold
                                                     ${item.status === 'closed'
                                                         ? 'bg-emerald-500/10 text-emerald-400'
@@ -616,7 +686,15 @@ export default function DashboardPage() {
                                                         : (isAr ? 'جارٍ' : 'Active')}
                                                 </span>
                                             </div>
-                                            <div className="text-[10px] text-slate-400 truncate">{item.label}</div>
+                                            <div className="flex justify-between items-center text-[10px] text-slate-400">
+                                                <span className="truncate max-w-[160px]">{item.label}</span>
+                                                {item.lastScan && (
+                                                    <span className="text-[9px] text-emerald-400 font-mono flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                                        {item.lastScan}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                                     <div
