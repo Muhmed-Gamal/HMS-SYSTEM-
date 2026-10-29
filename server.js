@@ -947,7 +947,31 @@ async function initializeDatabase() {
 
         // تهيئة جدول إعدادات النظام الشاملة (SystemSettings) لضبط لغة النظام والخيارات المركزية
         await globalPool.request().query(`
-            IF OBJECT_ID('dbo.SystemSettings', 'U') IS NULL
+                    // سلة محذوفات الأوردرات لحفظ الأوردرات وسجل وتاريخ من قام بالحذف وإمكانية الاسترجاع
+        await globalPool.request().query(
+            IF OBJECT_ID('dbo.DeletedOrders', 'U') IS NULL
+            BEGIN
+                CREATE TABLE DeletedOrders (
+                    id INT IDENTITY(1,1) PRIMARY KEY,
+                    original_order_id INT NULL,
+                    order_number NVARCHAR(100) NOT NULL,
+                    customer_name NVARCHAR(200) NOT NULL,
+                    target_quantity INT NOT NULL,
+                    original_status NVARCHAR(50) NULL,
+                    original_created_by NVARCHAR(200) NULL,
+                    original_created_at DATETIME NULL,
+                    deleted_by NVARCHAR(200) NOT NULL,
+                    deleted_at DATETIME DEFAULT GETDATE(),
+                    stages_json NVARCHAR(MAX) NULL,
+                    barcodes_json NVARCHAR(MAX) NULL,
+                    movements_count INT DEFAULT 0
+                );
+                CREATE NONCLUSTERED INDEX IX_DeletedOrders_OrderNumber ON DeletedOrders(order_number);
+                CREATE NONCLUSTERED INDEX IX_DeletedOrders_DeletedAt ON DeletedOrders(deleted_at);
+            END
+        );
+
+        IF OBJECT_ID('dbo.SystemSettings', 'U') IS NULL
             BEGIN
                 CREATE TABLE SystemSettings (
                     setting_key NVARCHAR(100) PRIMARY KEY,
@@ -1399,6 +1423,8 @@ app.post('/api/users/:id/unlock', async (req, res) => {
     const isMaster = caller && (
         ['gamal', 'auf'].includes((caller.username || '').toLowerCase()) || 
         caller.role === 'superadmin' || 
+        caller.role === 'admin' ||
+        caller.role === 'it_support' ||
         caller.can_manage_users
     );
 
@@ -1454,8 +1480,8 @@ app.post('/api/users', async (req, res) => {
         return res.status(400).json({ success: false, message: 'يرجى إكمال البيانات المطلوبة' });
     }
 
-    // التحقق من صلاحية المستخدم الحالي لإنشاء مستخدمين
-    if (!req.user || (!req.user.can_manage_users && !['superadmin', 'admin', 'external_admin'].includes(req.user.role))) {
+    // التحقق من صلاحية المستخدم الحالي لإنشاء مستخدمين (بما في ذلك مسؤول الـ IT)
+    if (!req.user || (!req.user.can_manage_users && !['superadmin', 'admin', 'it_support', 'external_admin'].includes(req.user.role))) {
         return res.status(403).json({ success: false, message: 'غير مصرح! ليس لديك صلاحية إنشاء مستخدمين.' });
     }
 
@@ -1477,6 +1503,16 @@ app.post('/api/users', async (req, res) => {
         });
     }
 
+    // قيود مسؤول الـ IT: يمكنه إنشاء مستخدمي الإنتاج والمتابعة الإدارية والتشغيل الخارجي ولكن لا ينشئ ملاك أو مديري مصنع
+    if (req.user && req.user.role === 'it_support') {
+        if (['superadmin', 'admin', 'factory_owner'].includes(role)) {
+            return res.status(403).json({
+                success: false,
+                message: 'غير مصرح! مسؤول الـ IT مصرح له بإنشاء يوزرات الإنتاج والتشغيل والمتابعة فقط.'
+            });
+        }
+    }
+
     try {
         const pool = await getPool();
         const hashed = hashPasswordSecure(password);
@@ -1486,11 +1522,12 @@ app.post('/api/users', async (req, res) => {
         const isFactoryOwner = (role === 'factory_owner');
         const isExtOp = (role === 'external_operator');
         const isExtAdm = (role === 'external_admin');
+        const isIT = (role === 'it_support');
 
-        const can_view    = (isExtOp || isExtAdm) ? 0 : 1; // حجب أوردرات العملاء العادية عن حسابات التشغيل الخارجي
-        const can_create  = (isSA || isAdm || isAdmView) ? 1 : 0; // صاحب المصنع لا ينشئ بل يتابع
-        const can_print   = (isSA || isAdm || isAdmView || isFactoryOwner || isExtAdm) ? 1 : 0;
-        const can_manage  = (isSA || isAdm) ? 1 : (isExtAdm ? 1 : 0);
+        const can_view    = (isExtOp || isExtAdm || isIT) ? 0 : 1; // حجب التقارير عن الـ IT
+        const can_create  = (isSA || isAdm || isAdmView) ? 1 : 0; // الـ IT لا يفتح أوردرات
+        const can_print   = (isSA || isAdm || isAdmView || isFactoryOwner || isExtAdm) ? 1 : 0; // حجب طباعة التقارير عن الـ IT
+        const can_manage  = (isSA || isAdm || isIT) ? 1 : (isExtAdm ? 1 : 0); // الـ IT يدير ويفتح اليوزرات
 
         // دعم الصلاحيات الثلاث الدقيقة لمشغلي التشغيل الخارجي (دخول / خروج / عام)
         let stageVal = null;
@@ -1530,44 +1567,62 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
-// حذف مستخدم
+// حذف مستخدم (صلاحية حصرية للمالك والمدير فقط لحذف من هم أقل منهم صلاحية)
 app.delete('/api/users/:id', async (req, res) => {
-    // التحقق من صلاحية المستخدم الحالي لحذف مستخدمين
-    if (!req.user || (!req.user.can_manage_users && !['superadmin', 'admin', 'external_admin'].includes(req.user.role))) {
-        return res.status(403).json({ success: false, message: 'غير مصرح! ليس لديك صلاحية حذف المستخدمين.' });
+    if (!req.user) {
+        return res.status(401).json({ success: false, message: 'يرجى تسجيل الدخول أولاً' });
+    }
+
+    const callerRole = req.user.role;
+    const callerName = (req.user.username || '').toLowerCase();
+    const isOwner = callerRole === 'superadmin' || ['gamal', 'auf'].includes(callerName);
+    const isAdminUser = callerRole === 'admin';
+
+    // الحذف للمالك والمدير فقط
+    if (!isOwner && !isAdminUser) {
+        return res.status(403).json({
+            success: false,
+            message: 'غير مصرح! صلاحية حذف المستخدمين مقتصرة حصرياً على مالك النظام والمدير فقط.'
+        });
     }
 
     try {
         const pool = await getPool();
         const targetId = parseInt(req.params.id, 10);
 
-        // حماية قصوى: منع حذف حسابات الملاك الأساسية (Gamal و Auf) أو admin أو superadmin
+        if (targetId === req.user.id) {
+            return res.status(400).json({ success: false, message: 'لا يمكن حذف حسابك الحالي المسجل به!' });
+        }
+
         const targetUserRes = await pool.request()
             .input('id', sql.Int, targetId)
-            .query('SELECT role, username FROM Users WHERE id = @id');
+            .query('SELECT id, role, username FROM Users WHERE id = @id');
         
-        if (targetUserRes.recordset.length > 0) {
-            const targetUser = targetUserRes.recordset[0];
-            const uName = (targetUser.username || '').toLowerCase();
+        if (targetUserRes.recordset.length === 0) {
+            return res.status(404).json({ success: false, message: 'المستخدم المطلوب حذفه غير موجود' });
+        }
 
-            // قيود مشرف التشغيل الخارجي: حذف مشغلي التشغيل الخارجي فقط
-            if (req.user && req.user.role === 'external_admin') {
-                if (targetUser.role !== 'external_operator') {
-                    return res.status(403).json({
-                        success: false,
-                        message: 'غير مصرح! مشرف التشغيل الخارجي مصرح له حصرياً بحذف حسابات مشغلي التشغيل الخارجي فقط.'
-                    });
-                }
-            }
+        const targetUser = targetUserRes.recordset[0];
+        const uName = (targetUser.username || '').toLowerCase();
 
-            if (uName === 'gamal' || uName === 'auf') {
-                return res.status(403).json({ success: false, message: 'محظور نهائياً! هذا الحساب الأساسي محمي ولا يمكن حذفه إطلاقاً.' });
-            }
-            if (uName === 'admin') {
-                return res.status(403).json({ success: false, message: 'محظور! لا يمكن حذف حساب المدير الرئيسي (admin).' });
-            }
-            if (targetUser.role === 'superadmin') {
-                return res.status(403).json({ success: false, message: 'محظور! لا يمكن حذف حسابات مالك النظام (Super Admin).' });
+        // حماية حسابات الملاك الأساسية وحساب admin
+        if (uName === 'gamal' || uName === 'auf') {
+            return res.status(403).json({ success: false, message: 'محظور نهائياً! هذا الحساب الأساسي محمي ولا يمكن حذفه إطلاقاً.' });
+        }
+        if (uName === 'admin') {
+            return res.status(403).json({ success: false, message: 'محظور! لا يمكن حذف حساب المدير الرئيسي (admin).' });
+        }
+        if (targetUser.role === 'superadmin') {
+            return res.status(403).json({ success: false, message: 'محظور! لا يمكن حذف حسابات مالك النظام (Super Admin).' });
+        }
+
+        // إذا كان القائم بالحذف هو مدير (admin عادي)، يمكنه فقط حذف المستخدمين الأقل منه صلاحية (ليس admin وليس superadmin)
+        if (isAdminUser && !isOwner) {
+            if (targetUser.role === 'admin' || targetUser.role === 'superadmin') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'غير مصرح! يمكن للمدير فقط حذف المستخدمين الأقل منه في مستوى الصلاحية.'
+                });
             }
         }
 
@@ -1576,14 +1631,14 @@ app.delete('/api/users/:id', async (req, res) => {
             .query("DELETE FROM Users WHERE id = @id AND username NOT IN ('admin', 'Gamal', 'Auf')");
         res.json({ success: true, message: 'تم حذف المستخدم بنجاح' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'فشل حذف المستخدم' });
+        res.status(500).json({ success: false, message: 'فشل حذف المستخدم: ' + err.message });
     }
 });
 
-// تعديل صلاحيات مستخدم
+// تعديل صلاحيات وبيانات المستخدم
 app.put('/api/users/:id', async (req, res) => {
-    // التحقق من صلاحية المستخدم الحالي لتعديل المستخدمين
-    if (!req.user || (!req.user.can_manage_users && !['superadmin', 'admin', 'external_admin'].includes(req.user.role))) {
+    // التحقق من صلاحية المستخدم الحالي لتعديل المستخدمين (بما في ذلك it_support)
+    if (!req.user || (!req.user.can_manage_users && !['superadmin', 'admin', 'it_support', 'external_admin'].includes(req.user.role))) {
         return res.status(403).json({ success: false, message: 'غير مصرح! ليس لديك صلاحية تعديل المستخدمين.' });
     }
 
@@ -1654,17 +1709,34 @@ app.put('/api/users/:id', async (req, res) => {
             });
         }
 
+        // قيود مسؤول الـ IT: لا يمكنه تعديل حسابات الملاك ولا صاحب المصنع ولا ترقية يوزر لـ admin أو superadmin
+        if (req.user && req.user.role === 'it_support') {
+            if (targetUser.role === 'superadmin' || targetUser.role === 'factory_owner') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'محظور! مسؤول الـ IT لا يملك صلاحية تعديل حسابات الملاك أو صاحب المصنع.'
+                });
+            }
+            if (['superadmin', 'admin', 'factory_owner'].includes(role)) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'غير مصرح! لا يمكن لمسؤول الـ IT منح صلاحيات مالك أو مدير مصنع.'
+                });
+            }
+        }
+
         const isSA = (role === 'superadmin');
         const isAdm = (role === 'admin');
         const isAdmView = (role === 'admin_view');
         const isFactoryOwner = (role === 'factory_owner');
         const isExtOp = (role === 'external_operator');
         const isExtAdm = (role === 'external_admin');
+        const isIT = (role === 'it_support');
 
         const can_create = (isSA || isAdm || isAdmView) ? 1 : 0;
-        const can_manage = (isSA || isAdm) ? 1 : (isExtAdm ? 1 : 0);
-        const can_view = (isExtOp || isExtAdm) ? 0 : 1;
-        const can_print = (role !== 'production' && !isExtOp) ? 1 : 0;
+        const can_manage = (isSA || isAdm || isIT) ? 1 : (isExtAdm ? 1 : 0);
+        const can_view = (isExtOp || isExtAdm || isIT) ? 0 : 1;
+        const can_print = (role !== 'production' && !isExtOp && !isIT) ? 1 : 0;
 
         let stageVal = null;
         if (isExtOp) {
@@ -2454,7 +2526,7 @@ app.post('/api/orders/stage-scan', async (req, res) => {
 
 // 1. إضافة مرحلة جديدة لأمر تشغيل قائم
 app.post('/api/orders/:id/stages/add', async (req, res) => {
-    if (!req.user || (!['superadmin', 'admin'].includes(req.user.role) && !req.user.can_create_orders)) {
+    if (!req.user || (!['superadmin', 'admin', 'it_support'].includes(req.user.role) && !req.user.can_create_orders)) {
         return res.status(403).json({ success: false, message: 'غير مصرح! ليس لديك صلاحية تعديل مراحل أوامر التشغيل.' });
     }
     try {
@@ -2524,7 +2596,7 @@ app.post('/api/orders/:id/stages/add', async (req, res) => {
 
 // 2. إلغاء/حذف مرحلة من أمر تشغيل قائم (بشرط عدم وجود حركات مسح سابقة عليها نهائياً)
 app.delete('/api/orders/:id/stages/:stageName', async (req, res) => {
-    if (!req.user || (!['superadmin', 'admin'].includes(req.user.role) && !req.user.can_create_orders)) {
+    if (!req.user || (!['superadmin', 'admin', 'it_support'].includes(req.user.role) && !req.user.can_create_orders)) {
         return res.status(403).json({ success: false, message: 'غير مصرح! ليس لديك صلاحية إلغاء مراحل أوامر التشغيل.' });
     }
     try {
@@ -2605,7 +2677,7 @@ app.delete('/api/orders/:id/stages/:stageName', async (req, res) => {
 
 // 3. تعيين مرحلة كبداية إلزامية لأمر التشغيل
 app.put('/api/orders/:id/stages/set-primary', async (req, res) => {
-    if (!req.user || (!['superadmin', 'admin'].includes(req.user.role) && !req.user.can_create_orders)) {
+    if (!req.user || (!['superadmin', 'admin', 'it_support'].includes(req.user.role) && !req.user.can_create_orders)) {
         return res.status(403).json({ success: false, message: 'غير مصرح! ليس لديك صلاحية تعديل ترتيب مراحل أوامر التشغيل.' });
     }
     try {
@@ -2780,13 +2852,16 @@ app.delete('/api/orders/:id', async (req, res) => {
 
     const paramId = String(req.params.id);
 
-    // التحقق من صلاحيات الحذف للأوامر الخارجية أو مصنعية
+    // التحقق من صلاحيات الحذف: المالك وsuperadmin والأدمن وit_support
+    const isOwnerOrMaster = req.user.role === 'superadmin' || ['gamal', 'auf'].includes((req.user.username || '').toLowerCase());
+    const isAllowedRole = isOwnerOrMaster || ['admin', 'it_support', 'external_admin'].includes(req.user.role) || req.user.can_manage_users;
+
     if (paramId.startsWith('ext_')) {
-        if (!['superadmin', 'admin', 'external_admin'].includes(req.user.role)) {
+        if (!isAllowedRole) {
             return res.status(403).json({ success: false, message: 'غير مصرح بحذف أمر التشغيل الخارجي' });
         }
     } else {
-        if (!['superadmin', 'admin'].includes(req.user.role) && !req.user.can_manage_users && !req.user.can_create_orders) {
+        if (!isAllowedRole && !req.user.can_create_orders) {
             return res.status(403).json({ success: false, message: 'غير مصرح بحذف أوردرات المصنع' });
         }
     }
@@ -2809,6 +2884,62 @@ app.delete('/api/orders/:id', async (req, res) => {
             return res.status(400).json({ success: false, message: 'معرف الأوردر غير صالح' });
         }
 
+        // 1. جلب بيانات الأوردر الكاملة قبل الحذف لأرشفتها في DeletedOrders
+        const orderDataRes = await pool.request()
+            .input('id', sql.Int, orderId)
+            .query('SELECT * FROM Orders WHERE id = @id');
+
+        if (orderDataRes.recordset.length === 0) {
+            return res.status(404).json({ success: false, message: 'الأوردر غير موجود بالفعل' });
+        }
+
+        const orderRow = orderDataRes.recordset[0];
+
+        // جلب المراحل المرتبطة
+        const stagesRes = await pool.request()
+            .input('id', sql.Int, orderId)
+            .query('SELECT stage_name, target_quantity, scanned_quantity, order_index FROM OrderStages WHERE order_id = @id ORDER BY order_index ASC');
+
+        // جلب الباركودات المرتبطة
+        const barcodesRes = await pool.request()
+            .input('id', sql.Int, orderId)
+            .query('SELECT barcode FROM OrderBarcodes WHERE order_id = @id');
+
+        // عدد الحركات المنفذة
+        const movCountRes = await pool.request()
+            .input('id', sql.Int, orderId)
+            .query('SELECT COUNT(*) AS cnt FROM StockMovements WHERE order_id = @id');
+
+        const deletedBy = (req.user.full_name && req.user.full_name.trim()) 
+            ? `${req.user.full_name} (@${req.user.username})` 
+            : req.user.username;
+
+        // إدراج في سلة محذوفات الأوردرات (DeletedOrders)
+        await pool.request()
+            .input('orig_id', sql.Int, orderRow.id)
+            .input('onum', sql.NVarChar, orderRow.order_number)
+            .input('cname', sql.NVarChar, orderRow.customer_name)
+            .input('tqty', sql.Int, orderRow.target_quantity)
+            .input('ostatus', sql.NVarChar, orderRow.status || 'active')
+            .input('cby', sql.NVarChar, orderRow.created_by || '—')
+            .input('cat', sql.DateTime, orderRow.created_at || new Date())
+            .input('dby', sql.NVarChar, deletedBy)
+            .input('sjson', sql.NVarChar, JSON.stringify(stagesRes.recordset || []))
+            .input('bjson', sql.NVarChar, JSON.stringify((barcodesRes.recordset || []).map(b => b.barcode)))
+            .input('mcnt', sql.Int, movCountRes.recordset[0]?.cnt || 0)
+            .query(`
+                INSERT INTO DeletedOrders (
+                    original_order_id, order_number, customer_name, target_quantity,
+                    original_status, original_created_by, original_created_at,
+                    deleted_by, deleted_at, stages_json, barcodes_json, movements_count
+                )
+                VALUES (
+                    @orig_id, @onum, @cname, @tqty,
+                    @ostatus, @cby, @cat,
+                    @dby, GETDATE(), @sjson, @bjson, @mcnt
+                )
+            `);
+
         // حذف كل ما يتعلق بالأوردر في كافة الجداول التابعة
         await pool.request().input('id', sql.Int, orderId).query(`
             DELETE FROM OrderMovements WHERE order_id = @id;
@@ -2822,7 +2953,7 @@ app.delete('/api/orders/:id', async (req, res) => {
             DELETE FROM Orders WHERE id = @id;
         `);
 
-        res.json({ success: true, message: 'تم حذف الأوردر وجميع بياناته بنجاح' });
+        res.json({ success: true, message: 'تم حذف الأوردر وأرشفته في سلة المحذوفات بنجاح' });
     } catch (err) {
         console.error('Delete Order Error:', err);
         res.status(500).json({ success: false, message: 'فشل حذف الأوردر: ' + err.message });
@@ -4003,6 +4134,10 @@ app.get('/api/system/time', (req, res) => {
 
 // API حالة الترخيص
 app.get('/api/license/status', (req, res) => {
+    // تراخيص النظام خاصة حصرياً بمالك النظام فقط
+    if (req.user && (req.user.role === 'it_support' || req.user.role === 'factory_owner' || req.user.role === 'external_operator' || req.user.role === 'external_admin')) {
+        return res.status(403).json({ valid: false, message: 'غير مصرح! إدارة وتفاصيل التراخيص مقتصرة حصرياً على مالك النظام.' });
+    }
     cachedLicenseStatus = verifyLicenseFile();
     res.json(cachedLicenseStatus);
 });
@@ -4188,3 +4323,155 @@ app.post('/api/license/activate', (req, res) => {
         process.exit(1);
     });
 })();
+
+
+// ===== سلة محذوفات الأوردرات (Recycle Bin & Audit Log) =====
+// متاح لمدير المصنع (admin) وصاحب المصنع (factory_owner) ومسؤول الـ IT (it_support) وملاك السيستم (superadmin / Gamal / Auf)
+function canAccessDeletedOrders(user) {
+    if (!user) return false;
+    const uName = (user.username || '').toLowerCase();
+    if (uName === 'gamal' || uName === 'auf') return true;
+    if (['superadmin', 'admin', 'factory_owner', 'it_support'].includes(user.role)) return true;
+    return false;
+}
+
+// 1. جلب قائمة الأوردرات المحذوفة
+app.get('/api/deleted-orders', async (req, res) => {
+    if (!canAccessDeletedOrders(req.user)) {
+        return res.status(403).json({ success: false, message: 'غير مصرح! سجل المحذوفات متاح فقط للمدير العام وصاحب المصنع ومسؤول الـ IT والملاك.' });
+    }
+    try {
+        const pool = await getPool();
+        const result = await pool.request().query(`
+            SELECT id, original_order_id, order_number, customer_name, target_quantity,
+                   original_status, original_created_by, original_created_at,
+                   deleted_by, deleted_at, movements_count, stages_json
+            FROM DeletedOrders
+            ORDER BY deleted_at DESC
+        `);
+        res.json({ success: true, deleted_orders: result.recordset });
+    } catch (err) {
+        console.error('Fetch Deleted Orders Error:', err);
+        res.status(500).json({ success: false, message: 'فشل جلب سجل المحذوفات' });
+    }
+});
+
+// 2. استرجاع أوردر محذوف بالكامل مع مراحله وأكواد الباركود
+app.post('/api/deleted-orders/:id/restore', async (req, res) => {
+    if (!canAccessDeletedOrders(req.user)) {
+        return res.status(403).json({ success: false, message: 'غير مصرح! استرجاع الأوردرات متاح فقط للمدير وصاحب المصنع ومسؤول الـ IT والملاك.' });
+    }
+    const delId = parseInt(req.params.id, 10);
+    if (isNaN(delId)) {
+        return res.status(400).json({ success: false, message: 'معرف غير صالح' });
+    }
+    try {
+        const pool = await getPool();
+        const delRes = await pool.request()
+            .input('id', sql.Int, delId)
+            .query('SELECT * FROM DeletedOrders WHERE id = @id');
+
+        if (delRes.recordset.length === 0) {
+            return res.status(404).json({ success: false, message: 'سجل الأوردر المحذوف غير موجود' });
+        }
+
+        const del = delRes.recordset[0];
+
+        // التأكد من عدم وجود أوردر نشط حالياً بنفس الرقم
+        const existRes = await pool.request()
+            .input('onum', sql.NVarChar, del.order_number)
+            .query('SELECT id FROM Orders WHERE order_number = @onum');
+
+        if (existRes.recordset.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `لا يمكن الاسترجاع! يوجد حالياً أوردر نشط في النظام بنفس الرقم (${del.order_number}).`
+            });
+        }
+
+        // إنشاء الأوردر من جديد في جدول Orders
+        const insertOrderRes = await pool.request()
+            .input('onum', sql.NVarChar, del.order_number)
+            .input('cname', sql.NVarChar, del.customer_name)
+            .input('tqty', sql.Int, del.target_quantity)
+            .input('status', sql.NVarChar, del.original_status || 'active')
+            .input('cby', sql.NVarChar, del.original_created_by || '—')
+            .input('cat', sql.DateTime, del.original_created_at || new Date())
+            .query(`
+                INSERT INTO Orders (order_number, customer_name, target_quantity, status, created_by, created_at)
+                OUTPUT INSERTED.id
+                VALUES (@onum, @cname, @tqty, @status, @cby, @cat)
+            `);
+
+        const newOrderId = insertOrderRes.recordset[0].id;
+
+        // إعادة مراحل الأوردر
+        let stages = [];
+        try { stages = JSON.parse(del.stages_json || '[]'); } catch (e) {}
+
+        if (Array.isArray(stages) && stages.length > 0) {
+            for (let i = 0; i < stages.length; i++) {
+                const st = stages[i];
+                await pool.request()
+                    .input('oid', sql.Int, newOrderId)
+                    .input('sname', sql.NVarChar, st.stage_name)
+                    .input('tqty', sql.Int, st.target_quantity || del.target_quantity)
+                    .input('sqty', sql.Int, st.scanned_quantity || 0)
+                    .input('oidx', sql.Int, st.order_index || (i + 1))
+                    .query(`
+                        INSERT INTO OrderStages (order_id, stage_name, target_quantity, scanned_quantity, order_index)
+                        VALUES (@oid, @sname, @tqty, @sqty, @oidx)
+                    `);
+            }
+        } else {
+            // استرجاع المراحل الافتراضية إذا كانت غير متوفرة
+            const defStages = await getActiveProductionStages();
+            for (let i = 0; i < defStages.length; i++) {
+                await pool.request()
+                    .input('oid', sql.Int, newOrderId)
+                    .input('sname', sql.NVarChar, defStages[i])
+                    .input('tqty', sql.Int, del.target_quantity)
+                    .input('oidx', sql.Int, i + 1)
+                    .query(`
+                        INSERT INTO OrderStages (order_id, stage_name, target_quantity, order_index)
+                        VALUES (@oid, @sname, @tqty, @oidx)
+                    `);
+            }
+        }
+
+        // إعادة الباركودات
+        let barcodes = [];
+        try { barcodes = JSON.parse(del.barcodes_json || '[]'); } catch (e) {}
+
+        if (Array.isArray(barcodes) && barcodes.length > 0) {
+            const CHUNK_SIZE = 5000;
+            const totalChunks = Math.ceil(barcodes.length / CHUNK_SIZE);
+            for (let c = 0; c < totalChunks; c++) {
+                const chunk = barcodes.slice(c * CHUNK_SIZE, (c + 1) * CHUNK_SIZE);
+                const table = new sql.Table('OrderBarcodes');
+                table.create = false;
+                table.columns.add('order_id', sql.Int, { nullable: false });
+                table.columns.add('barcode', sql.NVarChar(120), { nullable: false });
+                for (const bc of chunk) {
+                    table.rows.add(newOrderId, bc);
+                }
+                const bulkRequest = pool.request();
+                await bulkRequest.bulk(table);
+            }
+        }
+
+        // حذف السجل من سلة المحذوفات بعد الاسترجاع الناجح
+        await pool.request()
+            .input('id', sql.Int, delId)
+            .query('DELETE FROM DeletedOrders WHERE id = @id');
+
+        res.json({
+            success: true,
+            message: `تم استرجاع الأوردر (${del.order_number}) بنجاح وإعادته للعمل في النظام.`,
+            new_order_id: newOrderId
+        });
+    } catch (err) {
+        console.error('Restore Order Error:', err);
+        res.status(500).json({ success: false, message: 'فشل استرجاع الأوردر: ' + err.message });
+    }
+});

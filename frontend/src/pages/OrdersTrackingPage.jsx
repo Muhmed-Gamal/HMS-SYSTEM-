@@ -26,7 +26,7 @@ const PRODUCTION_STAGES = [
 ];
 
 export default function OrdersTrackingPage() {
-    const { user, isAdmin, canCreateOrders, companyName } = useAuth();
+    const { user, isAdmin, isSuperAdmin, isFactoryOwner, isITSupport, canCreateOrders, canAccessRecycleBin, companyName } = useAuth();
     const { toast, confirm, showProgress, updateProgress, closeProgress, showAlert } = useToast();
     const { t, isRTL, language, translateStage } = useLanguage();
     const navigate = useNavigate();
@@ -46,6 +46,9 @@ export default function OrdersTrackingPage() {
 
     // Data states
     const [orders, setOrders] = useState([]);
+    const [deletedOrdersList, setDeletedOrdersList] = useState([]);
+    const [showRecycleBinModal, setShowRecycleBinModal] = useState(false);
+    const [recycleLoading, setRecycleLoading] = useState(false);
     const [stats, setStats] = useState({ total_orders: 0, active_orders: 0, closed_orders: 0, total_barcodes: 0 });
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -434,6 +437,63 @@ export default function OrdersTrackingPage() {
         }
     };
 
+    // تعيين مرحلة كبداية إلزامية للأوردر
+    const handleSetPrimaryStageForOrder = async (orderId, stageName) => {
+        showProgress('جاري تعيين مرحلة البداية...', `يتم تعيين مرحلة [${stageName}] كبداية إلزامية للأوردر...`);
+        const { ok: resOk, data } = await api.setOrderPrimaryStage(orderId, stageName);
+        closeProgress();
+        if (resOk && data.success) {
+            toast(data.message, 'success');
+            await handleViewDetails(orderId);
+            await loadAll();
+        } else {
+            showAlert('فشل تعيين البداية', data?.message || 'تعذر تعيين مرحلة البداية', 'error');
+        }
+    };
+
+    // جلب قائمة الأوردرات المحذوفة
+    const loadDeletedOrders = async () => {
+        setRecycleLoading(true);
+        try {
+            const { ok, data } = await api.getDeletedOrders();
+            if (ok && data.success) {
+                setDeletedOrdersList(data.deleted_orders || []);
+            } else {
+                toast(data?.message || 'فشل جلب الأوردرات المحذوفة', 'error');
+            }
+        } catch (e) {
+            console.error('Error loading deleted orders:', e);
+        } finally {
+            setRecycleLoading(false);
+        }
+    };
+
+    const openRecycleBin = () => {
+        setShowRecycleBinModal(true);
+        loadDeletedOrders();
+    };
+
+    // استرجاع أوردر محذوف
+    const handleRestoreOrder = async (delId, orderNumber) => {
+        const ok = await confirm(
+            `استرجاع الأوردر (${orderNumber})`,
+            `هل تريد بالتأكيد استرجاع هذا الأوردر المحذوف بالكامل مع جميع مراحله وأكواد الباركود إلى خط الإنتاج؟`
+        );
+        if (!ok) return;
+
+        showProgress('جاري استرجاع الأوردر...', 'يتم إعادة بناء الأوردر ومراحله وأكواده في النظام...');
+        const { ok: resOk, data } = await api.restoreDeletedOrder(delId);
+        closeProgress();
+
+        if (resOk && data.success) {
+            toast(data.message, 'success');
+            await loadDeletedOrders();
+            await loadAll();
+        } else {
+            showAlert('فشل الاسترجاع', data?.message || 'تعذر استرجاع الأوردر', 'error');
+        }
+    };
+
     // Print External Order Report
     const handlePrintExternalOrderReport = async (orderId, mode = 'print') => {
         try {
@@ -652,6 +712,16 @@ export default function OrdersTrackingPage() {
                             <i className="fas fa-file-alt text-slate-400"></i>
                             <span>{t('orders.btn_print_report')}</span>
                         </button>
+                        {canAccessRecycleBin && (
+                            <button
+                                onClick={openRecycleBin}
+                                className="btn-slate text-xs py-2 px-3 flex items-center justify-center gap-1.5 border-rose-500/40 text-rose-300 hover:bg-rose-500/15 transition shadow-sm"
+                                title="عرض سجل الأوردرات المحذوفة ومعرفة من قام بحذفها وتاريخ ووقت الحذف مع إمكانية استرجاعها"
+                            >
+                                <i className="fas fa-trash-restore text-rose-400"></i>
+                                <span>{language === 'ar' ? 'سلة المحذوفات واسترجاع الأوردرات' : 'Recycle Bin & Restore'}</span>
+                            </button>
+                        )}
                         <button
                             onClick={loadAll}
                             className="btn-slate btn-slate-secondary text-xs py-2 px-3 flex items-center justify-center gap-1.5 col-span-1 sm:col-span-2 md:col-span-1"
@@ -918,6 +988,136 @@ export default function OrdersTrackingPage() {
                 </div>
             </main>
 
+            {/* ===== Modal سلة محذوفات الأوردرات وسجل الحذف والاسترجاع ===== */}
+            {showRecycleBinModal && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(10,17,32,0.85)',
+                        backdropFilter: 'blur(8px)',
+                        zIndex: 9995,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '1rem',
+                    }}
+                >
+                    <div
+                        className="w-full max-w-5xl rounded-2xl border border-rose-500/30 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+                        style={{ background: 'linear-gradient(135deg, #0b1120 0%, #171d33 100%)' }}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-rose-500/20 bg-rose-950/20">
+                            <div className="flex items-center gap-3">
+                                <span className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 text-base">
+                                    <i className="fas fa-trash-restore"></i>
+                                </span>
+                                <div>
+                                    <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                                        <span>{language === 'ar' ? 'سلة محذوفات الأوردرات وسجل الحذف' : 'Deleted Orders Audit & Restore'}</span>
+                                        <span className="badge-clean badge-red text-[10px]">
+                                            {deletedOrdersList.length} {language === 'ar' ? 'محذوف' : 'deleted'}
+                                        </span>
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">
+                                        {language === 'ar'
+                                            ? 'يوثق هذا السجل تلقائياً من قام بحذف أي أوردر وتاريخ ووقت الحذف بدقة لمنع الأخطاء، مع إمكانية استرجاعه فوراً.'
+                                            : 'Audit log of all deleted orders with timestamps, user identity, and full restore capability.'
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowRecycleBinModal(false)}
+                                className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition"
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-4 overflow-y-auto flex-1 space-y-3">
+                            {recycleLoading ? (
+                                <div className="text-center py-12 text-slate-400 text-xs">
+                                    <i className="fas fa-circle-notch fa-spin text-xl mb-2 block text-rose-400"></i>
+                                    {language === 'ar' ? 'جاري تحميل سجل المحذوفات...' : 'Loading deleted orders...'}
+                                </div>
+                            ) : deletedOrdersList.length === 0 ? (
+                                <div className="text-center py-12 text-slate-400 text-xs">
+                                    <i className="fas fa-check-circle text-3xl mb-2 text-emerald-400 block"></i>
+                                    {language === 'ar' ? 'لا توجد أي أوردرات محذوفة في السجل حالياً.' : 'No deleted orders found.'}
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-[#090e1c]">
+                                    <table className="slate-table w-full text-xs">
+                                        <thead>
+                                            <tr>
+                                                <th className="p-2.5 font-bold">رقم الأوردر</th>
+                                                <th className="p-2.5 font-bold">اسم العميل</th>
+                                                <th className="p-2.5 text-center font-bold">الكمية</th>
+                                                <th className="p-2.5 font-bold text-rose-300">من قام بالحذف</th>
+                                                <th className="p-2.5 text-center font-bold text-amber-300">تاريخ ووقت الحذف</th>
+                                                <th className="p-2.5 text-center font-bold">الحركات السابقة</th>
+                                                <th className="p-2.5 text-center font-bold">استرجاع</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {deletedOrdersList.map((del) => (
+                                                <tr key={del.id} className="hover:bg-slate-800/40 border-b border-slate-800">
+                                                    <td className="p-2.5 font-mono font-bold text-white">
+                                                        {del.order_number}
+                                                    </td>
+                                                    <td className="p-2.5 text-slate-300 font-semibold">
+                                                        {del.customer_name}
+                                                    </td>
+                                                    <td className="p-2.5 text-center font-mono font-bold text-amber-400">
+                                                        {Number(del.target_quantity).toLocaleString('en-US')}
+                                                    </td>
+                                                    <td className="p-2.5 font-bold text-rose-400">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <i className="fas fa-user-times text-xs"></i>
+                                                            <span>{del.deleted_by}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-2.5 text-center font-mono text-slate-300 text-[11px]">
+                                                        {del.deleted_at ? new Date(del.deleted_at).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                                                    </td>
+                                                    <td className="p-2.5 text-center font-mono text-slate-400">
+                                                        {del.movements_count || 0}
+                                                    </td>
+                                                    <td className="p-2.5 text-center">
+                                                        <button
+                                                            onClick={() => handleRestoreOrder(del.id, del.order_number)}
+                                                            className="btn-slate text-[11px] py-1 px-3 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/20 font-bold flex items-center gap-1 mx-auto shadow-sm"
+                                                            title="استرجاع هذا الأوردر بكل مراحله وأكواد الباركود إلى خط الإنتاج"
+                                                        >
+                                                            <i className="fas fa-undo-alt text-[10px]"></i>
+                                                            <span>{language === 'ar' ? 'استرجاع الأوردر' : 'Restore'}</span>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-3 bg-slate-900/60 border-t border-slate-800 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setShowRecycleBinModal(false)}
+                                className="btn-slate btn-slate-secondary text-xs py-1.5 px-4"
+                            >
+                                {language === 'ar' ? 'إغلاق' : 'Close'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ===== Modal 1: تفاصيل الأوردر (Order Sheet) ===== */}
             {detailsModalData && (
                 <div
@@ -1039,8 +1239,8 @@ export default function OrdersTrackingPage() {
                                                 <th className="p-2.5 text-center font-bold text-slate-300">{language === 'ar' ? 'أول ضربة (بدء المسح)' : 'First Scan'}</th>
                                                 <th className="p-2.5 text-center font-bold text-slate-300">{language === 'ar' ? 'آخر ضربة (إغلاق / توقف)' : 'Last Scan'}</th>
                                                 <th className="p-2.5 text-center font-bold">{t('common.status')}</th>
-                                                {(canCreateOrders || isAdmin) && !detailsModalData.order?.is_external && (
-                                                    <th className="p-2.5 text-center font-bold text-amber-300">{language === 'ar' ? 'تعديل وإلغاء المرحلة' : 'Edit / Cancel Stage'}</th>
+                                                {(canCreateOrders || isAdmin || isITSupport) && !detailsModalData.order?.is_external && (
+                                                    <th className="p-2.5 text-center font-bold text-amber-300">{language === 'ar' ? 'التحكم بالمرحلة (إلغاء / بداية إلزامية)' : 'Stage Control'}</th>
                                                 )}
                                             </tr>
                                         </thead>
@@ -1123,22 +1323,34 @@ export default function OrdersTrackingPage() {
                                                                 <span className="badge-clean badge-neutral text-[10px]">في الانتظار</span>
                                                             )}
                                                         </td>
-                                                        {(canCreateOrders || isAdmin) && !detailsModalData.order?.is_external && (
+                                                        {(canCreateOrders || isAdmin || isITSupport) && !detailsModalData.order?.is_external && (
                                                             <td className="p-2.5 text-center">
-                                                                {sQty === 0 ? (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleDeleteStageFromCurrentOrder(detailsModalData.order.id, stg.stage_name)}
-                                                                        className="btn-slate btn-slate-danger text-[10.5px] py-1 px-2.5 whitespace-nowrap"
-                                                                        title="إلغاء واستبعاد هذه المرحلة لعدم وجود أي شغل أو مسحات سابقة عليها"
-                                                                    >
-                                                                        <i className="fas fa-trash-alt text-[10px]"></i> إلغاء المرحلة
-                                                                    </button>
-                                                                ) : (
-                                                                    <span className="text-[10px] text-slate-500 font-bold flex items-center justify-center gap-1" title="لا يمكن إلغاء هذه المرحلة لوجود مسحات وشغل سابق عليها">
-                                                                        <i className="fas fa-lock text-slate-400 text-[10px]"></i> محصنة ({sQty.toLocaleString('en-US')} قطعة)
-                                                                    </span>
-                                                                )}
+                                                                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                                                    {!isPrimaryStage && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleSetPrimaryStageForOrder(detailsModalData.order.id, stg.stage_name)}
+                                                                            className="btn-slate text-[10.5px] py-1 px-2 border-amber-500/40 text-amber-300 hover:bg-amber-500/15 whitespace-nowrap"
+                                                                            title="تعيين هذه المرحلة لتكون هي المرحلة الأولى الإلزامية التي يبدأ منها الأوردر"
+                                                                        >
+                                                                            👑 {language === 'ar' ? 'تعيين كبداية إلزامية' : 'Set as Primary'}
+                                                                        </button>
+                                                                    )}
+                                                                    {sQty === 0 ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleDeleteStageFromCurrentOrder(detailsModalData.order.id, stg.stage_name)}
+                                                                            className="btn-slate btn-slate-danger text-[10.5px] py-1 px-2 whitespace-nowrap"
+                                                                            title="إلغاء واستبعاد هذه المرحلة لعدم وجود أي شغل أو مسحات سابقة عليها"
+                                                                        >
+                                                                            <i className="fas fa-trash-alt text-[10px]"></i> {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                                                                        </button>
+                                                                    ) : (
+                                                                        <span className="text-[10px] text-slate-500 font-bold flex items-center justify-center gap-1" title="لا يمكن إلغاء هذه المرحلة لوجود مسحات وشغل سابق عليها">
+                                                                            <i className="fas fa-lock text-slate-400 text-[10px]"></i> محصنة
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </td>
                                                         )}
                                                     </tr>
@@ -1149,7 +1361,7 @@ export default function OrdersTrackingPage() {
                                 </div>
 
                                 {/* إضافة مرحلة جديدة لأمر التشغيل هذا */}
-                                {(canCreateOrders || isAdmin) && !detailsModalData.order?.is_external && (
+                                {(canCreateOrders || isAdmin || isITSupport) && !detailsModalData.order?.is_external && (
                                     <div className="mt-3.5 p-3 rounded-xl bg-[#090e1c] border border-slate-700/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                         <div className="flex items-center gap-2.5">
                                             <div className="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-xs flex-shrink-0">

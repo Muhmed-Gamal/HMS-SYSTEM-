@@ -24,7 +24,7 @@ const PIPELINE_DEPARTMENTS = [
 ];
 
 export default function AdminUsersPage() {
-    const { user, isAdmin, isSuperAdmin, companyName } = useAuth();
+    const { user, isAdmin, isSuperAdmin, isITSupport, canManageUsers, companyName } = useAuth();
     const { toast, confirm, showAlert } = useToast();
     const { language, changeLanguage, t, isRTL } = useLanguage();
     const navigate = useNavigate();
@@ -76,15 +76,15 @@ export default function AdminUsersPage() {
     const activeStages = stagesConfig.filter(s => s.is_active).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
 
 
-    // Guard: Only admin can access
+    // Guard: Admin, SuperAdmin, and IT Support can access
     useEffect(() => {
         if (!user) {
             navigate('/login');
-        } else if (!isAdmin) {
+        } else if (!isAdmin && !isITSupport && !canManageUsers) {
             toast('غير مصرح لك بالدخول إلى لوحة إدارة المستخدمين', 'error');
             navigate('/');
         }
-    }, [user, isAdmin, navigate, toast]);
+    }, [user, isAdmin, isITSupport, canManageUsers, navigate, toast]);
 
     const loadUsers = async () => {
         setLoading(true);
@@ -132,14 +132,14 @@ export default function AdminUsersPage() {
     };
 
     useEffect(() => {
-        if (isAdmin) {
+        if (isAdmin || isITSupport || canManageUsers) {
             loadUsers();
             loadStagesConfig(); // دائماً نحمّل المراحل لملء الـ dropdown
             if (isSuperAdmin) {
                 loadLicenseStatus();
             }
         }
-    }, [isAdmin, isSuperAdmin]);
+    }, [isAdmin, isITSupport, canManageUsers, isSuperAdmin]);
 
     // Pipeline actions (SuperAdmin only)
     const handleToggleSingleStage = async (id) => {
@@ -499,28 +499,40 @@ export default function AdminUsersPage() {
     const canEditUser = (targetUser) => {
         const uname = (targetUser.username || '').toLowerCase();
         const myName = (user?.username || '').toLowerCase();
-        // الحسابات الأساسية للملاك محمية من أي مستخدم آخر
+        // الحسابات الأساسية للملاك محمية بالكامل من أي تعديل
         if (uname === 'gamal' || uname === 'auf') {
             if (myName !== 'gamal' && myName !== 'auf') return false;
         }
         // superadmin و Gamal و Auf يملكون الصلاحية الكاملة لتعديل أي مستخدم
         if (isSuperAdmin || myName === 'gamal' || myName === 'auf') return true;
+        // مسؤول الـ IT لا يرى ولا يعدل حسابات الملاك أو صاحب المصنع
+        if (isITSupport) {
+            if (targetUser.role === 'superadmin' || targetUser.role === 'factory_owner') return false;
+            return true;
+        }
         // admin عادي يعدّل أي حد ماعدا superadmin
         if (targetUser.role === 'superadmin') return false;
         return true;
     };
 
+    // شرط الحذف: المالك والمدير فقط لحذف من هم أقل منهم صلاحية
     const canDeleteUser = (targetUser) => {
         const uname = (targetUser.username || '').toLowerCase();
         const myName = (user?.username || '').toLowerCase();
-        // حسابات الملاك الأساسية Gamal و Auf لا يمكن حذفها نهائياً لحماية النظام
-        if (uname === 'gamal' || uname === 'auf') return false;
-        if (targetUser.username === 'admin') return false;
+        // الحسابات الأساسية لا تحذف نهائياً
+        if (uname === 'gamal' || uname === 'auf' || targetUser.username === 'admin') return false;
         if (targetUser.id === user?.id) return false;
-        // Gamal و Auf و superadmin يملكون حذف أي حساب آخر
+        // مسؤول الـ IT ليس لديه صلاحية حذف المستخدمين
+        if (isITSupport) return false;
+
+        // مالك السيستم (Superadmin) يحذف أي حساب أقل منه
         if (isSuperAdmin || myName === 'gamal' || myName === 'auf') return true;
-        if (targetUser.role === 'superadmin') return false;
-        return true;
+
+        // مدير المصنع (admin) يحذف فقط من هم أقل منه صلاحية (ليس admin ولا superadmin)
+        if (user?.role === 'admin') {
+            return targetUser.role !== 'admin' && targetUser.role !== 'superadmin';
+        }
+        return false;
     };
 
     return (
@@ -610,17 +622,19 @@ export default function AdminUsersPage() {
                             </span>
                         </button>
 
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('license')}
-                            className={`tab-nav-item ${activeTab === 'license' ? 'active' : ''}`}
-                        >
-                            <i className="fas fa-crown text-amber-300 text-xs"></i>
-                            <span>{t('admin.tab_license')}</span>
-                            <span className="badge-clean badge-amber text-[9px] font-mono px-1.5 py-0.5 rounded">
-                                LICENSE
-                            </span>
-                        </button>
+                        {isSuperAdmin && (
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('license')}
+                                className={`tab-nav-item ${activeTab === 'license' ? 'active' : ''}`}
+                            >
+                                <i className="fas fa-crown text-amber-300 text-xs"></i>
+                                <span>{t('admin.tab_license')}</span>
+                                <span className="badge-clean badge-amber text-[9px] font-mono px-1.5 py-0.5 rounded">
+                                    LICENSE
+                                </span>
+                            </button>
+                        )}
 
                         <button
                             type="button"
@@ -1282,11 +1296,16 @@ export default function AdminUsersPage() {
                                     className="slate-input text-xs cursor-pointer"
                                 >
                                     <option value="production">{language === 'ar' ? 'يوزر إنتاج (مسح مراحل محددة)' : 'Production Operator (specific stages)'}</option>
-                                    <option value="factory_owner">🏢 {language === 'ar' ? 'صاحب المصنع (داشبورد وتتبع شامل فقط)' : 'Factory Owner (Dashboard & Tracking Only)'}</option>
+                                    {!isITSupport && (
+                                        <option value="factory_owner">🏢 {language === 'ar' ? 'صاحب المصنع (داشبورد وتتبع شامل فقط)' : 'Factory Owner (Dashboard & Tracking Only)'}</option>
+                                    )}
                                     <option value="external_operator">{language === 'ar' ? 'تشغيل خارجي (مسح أي باركود)' : 'External Operator (any barcode)'}</option>
                                     <option value="external_admin">{language === 'ar' ? 'مشرف تشغيل خارجي (متابعة الأوردرات الخارجية فقط)' : 'External Admin (external orders only)'}</option>
                                     <option value="admin_view">{language === 'ar' ? 'متابع إداري (اطلاع فقط)' : 'Admin Viewer (read-only)'}</option>
-                                    <option value="admin">{language === 'ar' ? 'مدير مصنع (أدمن عادي)' : 'Factory Manager (Admin)'}</option>
+                                    <option value="it_support">💻 {language === 'ar' ? 'مسؤول IT (فك قفل، تغيير باسوردات، إنشاء يوزرات وتعديل مراحل)' : 'IT Support (Unlock, Reset Passwords, Manage Stages)'}</option>
+                                    {!isITSupport && (
+                                        <option value="admin">{language === 'ar' ? 'مدير مصنع (أدمن عادي)' : 'Factory Manager (Admin)'}</option>
+                                    )}
                                     {isSuperAdmin && (
                                         <option value="superadmin">👑 {language === 'ar' ? 'مالك السيستم (Super Admin - صلاحية شاملة)' : 'System Owner (Super Admin - Full Access)'}</option>
                                     )}
@@ -1433,6 +1452,12 @@ export default function AdminUsersPage() {
                                                     <span className="badge-clean-dot" style={{background:'#22d3ee'}}></span> {language === 'ar' ? 'مشرف خارجي' : 'External Admin'}
                                                 </span>
                                             );
+                                        } else if (u.role === 'it_support') {
+                                            roleBadge = (
+                                                <span className="badge-clean text-[10px]" style={{background:'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(139,92,246,0.2))',color:'#c084fc',border:'1px solid rgba(192,132,252,0.4)'}}>
+                                                    <i className="fas fa-laptop-code text-[9px] mr-1"></i> {language === 'ar' ? 'مسؤول IT' : 'IT Support'}
+                                                </span>
+                                            );
                                         } else {
                                             roleBadge = (
                                                 <span className="badge-clean badge-green text-[10px]">
@@ -1484,7 +1509,7 @@ export default function AdminUsersPage() {
                                                 <td className="p-3 text-center">
                                                     <div className="flex items-center justify-center gap-1.5">
                                                         {/* Unlock Button for locked users */}
-                                                        {u.is_locked && (isSuperAdmin || isAdmin || ['gamal','auf'].includes(user?.username?.toLowerCase())) && (
+                                                        {u.is_locked && (isSuperAdmin || isAdmin || isITSupport || ['gamal','auf'].includes(user?.username?.toLowerCase())) && (
                                                             <button
                                                                 onClick={() => handleUnlockUser(u.id, u.username)}
                                                                 className="btn-slate text-[11px] py-1 px-2.5 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/15 hover:border-emerald-400 transition flex items-center gap-1 font-semibold"
@@ -1599,11 +1624,16 @@ export default function AdminUsersPage() {
                                         className="slate-input text-xs cursor-pointer"
                                     >
                                         <option value="production">{language === 'ar' ? 'يوزر إنتاج (مسح مراحل محددة)' : 'Production Operator (specific stages)'}</option>
-                                        <option value="factory_owner">🏢 {language === 'ar' ? 'صاحب المصنع (داشبورد وتتبع شامل فقط)' : 'Factory Owner (Dashboard & Tracking Only)'}</option>
+                                        {!isITSupport && (
+                                            <option value="factory_owner">🏢 {language === 'ar' ? 'صاحب المصنع (داشبورد وتتبع شامل فقط)' : 'Factory Owner (Dashboard & Tracking Only)'}</option>
+                                        )}
                                         <option value="external_operator">{language === 'ar' ? 'تشغيل خارجي (مسح أي باركود)' : 'External Operator (any barcode)'}</option>
                                         <option value="external_admin">{language === 'ar' ? 'مشرف تشغيل خارجي (متابعة الأوردرات الخارجية فقط)' : 'External Admin (external orders only)'}</option>
                                         <option value="admin_view">{language === 'ar' ? 'متابع إداري (اطلاع فقط)' : 'Admin Viewer (read-only)'}</option>
-                                        <option value="admin">{language === 'ar' ? 'مدير مصنع (أدمن عادي)' : 'Factory Manager (Admin)'}</option>
+                                        <option value="it_support">💻 {language === 'ar' ? 'مسؤول IT (فك قفل، تغيير باسوردات، إنشاء يوزرات وتعديل مراحل)' : 'IT Support (Unlock, Reset Passwords, Manage Stages)'}</option>
+                                        {!isITSupport && (
+                                            <option value="admin">{language === 'ar' ? 'مدير مصنع (أدمن عادي)' : 'Factory Manager (Admin)'}</option>
+                                        )}
                                         {isSuperAdmin && (
                                             <option value="superadmin">👑 {language === 'ar' ? 'مالك السيستم (Super Admin - صلاحية شاملة)' : 'System Owner (Super Admin - Full Access)'}</option>
                                         )}

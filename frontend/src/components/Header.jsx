@@ -9,7 +9,7 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
     const {
         user, logout,
         isAdmin, isSuperAdmin, isMasterOwner, isFactoryOwner,
-        isProduction, isAdminView, isExternalOperator, isExternalAdmin,
+        isProduction, isAdminView, isExternalOperator, isExternalAdmin, isITSupport,
         canCreateOrders, canManageUsers, canViewOrders, companyName
     } = useAuth();
     const { confirm } = useToast();
@@ -78,6 +78,12 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
             );
         }
         if (user.role === 'admin') return <span className="badge-clean badge-red text-[10px] px-2 py-0.5 rounded-md font-bold">{t('nav.admin')}</span>;
+        if (user.role === 'it_support') return (
+            <span className="badge-clean text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold"
+                style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.25), rgba(139,92,246,0.25))', color: '#c084fc', border: '1px solid rgba(192,132,252,0.4)' }}>
+                <i className="fas fa-laptop-code text-purple-400 text-[10px]"></i> {language === 'ar' ? 'مسؤول IT' : 'IT Support'}
+            </span>
+        );
         if (user.role === 'factory_owner') return (
             <span className="badge-clean text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold"
                 style={{ background: 'linear-gradient(135deg, rgba(2,132,199,0.25), rgba(99,102,241,0.25))', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.4)' }}>

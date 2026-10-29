@@ -71,17 +71,24 @@ export function AuthProvider({ children }) {
     const isAdminView = !isSuperAdmin && user?.role === 'admin_view';
     const isExternalOperator = !isSuperAdmin && user?.role === 'external_operator';
     const isExternalAdmin = !isSuperAdmin && user?.role === 'external_admin';
-    const canCreateOrders = isSuperAdmin || isAdmin || Boolean(user?.can_create_orders);
-    const canManageUsers = isSuperAdmin || isAdmin || Boolean(user?.can_manage_users);
-    const canPrintReports = isSuperAdmin || isAdmin || isFactoryOwner || Boolean(user?.can_print_reports);
-    const canViewOrders = isSuperAdmin || isFactoryOwner || Boolean(user?.can_view_orders);
+    const isITSupport = !isSuperAdmin && user?.role === 'it_support';
+    // مسؤول الـ IT لا يفتح أوردرات
+    const canCreateOrders = (isSuperAdmin || isAdmin || Boolean(user?.can_create_orders)) && !isITSupport;
+    // مسؤول الـ IT يدير ويفتح ويغير باسوردات المستخدمين
+    const canManageUsers = isSuperAdmin || isAdmin || isITSupport || Boolean(user?.can_manage_users);
+    // مسؤول الـ IT لا يطبع تقارير
+    const canPrintReports = (isSuperAdmin || isAdmin || isFactoryOwner || Boolean(user?.can_print_reports)) && !isITSupport;
+    // مسؤول الـ IT لا يرى التقارير والداشبورد العام بل يرى فقط إدارة المستخدمين وتعديل مراحل الأوردرات المفتوحة
+    const canViewOrders = isSuperAdmin || isFactoryOwner || isITSupport || Boolean(user?.can_view_orders);
+    // صلاحية الوصول لسلة المحذوفات وتفاصيل الحذف
+    const canAccessRecycleBin = isSuperAdmin || isAdmin || isFactoryOwner || isITSupport;
 
     return (
         <AuthContext.Provider value={{ 
             user, login, logout, 
             isAdmin, isSuperAdmin, isMasterOwner, isFactoryOwner,
-            isProduction, isAdminView, isExternalOperator, isExternalAdmin, 
-            canCreateOrders, canManageUsers, canPrintReports, canViewOrders,
+            isProduction, isAdminView, isExternalOperator, isExternalAdmin, isITSupport,
+            canCreateOrders, canManageUsers, canPrintReports, canViewOrders, canAccessRecycleBin,
             companyName, setCompanyName, licenseInfo, isMasterGeneral, reloadSystemInfo 
         }}>
             {children}

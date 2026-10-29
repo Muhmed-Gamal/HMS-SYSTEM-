@@ -69,6 +69,8 @@ export const api = {
     getUnscannedBarcodes: (id, stage = 'ALL') =>
         request(`/orders/${id}/unscanned?stage=${encodeURIComponent(stage)}`, { method: 'GET' }),
     deleteOrder: (id) => request(`/orders/${id}`, { method: 'DELETE' }),
+    getDeletedOrders: () => request('/deleted-orders', { method: 'GET' }),
+    restoreDeletedOrder: (id) => request(`/deleted-orders/${id}/restore`, { method: 'POST' }),
     addOrderStage: (orderId, stageName) => request(`/orders/${orderId}/stages/add`, { method: 'POST', body: JSON.stringify({ stage_name: stageName }) }),
     deleteOrderStage: (orderId, stageName) => request(`/orders/${orderId}/stages/${encodeURIComponent(stageName)}`, { method: 'DELETE' }),
     setOrderPrimaryStage: (orderId, stageName) => request(`/orders/${orderId}/stages/set-primary`, { method: 'PUT', body: JSON.stringify({ stage_name: stageName }) }),

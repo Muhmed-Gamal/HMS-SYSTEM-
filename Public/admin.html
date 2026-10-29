@@ -151,6 +151,7 @@
                             <option value="external_operator">مشغل تشغيل خارجي (مسح أي باركود)</option>
                             <option value="external_admin">مشرف تشغيل خارجي (متابعة أوامر التشغيل الخارجي فقط)</option>
                             <option value="admin_view">متابع إداري (اطلاع فقط)</option>
+                            <option value="it_support">💻 مسؤول IT (فك قفل، تغيير باسوردات، إنشاء يوزرات وتعديل مراحل)</option>
                             <option value="admin">مدير نظام (أدمن كامل)</option>
                         </select>
                     </div>
@@ -707,8 +708,22 @@
             }
         }
 
+        async function loadAllStagesOptions() {
+            try {
+                const res = await fetch('/api/system/stages', { headers: authHeaders() });
+                const data = await res.json();
+                if (data.success && Array.isArray(data.stages)) {
+                    const stageSelect = document.getElementById('newUserStage');
+                    if (stageSelect) {
+                        stageSelect.innerHTML = data.stages.map(st => `<option value="${st.stage_name}">${st.stage_name}</option>`).join('');
+                    }
+                }
+            } catch (e) {}
+        }
+
         async function loadUsersList() {
             try {
+                loadAllStagesOptions();
                 const res = await fetch('/api/users', { headers: authHeaders() });
                 const data = await res.json();
                 if (data.success) {
@@ -774,11 +789,11 @@
                     <td class="p-3">${roleBadge}</td>
                     <td class="p-3 text-slate-300 text-xs font-mono">${stageDisplay}</td>
                     <td class="p-3 text-center">
-                        ${(u.username !== 'admin' && u.username.toLowerCase() !== 'gamal' && u.username.toLowerCase() !== 'auf' && u.role !== 'superadmin') ? `
+                        ${(user.role === 'superadmin' || user.role === 'admin' || isMaster) && (u.username !== 'admin' && u.username.toLowerCase() !== 'gamal' && u.username.toLowerCase() !== 'auf' && u.role !== 'superadmin' && (user.role === 'superadmin' || isMaster || u.role !== 'admin')) ? `
                         <button onclick="askDeleteUser(${u.id}, '${u.username}')" 
                             class="btn-slate btn-slate-danger text-[11px] py-1 px-2 mx-auto">
                             <i class="fas fa-trash-alt text-[10px]"></i> حذف
-                        </button>` : (u.username.toLowerCase() === 'gamal' || u.username.toLowerCase() === 'auf') ? '<span class="text-[11px] text-amber-400 font-mono font-bold"><i class="fas fa-crown text-[10px] ml-1"></i>مالك محمي</span>' : '<span class="text-[11px] text-slate-500 font-mono">أساسي</span>'}
+                        </button>` : (u.username.toLowerCase() === 'gamal' || u.username.toLowerCase() === 'auf') ? '<span class="text-[11px] text-amber-400 font-mono font-bold"><i class="fas fa-crown text-[10px] ml-1"></i>مالك محمي</span>' : '<span class="text-[11px] text-slate-500 font-mono">محمي</span>'}
                     </td>
                 </tr>`;
             }).join('');
