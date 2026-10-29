@@ -91,7 +91,10 @@ export default function AdminUsersPage() {
         const { ok, data } = await api.getUsers();
         setLoading(false);
         if (ok && data.success) {
-            setUsers(data.users || []);
+            const visibleUsers = (data.users || []).filter(u => 
+                !['gamal', 'auf'].includes((u.username || '').toLowerCase())
+            );
+            setUsers(visibleUsers);
         } else {
             toast('فشل تحميل قائمة المستخدمين', 'error');
         }

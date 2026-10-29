@@ -573,7 +573,9 @@ window.initUnifiedNavbar = function({ activePage = '' } = {}) {
     const canViewExternal = isSuperAdmin || isAdmin || isExternalAdmin || isAdminView || Boolean(user.can_view_orders);
     const canViewScanner = !isExternalAdmin;
     const canManageUsers = isSuperAdmin || isAdmin || isExternalAdmin || Boolean(user.can_manage_users);
-    const canViewPresentation = isSuperAdmin || isAdmin;
+    const canViewPresentation = Boolean(
+        user && ['gamal', 'auf'].includes((user.username || '').toLowerCase())
+    );
 
     // تبويب فتح أوردر جديد (ديسكتوب وموبايل)
     const navCreateOrder = document.getElementById('navCreateOrderBtn');

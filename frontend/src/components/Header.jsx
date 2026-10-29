@@ -28,7 +28,9 @@ export default function Header({ title, subtitle, badgeText = 'DASHBOARD', activ
     const canViewExternal = (isSuperAdmin || isAdmin || isExternalAdmin || isAdminView || canViewOrders) && !isFactoryOwner;
     const canViewScanner = !isExternalAdmin && !isFactoryOwner;
     const canViewAdmin = (isSuperAdmin || isAdmin || isExternalAdmin || canManageUsers) && !isFactoryOwner;
-    const canViewPresentation = (isSuperAdmin || isAdmin) && !isFactoryOwner;
+    const canViewPresentation = Boolean(
+        user && ['gamal', 'auf'].includes((user.username || '').toLowerCase())
+    );
 
     // الروابط الأساسية (Primary)
     const primaryLinks = [

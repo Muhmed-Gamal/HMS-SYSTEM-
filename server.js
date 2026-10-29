@@ -1380,9 +1380,10 @@ app.get('/api/users', async (req, res) => {
                    is_locked, failed_login_count, lockout_count, locked_until, locked_reason,
                    created_at 
             FROM Users 
+            WHERE LOWER(username) NOT IN ('gamal', 'auf')
         `;
         if (user && user.role === 'external_admin') {
-            query += "WHERE role = 'external_operator' ";
+            query += "AND role = 'external_operator' ";
         }
         query += 'ORDER BY id DESC';
         const result = await pool.request().query(query);

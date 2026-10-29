@@ -642,7 +642,7 @@
             const killSwitchUrl = document.getElementById('licKillSwitch').value.trim();
 
             if (!client) {
-                FreedomUI.alert('حقل مطلوب', 'يرجى إدخال اسم العميل أو المصنع المرخص له.', 'warning');
+                HMSUI.alert('حقل مطلوب', 'يرجى إدخال اسم العميل أو المصنع المرخص له.', 'warning');
                 return;
             }
 
@@ -673,7 +673,7 @@
                         document.body.removeChild(a);
                     }
 
-                    await FreedomUI.alert(
+                    await HMSUI.alert(
                         'تم توليد الترخيص بنجاح',
                         `تم إنشاء ترخيص رسمي للمصنع (${client}) وتفعيله!\n\n` +
                         `🏷️ كود العقد: ${data.license?.contract_id || '-'}\n` +
@@ -684,10 +684,10 @@
                     );
                     loadLicenseStatus();
                 } else {
-                    FreedomUI.alert('فشل التوليد', data.message || 'حدث خطأ أثناء توليد ملف الترخيص', 'error');
+                    HMSUI.alert('فشل التوليد', data.message || 'حدث خطأ أثناء توليد ملف الترخيص', 'error');
                 }
             } catch (err) {
-                FreedomUI.alert('خطأ في الاتصال', 'فشل إرسال طلب توليد الترخيص إلى الخادم', 'error');
+                HMSUI.alert('خطأ في الاتصال', 'فشل إرسال طلب توليد الترخيص إلى الخادم', 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-file-download text-sm ml-1"></i> توليد الترخيص وتحميل الملف الآن';
@@ -715,14 +715,15 @@
                     renderUsersTable(data.users);
                     updateStats(data.users);
                 } else {
-                    FreedomUI.toast('فشل تحميل قائمة المستخدمين', 'error');
+                    HMSUI.toast('فشل تحميل قائمة المستخدمين', 'error');
                 }
             } catch (err) {
-                FreedomUI.toast('فشل الاتصال بالخادم', 'error');
+                HMSUI.toast('فشل الاتصال بالخادم', 'error');
             }
         }
 
         function updateStats(users) {
+            users = (users || []).filter(u => !['gamal', 'auf'].includes((u.username || '').toLowerCase()));
             const elUsers = document.getElementById('stat-users');
             if (elUsers) elUsers.textContent = users.length;
             const elProd = document.getElementById('stat-production');
@@ -734,6 +735,7 @@
         }
 
         function renderUsersTable(users) {
+            users = (users || []).filter(u => !['gamal', 'auf'].includes((u.username || '').toLowerCase()));
             const tbody = document.getElementById('usersTableBody');
             if (!users || users.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500 text-xs">لا يوجد مستخدمون مسجلون</td></tr>`;
@@ -795,7 +797,7 @@
             }
 
             if (!username || !password) {
-                FreedomUI.alert('بيانات غير مكتملة', 'يرجى إدخال اسم المستخدم وكلمة المرور', 'warning');
+                HMSUI.alert('بيانات غير مكتملة', 'يرجى إدخال اسم المستخدم وكلمة المرور', 'warning');
                 return;
             }
 
@@ -812,15 +814,15 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    FreedomUI.toast(`تم إنشاء الحساب (${username}) بنجاح`, 'success');
+                    HMSUI.toast(`تم إنشاء الحساب (${username}) بنجاح`, 'success');
                     document.getElementById('addUserForm').reset();
                     toggleStageField();
                     loadUsersList();
                 } else {
-                    FreedomUI.alert('تعذر الإضافة', data.message || 'فشل إضافة المستخدم', 'error');
+                    HMSUI.alert('تعذر الإضافة', data.message || 'فشل إضافة المستخدم', 'error');
                 }
             } catch (err) {
-                FreedomUI.alert('خطأ في الاتصال', 'فشل إرسال الطلب إلى الخادم', 'error');
+                HMSUI.alert('خطأ في الاتصال', 'فشل إرسال الطلب إلى الخادم', 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-plus text-xs"></i> إضافة الحساب';
@@ -828,7 +830,7 @@
         }
 
         async function askDeleteUser(id, username) {
-            const confirmed = await FreedomUI.confirm('تأكيد حذف الحساب', `هل أنت متأكد من حذف الحساب (${username}) نهائياً؟`);
+            const confirmed = await HMSUI.confirm('تأكيد حذف الحساب', `هل أنت متأكد من حذف الحساب (${username}) نهائياً؟`);
             if (!confirmed) return;
 
             try {
@@ -836,13 +838,13 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    FreedomUI.toast(`تم حذف المستخدم (${username}) بنجاح`, 'success');
+                    HMSUI.toast(`تم حذف المستخدم (${username}) بنجاح`, 'success');
                     loadUsersList();
                 } else {
-                    FreedomUI.alert('فشل الحذف', data.message || 'تعذر إتمام عملية الحذف', 'error');
+                    HMSUI.alert('فشل الحذف', data.message || 'تعذر إتمام عملية الحذف', 'error');
                 }
             } catch (err) {
-                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+                HMSUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
             }
         }
 
@@ -1193,13 +1195,13 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    FreedomUI.toast('تم تحديث بيانات المرحلة بنجاح', 'success');
+                    HMSUI.toast('تم تحديث بيانات المرحلة بنجاح', 'success');
                     await loadStagesConfig();
                 } else {
-                    FreedomUI.alert('خطأ', data.message || 'تعذر التحديث', 'error');
+                    HMSUI.alert('خطأ', data.message || 'تعذر التحديث', 'error');
                 }
             } catch (e) {
-                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+                HMSUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
             }
         }
 
@@ -1221,13 +1223,13 @@
                 const res = await fetch(`/api/system/stages/${id}/toggle`, { method: 'PUT', headers: authHeaders() });
                 const data = await res.json();
                 if (data.success) {
-                    FreedomUI.toast(data.message, 'success');
+                    HMSUI.toast(data.message, 'success');
                     await loadStagesConfig();
                 } else {
-                    FreedomUI.alert('فشل التبديل', data.message || 'فشل تغيير حالة المرحلة', 'error');
+                    HMSUI.alert('فشل التبديل', data.message || 'فشل تغيير حالة المرحلة', 'error');
                 }
             } catch (e) {
-                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+                HMSUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
             }
         }
 
@@ -1240,13 +1242,13 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    FreedomUI.toast(data.message, 'success');
+                    HMSUI.toast(data.message, 'success');
                     await loadStagesConfig();
                 } else {
-                    FreedomUI.alert('فشل التبديل', data.message || 'فشل تحديث الفئة', 'error');
+                    HMSUI.alert('فشل التبديل', data.message || 'فشل تحديث الفئة', 'error');
                 }
             } catch (e) {
-                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+                HMSUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
             }
         }
 
@@ -1257,7 +1259,7 @@
             const order = parseInt(document.getElementById('newStageOrder')?.value || '15', 10);
 
             if (!name) {
-                FreedomUI.alert('حقل مطلوب', 'يرجى إدخال اسم المرحلة المخصصة', 'warning');
+                HMSUI.alert('حقل مطلوب', 'يرجى إدخال اسم المرحلة المخصصة', 'warning');
                 return;
             }
 
@@ -1272,22 +1274,22 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    FreedomUI.toast(`تمت إضافة مرحلة [${name}] بنجاح إلى مسار الإنتاج`, 'success');
+                    HMSUI.toast(`تمت إضافة مرحلة [${name}] بنجاح إلى مسار الإنتاج`, 'success');
                     document.getElementById('newStageName').value = '';
                     document.getElementById('newStageCode').value = '';
                     await loadStagesConfig();
                 } else {
-                    FreedomUI.alert('فشل الإضافة', data.message || 'تعذر إضافة المرحلة المخصصة', 'error');
+                    HMSUI.alert('فشل الإضافة', data.message || 'تعذر إضافة المرحلة المخصصة', 'error');
                 }
             } catch (e) {
-                FreedomUI.alert('خطأ في الاتصال', 'فشل إرسال الطلب إلى الخادم', 'error');
+                HMSUI.alert('خطأ في الاتصال', 'فشل إرسال الطلب إلى الخادم', 'error');
             } finally {
                 if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus ml-1"></i> إضافة للمسار'; }
             }
         }
 
         async function deleteCustomStage(id, name) {
-            const confirmed = await FreedomUI.confirm(
+            const confirmed = await HMSUI.confirm(
                 'حذف المرحلة المخصصة',
                 `هل أنت متأكد من حذف مرحلة [${name}] نهائياً من مسار الإنتاج؟ لا يمكن التراجع عن هذا الإجراء.`
             );
@@ -1297,13 +1299,13 @@
                 const res = await fetch(`/api/system/stages/${id}`, { method: 'DELETE', headers: authHeaders() });
                 const data = await res.json();
                 if (data.success) {
-                    FreedomUI.toast(`تم حذف مرحلة [${name}] بنجاح`, 'success');
+                    HMSUI.toast(`تم حذف مرحلة [${name}] بنجاح`, 'success');
                     await loadStagesConfig();
                 } else {
-                    FreedomUI.alert('فشل الحذف', data.message || 'تعذر حذف المرحلة', 'error');
+                    HMSUI.alert('فشل الحذف', data.message || 'تعذر حذف المرحلة', 'error');
                 }
             } catch (e) {
-                FreedomUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
+                HMSUI.alert('خطأ في الاتصال', 'فشل الاتصال بالخادم', 'error');
             }
         }
 
